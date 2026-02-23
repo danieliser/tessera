@@ -4,7 +4,7 @@ import pytest
 import asyncio
 from unittest.mock import Mock, AsyncMock, MagicMock, patch
 import mcp.types as types
-from codemem.server import create_server, search_tool, symbols_tool, references_tool, file_context_tool, impact_tool
+from tessera.server import create_server, search_tool, symbols_tool, references_tool, file_context_tool, impact_tool
 
 
 def run_async(coro):

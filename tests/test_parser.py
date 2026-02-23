@@ -1,7 +1,7 @@
 """Tests for the tree-sitter based parser module."""
 
 import pytest
-from codemem.parser import (
+from tessera.parser import (
     detect_language,
     parse_file,
     extract_symbols,

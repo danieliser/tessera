@@ -9,14 +9,14 @@ from pathlib import Path
 
 import pytest
 
-from codemem.db import GlobalDB, ProjectDB
-from codemem.auth import create_scope, validate_session, revoke_scope, SessionNotFoundError, SessionExpiredError
-from codemem.indexer import IndexerPipeline
-from codemem.server import (
+from tessera.db import GlobalDB, ProjectDB
+from tessera.auth import create_scope, validate_session, revoke_scope, SessionNotFoundError, SessionExpiredError
+from tessera.indexer import IndexerPipeline
+from tessera.server import (
     create_server, search_tool, register_project_tool, reindex_tool,
     create_scope_tool, revoke_scope_tool, status_tool, _check_session
 )
-import codemem.server as server_mod
+import tessera.server as server_mod
 
 
 def run_async(coro):

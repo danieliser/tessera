@@ -3,7 +3,7 @@
 import pytest
 from unittest.mock import Mock, patch
 import httpx
-from codemem.embeddings import EmbeddingClient, EmbeddingUnavailableError
+from tessera.embeddings import EmbeddingClient, EmbeddingUnavailableError
 
 
 class TestEmbeddingClientInit:

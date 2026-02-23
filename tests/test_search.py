@@ -2,7 +2,7 @@
 
 import pytest
 import numpy as np
-from codemem.search import rrf_merge, cosine_search
+from tessera.search import rrf_merge, cosine_search
 
 
 class TestRRFMerge:

@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "codemem"
+name = "tessera"
 version = "0.1.0"
 description = "Hierarchical, scope-gated codebase indexing and persistent memory system for AI agents"
 readme = "README.md"
@@ -31,11 +31,11 @@ dev = [
 ]
 
 [project.scripts]
-codemem = "codemem.__main__:main"
+tessera = "tessera.__main__:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/codemem"]
+packages = ["src/tessera"]

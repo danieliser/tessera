@@ -484,10 +484,10 @@ def create_server(project_path: str, global_db_path: str) -> Server:
     """
     global _project_db, _global_db
 
-    server = Server("codemem")
+    server = Server("tessera")
 
     # Initialize real databases
-    project_db_path = str(Path(project_path) / ".codemem" / "project.db")
+    project_db_path = str(Path(project_path) / ".tessera" / "project.db")
     Path(project_db_path).parent.mkdir(parents=True, exist_ok=True)
     Path(global_db_path).parent.mkdir(parents=True, exist_ok=True)
 
@@ -705,14 +705,14 @@ async def run_server(project_path: str, global_db_path: Optional[str] = None) ->
 
     Args:
         project_path: Path to project directory
-        global_db_path: Path to global.db (optional, defaults to ~/.codemem/global.db)
+        global_db_path: Path to global.db (optional, defaults to ~/.tessera/global.db)
 
     Returns:
         Exit code (0 for success, 1 for error)
     """
     if not global_db_path:
         home = Path.home()
-        global_db_path = str(home / ".codemem" / "global.db")
+        global_db_path = str(home / ".tessera" / "global.db")
 
     # Create server
     server = create_server(project_path, global_db_path)

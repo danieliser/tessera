@@ -109,10 +109,10 @@ class IndexerPipeline:
 
         files = []
         for root, dirs, filenames in os.walk(self.project_path):
-            # Skip hidden dirs, node_modules, vendor, .git, .codemem
+            # Skip hidden dirs, node_modules, vendor, .git, .tessera
             dirs[:] = [
                 d for d in dirs
-                if not d.startswith('.') and d not in ('node_modules', 'vendor', '__pycache__', '.codemem')
+                if not d.startswith('.') and d not in ('node_modules', 'vendor', '__pycache__', '.tessera')
             ]
             for f in filenames:
                 if any(f.endswith(ext) for ext in allowed_exts):

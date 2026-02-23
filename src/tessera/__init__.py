@@ -1,4 +1,4 @@
-"""CodeMem: Hierarchical codebase indexing and persistent memory system for AI agents.
+"""Tessera: Hierarchical, scope-gated indexing and retrieval for AI agents.
 
 A scope-gated MCP server providing search, symbol navigation, reference tracing,
 and impact analysis across multi-language, multi-repo projects.

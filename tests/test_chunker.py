@@ -1,7 +1,7 @@
 """Tests for chunker.py module."""
 
 import pytest
-from codemem.chunker import chunk_with_cast, Chunk
+from tessera.chunker import chunk_with_cast, Chunk
 
 
 class TestChunkWithCast:

@@ -1,8 +1,8 @@
 """CLI entry point for CodeMem.
 
 Supports:
-  - indexing: python -m codemem index <path> --embedding-endpoint <url>
-  - serving: python -m codemem serve --project <path>
+  - indexing: python -m tessera index <path> --embedding-endpoint <url>
+  - serving: python -m tessera serve --project <path>
 """
 
 import argparse
@@ -14,7 +14,7 @@ import asyncio
 def main() -> int:
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
-        prog="codemem",
+        prog="tessera",
         description="CodeMem: Hierarchical codebase indexing and memory system"
     )
     subparsers = parser.add_subparsers(dest="command", help="Command to run")

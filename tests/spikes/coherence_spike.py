@@ -26,7 +26,7 @@ class CoherenceSpike:
 
     def __init__(self):
         """Initialize temporary databases."""
-        self.temp_dir = tempfile.mkdtemp(prefix="codemem_spike_")
+        self.temp_dir = tempfile.mkdtemp(prefix="tessera_spike_")
         self.sqlite_db = sqlite3.connect(":memory:")
         self.lancedb_uri = self.temp_dir
         self.lancedb_conn = lancedb.connect(self.lancedb_uri)

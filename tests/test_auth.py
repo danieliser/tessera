@@ -1,6 +1,6 @@
 """Tests for session token distribution and scope-gated access control.
 
-Tests all functions in src/codemem/auth.py:
+Tests all functions in src/tessera/auth.py:
 - create_scope: session token generation
 - validate_session: token validation and scope retrieval
 - check_scope: scope containment checks
@@ -15,7 +15,7 @@ import tempfile
 from pathlib import Path
 from datetime import datetime, timedelta
 
-from codemem.auth import (
+from tessera.auth import (
     create_scope,
     validate_session,
     check_scope,

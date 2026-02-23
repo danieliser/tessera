@@ -1,7 +1,7 @@
-# CodeMem — Project Context
+# Tessera — Project Context
 
 ## Overview
-CodeMem is a hierarchical, scope-gated codebase indexing and persistent memory system for always-on AI agents. It's an MCP server that provides search, symbol navigation, reference tracing, and impact analysis across multi-language, multi-repo projects.
+Tessera is a hierarchical, scope-gated codebase indexing and persistent memory system for always-on AI agents. It's an MCP server that provides search, symbol navigation, reference tracing, and impact analysis across multi-language, multi-repo projects.
 
 ## Project Status
 **Phase 1: Active Implementation**
@@ -26,7 +26,7 @@ Scaffolding complete. Architecture design documented in `docs/plans/architecture
 
 ## Package Structure
 ```
-src/codemem/
+src/tessera/
   __init__.py       - Package metadata and version
   __main__.py       - CLI entry point (index, serve commands)
   db.py             - SQLite schema and connection management
@@ -39,7 +39,7 @@ src/codemem/
   search.py         - FAISS vector search + keyword + RRF merging (C5)
 ```
 
-## Running CodeMem
+## Running Tessera
 
 ### Development Setup
 ```bash
@@ -49,13 +49,13 @@ uv run pytest tests/ -v           # Run test suite
 
 ### Index a Project
 ```bash
-uv run python -m codemem index /path/to/project \
+uv run python -m tessera index /path/to/project \
   --embedding-endpoint http://localhost:8000/v1
 ```
 
 ### Start MCP Server
 ```bash
-uv run python -m codemem serve --project /path/to/project
+uv run python -m tessera serve --project /path/to/project
 ```
 
 ## Code Style

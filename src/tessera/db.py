@@ -1,6 +1,6 @@
 """SQLite database layer for CodeMem Phase 1.
 
-Manages both global (~/.codemem/global.db) and per-project (.codemem/index.db)
+Manages both global (~/.tessera/global.db) and per-project (.tessera/index.db)
 SQLite databases. All queries use parameterized placeholders to prevent SQL injection.
 
 Architecture:
@@ -51,18 +51,18 @@ def normalize_and_validate(project_root: Path, user_path: str) -> Path:
 
 
 class GlobalDB:
-    """Manages ~/.codemem/global.db for project metadata, collections, sessions."""
+    """Manages ~/.tessera/global.db for project metadata, collections, sessions."""
 
     def __init__(self, db_path: str = None):
         """Initialize global database connection.
 
         Args:
-            db_path: Path to global.db. Defaults to ~/.codemem/global.db
+            db_path: Path to global.db. Defaults to ~/.tessera/global.db
         """
         if db_path is None:
-            codemem_dir = Path.home() / ".codemem"
-            codemem_dir.mkdir(parents=True, exist_ok=True)
-            db_path = str(codemem_dir / "global.db")
+            tessera_dir = Path.home() / ".tessera"
+            tessera_dir.mkdir(parents=True, exist_ok=True)
+            db_path = str(tessera_dir / "global.db")
 
         self.db_path = db_path
         self.conn = sqlite3.connect(db_path, check_same_thread=False)
@@ -344,7 +344,7 @@ class GlobalDB:
 
 
 class ProjectDB:
-    """Manages <project>/.codemem/index.db for symbols, references, and embeddings."""
+    """Manages <project>/.tessera/index.db for symbols, references, and embeddings."""
 
     def __init__(self, project_path: str):
         """Initialize project database connection.
@@ -353,11 +353,11 @@ class ProjectDB:
             project_path: Absolute path to the project root
         """
         project_path = Path(project_path)
-        codemem_dir = project_path / ".codemem"
-        codemem_dir.mkdir(parents=True, exist_ok=True)
+        tessera_dir = project_path / ".tessera"
+        tessera_dir.mkdir(parents=True, exist_ok=True)
 
         self.project_path = project_path
-        self.db_path = str(codemem_dir / "index.db")
+        self.db_path = str(tessera_dir / "index.db")
         self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
 
