@@ -1,0 +1,250 @@
+"""Query interface: keyword search, semantic search, and reciprocal rank fusion.
+
+Phase 1: Search API design and result merging.
+Will implement:
+  - Keyword search (SQLite FTS5 against symbols and references)
+  - Semantic search (LanceDB vector queries)
+  - Reciprocal rank fusion (RRF) merging keyword + semantic results
+  - Scope-filtered queries (respect project/collection/global scope)
+  - Pagination and result ranking
+
+CTO Condition C5: Phase 1 latency gate criteria:
+  - Keyword search <20ms
+  - Semantic search <30ms
+  - RRF merge <10ms
+  - Total <100ms p95 (validated via pytest benchmarks)
+"""
+
+from typing import Optional
+import numpy as np
+import faiss
+
+
+def rrf_merge(ranked_lists: list[list[dict]], k: int = 60) -> list[dict]:
+    """
+    Reciprocal Rank Fusion.
+
+    Combines multiple ranked lists using RRF scoring:
+    score(d) = sum over sources of 1 / (k + rank(d, source))
+
+    Args:
+        ranked_lists: List of ranked result lists, each containing dicts with 'id' field
+        k: RRF constant (default 60)
+
+    Returns:
+        Merged list sorted by RRF score descending, with 'rrf_score' added to each item
+    """
+    if not ranked_lists:
+        return []
+
+    # Build score map: {id -> sum of reciprocal ranks}
+    score_map = {}
+    item_map = {}  # Keep track of items for later enrichment
+
+    for ranked_list in ranked_lists:
+        for rank, item in enumerate(ranked_list, start=1):
+            item_id = item["id"]
+            reciprocal_rank = 1.0 / (k + rank)
+
+            if item_id not in score_map:
+                score_map[item_id] = 0.0
+                item_map[item_id] = item
+            else:
+                # Update item_map if this result has more fields
+                item_map[item_id].update(item)
+
+            score_map[item_id] += reciprocal_rank
+
+    # Sort by RRF score descending
+    sorted_results = sorted(
+        score_map.items(),
+        key=lambda x: x[1],
+        reverse=True
+    )
+
+    # Build output with rrf_score
+    output = []
+    for item_id, score in sorted_results:
+        result = item_map[item_id].copy()
+        result["rrf_score"] = score
+        output.append(result)
+
+    return output
+
+
+def cosine_search(
+    query_embedding: np.ndarray,
+    chunk_ids: list[int],
+    embeddings: np.ndarray,
+    limit: int = 10
+) -> list[dict]:
+    """
+    Vector similarity search using FAISS IndexFlatIP (inner product on normalized vectors).
+
+    Args:
+        query_embedding: 1D float32 array (e.g. 768 dims)
+        chunk_ids: list of chunk IDs corresponding to rows in embeddings
+        embeddings: 2D float32 array (N x dim)
+        limit: max results
+
+    Returns:
+        list of dicts with 'id', 'score' fields, sorted by score descending
+    """
+    if len(embeddings) == 0:
+        return []
+
+    query_norm = np.linalg.norm(query_embedding)
+    if query_norm == 0:
+        return []
+
+    # Normalize for cosine similarity via inner product
+    query_normalized = (query_embedding / query_norm).reshape(1, -1).astype(np.float32)
+    embedding_norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
+    embedding_norms[embedding_norms == 0] = 1
+    normalized_embeddings = (embeddings / embedding_norms).astype(np.float32)
+
+    # Build FAISS index and search
+    d = normalized_embeddings.shape[1]
+    index = faiss.IndexFlatIP(d)
+    index.add(np.ascontiguousarray(normalized_embeddings))
+
+    k = min(limit, len(chunk_ids))
+    scores, indices = index.search(query_normalized, k)
+
+    results = []
+    for i in range(k):
+        idx = int(indices[0][i])
+        if idx >= 0:
+            results.append({
+                "id": chunk_ids[idx],
+                "score": float(scores[0][i])
+            })
+
+    return results
+
+
+def hybrid_search(
+    query: str,
+    query_embedding: Optional[np.ndarray],
+    db,
+    limit: int = 10
+) -> list[dict]:
+    """
+    Hybrid search combining keyword (FTS5) and semantic (vector) results.
+
+    Algorithm:
+    1. Run FTS5 keyword search via db.keyword_search()
+    2. If query_embedding provided: run cosine_search on db.get_all_embeddings()
+    3. Merge with RRF
+    4. Enrich results with file_path, start_line, end_line from chunk_meta
+
+    Args:
+        query: Search query string
+        query_embedding: Optional query embedding (1D array)
+        db: ProjectDB instance with methods: keyword_search(), get_all_embeddings(), get_chunk_meta()
+        limit: Max results to return
+
+    Returns:
+        list of SearchResult dicts with:
+            id, file_path, start_line, end_line, content, score, rank_sources
+    """
+    ranked_lists = []
+
+    # 1. Keyword search
+    try:
+        keyword_results = db.keyword_search(query, limit=limit)
+        if keyword_results:
+            ranked_lists.append(keyword_results)
+    except Exception:
+        keyword_results = []
+
+    # 2. Semantic search
+    if query_embedding is not None:
+        try:
+            all_embeddings = db.get_all_embeddings()
+            if all_embeddings and len(all_embeddings) > 0:
+                chunk_ids, embedding_vectors = all_embeddings
+                semantic_results = cosine_search(
+                    query_embedding,
+                    chunk_ids,
+                    embedding_vectors,
+                    limit=limit
+                )
+                if semantic_results:
+                    ranked_lists.append(semantic_results)
+        except Exception:
+            semantic_results = []
+
+    # 3. Merge with RRF
+    if not ranked_lists:
+        return []
+
+    merged = rrf_merge(ranked_lists)
+
+    # 4. Enrich with chunk metadata
+    results = []
+    for item in merged[:limit]:
+        chunk_id = item["id"]
+        try:
+            meta = db.get_chunk_meta(chunk_id)
+            enriched = {
+                "id": chunk_id,
+                "file_path": meta.get("file_path", ""),
+                "start_line": meta.get("start_line", 0),
+                "end_line": meta.get("end_line", 0),
+                "content": meta.get("content", ""),
+                "score": item.get("rrf_score", item.get("score", 0.0)),
+                "rank_sources": ["keyword", "semantic"]  # simplified
+            }
+        except Exception:
+            enriched = {
+                "id": chunk_id,
+                "file_path": "",
+                "start_line": 0,
+                "end_line": 0,
+                "content": "",
+                "score": item.get("rrf_score", item.get("score", 0.0)),
+                "rank_sources": []
+            }
+
+        results.append(enriched)
+
+    return results
+
+
+if __name__ == "__main__":
+    # Test RRF merge with mock data
+    print("=== RRF Merge Test ===")
+
+    ranked_list_1 = [
+        {"id": 1, "score": 0.9},
+        {"id": 2, "score": 0.8},
+        {"id": 3, "score": 0.7},
+    ]
+
+    ranked_list_2 = [
+        {"id": 2, "score": 0.95},
+        {"id": 1, "score": 0.85},
+        {"id": 4, "score": 0.75},
+    ]
+
+    merged = rrf_merge([ranked_list_1, ranked_list_2], k=60)
+    print("Merged results:")
+    for item in merged:
+        print(f"  ID: {item['id']}, RRF Score: {item['rrf_score']:.4f}")
+
+    # Test cosine search with random vectors
+    print("\n=== Cosine Search Test ===")
+
+    query_embedding = np.random.randn(768).astype(np.float32)
+    chunk_ids = [101, 102, 103, 104, 105]
+    embeddings = np.random.randn(5, 768).astype(np.float32)
+
+    results = cosine_search(query_embedding, chunk_ids, embeddings, limit=3)
+    print("Cosine search results:")
+    for result in results:
+        print(f"  Chunk ID: {result['id']}, Similarity: {result['score']:.4f}")
+
+    # Test hybrid search would require a mock db
+    print("\n=== Hybrid Search (requires db) ===")
+    print("Skipped (requires ProjectDB instance)")
