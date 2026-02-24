@@ -269,3 +269,58 @@ class TestDeleteFileData:
             assert pdb.get_file("test.py") is None
 
             pdb.close()
+
+
+class TestCallerRefsTriggers:
+    """Test that caller_refs triggers handle INSERT, DELETE, and UPDATE."""
+
+    def test_update_trigger_propagates(self):
+        """Updating a ref's to_symbol_id should update caller_refs."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            pdb = ProjectDB(tmpdir)
+
+            file_id = pdb.upsert_file(1, "test.py", "python", "abc123")
+            sym_ids = pdb.insert_symbols([
+                {"project_id": 1, "file_id": file_id, "name": "caller", "kind": "function", "line": 1, "col": 0, "scope": None, "signature": None},
+                {"project_id": 1, "file_id": file_id, "name": "callee", "kind": "function", "line": 5, "col": 0, "scope": None, "signature": None},
+                {"project_id": 1, "file_id": file_id, "name": "new_target", "kind": "function", "line": 10, "col": 0, "scope": None, "signature": None},
+            ])
+            caller_id, callee_id, new_target_id = sym_ids
+
+            # Insert a ref (triggers INSERT trigger → populates caller_refs)
+            pdb.insert_refs([{
+                "project_id": 1,
+                "from_symbol_id": caller_id,
+                "to_symbol_id": callee_id,
+                "to_symbol_name": "callee",
+                "kind": "calls",
+                "context": "",
+                "line": 2,
+            }])
+
+            # Verify caller_refs has the entry
+            row = pdb.conn.execute(
+                "SELECT to_symbol_id FROM caller_refs WHERE from_symbol_id = ?",
+                (caller_id,)
+            ).fetchone()
+            assert row is not None
+            assert row["to_symbol_id"] == callee_id
+
+            # Now UPDATE the ref to point to new_target
+            ref_id = pdb.conn.execute("SELECT id FROM refs WHERE from_symbol_id = ?", (caller_id,)).fetchone()["id"]
+            pdb.conn.execute(
+                "UPDATE refs SET to_symbol_id = ?, to_symbol_name = 'new_target' WHERE id = ?",
+                (new_target_id, ref_id)
+            )
+            pdb.conn.commit()
+
+            # Verify caller_refs was updated by the trigger
+            row = pdb.conn.execute(
+                "SELECT to_symbol_id, to_symbol_name FROM caller_refs WHERE from_symbol_id = ?",
+                (caller_id,)
+            ).fetchone()
+            assert row is not None
+            assert row["to_symbol_id"] == new_target_id
+            assert row["to_symbol_name"] == "new_target"
+
+            pdb.close()

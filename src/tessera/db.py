@@ -70,6 +70,7 @@ class GlobalDB:
 
         # Enable WAL mode for better concurrency
         self.conn.execute("PRAGMA journal_mode=WAL")
+        self.conn.execute("PRAGMA foreign_keys=ON")
 
         self._create_schema()
 
@@ -363,6 +364,7 @@ class ProjectDB:
 
         # Enable WAL mode for better concurrency
         self.conn.execute("PRAGMA journal_mode=WAL")
+        self.conn.execute("PRAGMA foreign_keys=ON")
 
         self._create_schema()
 
@@ -486,7 +488,7 @@ class ProjectDB:
                 AFTER INSERT ON refs
                 WHEN NEW.to_symbol_id IS NOT NULL OR NEW.to_symbol_name IS NOT NULL
                 BEGIN
-                    INSERT OR IGNORE INTO caller_refs
+                    INSERT INTO caller_refs
                         (to_symbol_id, to_symbol_name, from_symbol_id, ref_id, kind)
                     VALUES (
                         COALESCE(NEW.to_symbol_id, 0),
@@ -494,7 +496,9 @@ class ProjectDB:
                         NEW.from_symbol_id,
                         NEW.id,
                         NEW.kind
-                    );
+                    )
+                    ON CONFLICT(to_symbol_id, from_symbol_id, ref_id)
+                    DO UPDATE SET kind = excluded.kind, to_symbol_name = excluded.to_symbol_name;
                 END
             """)
             self.conn.execute("""
@@ -502,6 +506,24 @@ class ProjectDB:
                 AFTER DELETE ON refs
                 BEGIN
                     DELETE FROM caller_refs WHERE ref_id = OLD.id;
+                END
+            """)
+            self.conn.execute("""
+                CREATE TRIGGER IF NOT EXISTS trg_caller_refs_update
+                AFTER UPDATE ON refs
+                BEGIN
+                    DELETE FROM caller_refs WHERE ref_id = OLD.id;
+                    INSERT INTO caller_refs
+                        (to_symbol_id, to_symbol_name, from_symbol_id, ref_id, kind)
+                    VALUES (
+                        COALESCE(NEW.to_symbol_id, 0),
+                        NEW.to_symbol_name,
+                        NEW.from_symbol_id,
+                        NEW.id,
+                        NEW.kind
+                    )
+                    ON CONFLICT(to_symbol_id, from_symbol_id, ref_id)
+                    DO UPDATE SET kind = excluded.kind, to_symbol_name = excluded.to_symbol_name;
                 END
             """)
 
@@ -668,7 +690,8 @@ class ProjectDB:
                 return
 
             file_id = row["id"]
-            # Delete chunks and their embeddings
+            # Delete chunks: FTS5, embeddings, then metadata
+            self.conn.execute("DELETE FROM chunks_fts WHERE chunk_id IN (SELECT id FROM chunk_meta WHERE file_id = ?)", (file_id,))
             self.conn.execute("DELETE FROM chunk_embeddings WHERE chunk_id IN (SELECT id FROM chunk_meta WHERE file_id = ?)", (file_id,))
             self.conn.execute("DELETE FROM chunk_meta WHERE file_id = ?", (file_id,))
             # Delete refs linked to this file's symbols
@@ -972,57 +995,77 @@ class ProjectDB:
     ) -> List[Dict[str, Any]]:
         """Get forward references (callees) for a symbol up to depth.
 
-        Uses query-time cross-file resolution: follows both pre-resolved
-        edges and unresolved refs (matching to_symbol_name against the
-        project-wide symbols table at query time).
+        Uses iterative BFS with a visited set for efficient graph traversal.
+        Follows pre-resolved refs, unresolved refs (query-time name resolution),
+        and containment edges.
 
         Args:
             symbol_id: Starting symbol ID
-            depth: Max traversal depth (number of hops to follow)
+            depth: Max traversal depth (number of hops to follow, capped at 10)
 
         Returns:
             List of reachable symbols (forward graph traversal)
         """
+        depth = min(depth, 10)  # Hard cap to prevent runaway recursion
+
+        visited = {symbol_id}
+        frontier = {symbol_id}
+
+        for _ in range(depth):
+            if not frontier:
+                break
+
+            next_frontier = set()
+            placeholders = ",".join("?" * len(frontier))
+            frontier_list = list(frontier)
+
+            # 1. Pre-resolved refs (to_symbol_id is set)
+            rows = self.conn.execute(
+                f"SELECT DISTINCT r.to_symbol_id FROM refs r "
+                f"WHERE r.from_symbol_id IN ({placeholders}) AND r.to_symbol_id IS NOT NULL",
+                frontier_list
+            ).fetchall()
+            for row in rows:
+                sid = row[0]
+                if sid not in visited:
+                    next_frontier.add(sid)
+
+            # 2. Unresolved refs via query-time name resolution
+            rows = self.conn.execute(
+                f"SELECT DISTINCT s2.id FROM refs r "
+                f"JOIN symbols s2 ON s2.name = r.to_symbol_name AND s2.project_id = r.project_id "
+                f"WHERE r.from_symbol_id IN ({placeholders}) "
+                f"AND r.to_symbol_id IS NULL AND r.to_symbol_name IS NOT NULL",
+                frontier_list
+            ).fetchall()
+            for row in rows:
+                sid = row[0]
+                if sid not in visited:
+                    next_frontier.add(sid)
+
+            # 3. Containment edges
+            rows = self.conn.execute(
+                f"SELECT DISTINCT e.to_id FROM edges e "
+                f"WHERE e.from_id IN ({placeholders}) AND e.type = 'contains'",
+                frontier_list
+            ).fetchall()
+            for row in rows:
+                sid = row[0]
+                if sid not in visited:
+                    next_frontier.add(sid)
+
+            visited.update(next_frontier)
+            frontier = next_frontier
+
+        # Fetch all discovered symbols (excluding the seed)
+        result_ids = visited - {symbol_id}
+        if not result_ids:
+            return []
+
+        placeholders = ",".join("?" * len(result_ids))
         cursor = self.conn.execute(
-            """
-            WITH RECURSIVE forward_refs AS (
-                -- Seed: the starting symbol
-                SELECT id, 0 as depth FROM symbols WHERE id = ?
-
-                UNION
-
-                -- Follow pre-resolved refs (to_symbol_id is set)
-                SELECT r.to_symbol_id, f.depth + 1
-                FROM refs r
-                JOIN forward_refs f ON r.from_symbol_id = f.id
-                WHERE r.to_symbol_id IS NOT NULL
-                  AND f.depth < ?
-
-                UNION
-
-                -- Follow unresolved refs via query-time name resolution
-                SELECT s2.id, f.depth + 1
-                FROM refs r
-                JOIN forward_refs f ON r.from_symbol_id = f.id
-                JOIN symbols s2 ON s2.name = r.to_symbol_name
-                WHERE r.to_symbol_id IS NULL
-                  AND r.to_symbol_name IS NOT NULL
-                  AND f.depth < ?
-
-                UNION
-
-                -- Follow containment edges (outer scope → inner definitions)
-                SELECT e.to_id, f.depth + 1
-                FROM edges e
-                JOIN forward_refs f ON e.from_id = f.id
-                WHERE e.type = 'contains'
-                  AND f.depth < ?
-            )
-            SELECT DISTINCT s.* FROM symbols s
-            WHERE s.id IN (SELECT id FROM forward_refs WHERE depth > 0)
-            ORDER BY s.name
-            """,
-            (symbol_id, depth, depth, depth)
+            f"SELECT * FROM symbols WHERE id IN ({placeholders}) ORDER BY name",
+            list(result_ids)
         )
         return [dict(row) for row in cursor.fetchall()]
 
@@ -1199,55 +1242,31 @@ class ProjectDB:
             file_id: File ID
         """
         with self.conn:
-            # Get all chunk IDs for this file
-            cursor = self.conn.execute(
-                "SELECT id FROM chunk_meta WHERE file_id = ?",
+            # Batch delete chunks: FTS5, embeddings, then metadata
+            self.conn.execute(
+                "DELETE FROM chunk_embeddings WHERE chunk_id IN (SELECT id FROM chunk_meta WHERE file_id = ?)",
                 (file_id,)
             )
-            chunk_ids = [row[0] for row in cursor.fetchall()]
-
-            # Delete embeddings
-            for chunk_id in chunk_ids:
-                self.conn.execute(
-                    "DELETE FROM chunk_embeddings WHERE chunk_id = ?",
-                    (chunk_id,)
-                )
-
-            # Delete from FTS5
-            for chunk_id in chunk_ids:
-                self.conn.execute(
-                    "DELETE FROM chunks_fts WHERE chunk_id = ?",
-                    (chunk_id,)
-                )
-
-            # Delete chunks
+            self.conn.execute(
+                "DELETE FROM chunks_fts WHERE chunk_id IN (SELECT id FROM chunk_meta WHERE file_id = ?)",
+                (file_id,)
+            )
             self.conn.execute(
                 "DELETE FROM chunk_meta WHERE file_id = ?",
                 (file_id,)
             )
 
-            # Get all symbol IDs for this file
-            cursor = self.conn.execute(
-                "SELECT id FROM symbols WHERE file_id = ?",
-                (file_id,)
+            # Batch delete graph data: edges, refs, then symbols
+            self.conn.execute(
+                "DELETE FROM edges WHERE from_id IN (SELECT id FROM symbols WHERE file_id = ?) "
+                "OR to_id IN (SELECT id FROM symbols WHERE file_id = ?)",
+                (file_id, file_id)
             )
-            symbol_ids = [row[0] for row in cursor.fetchall()]
-
-            # Delete edges referencing these symbols
-            for symbol_id in symbol_ids:
-                self.conn.execute(
-                    "DELETE FROM edges WHERE from_id = ? OR to_id = ?",
-                    (symbol_id, symbol_id)
-                )
-
-            # Delete refs
-            for symbol_id in symbol_ids:
-                self.conn.execute(
-                    "DELETE FROM refs WHERE from_symbol_id = ? OR to_symbol_id = ?",
-                    (symbol_id, symbol_id)
-                )
-
-            # Delete symbols
+            self.conn.execute(
+                "DELETE FROM refs WHERE from_symbol_id IN (SELECT id FROM symbols WHERE file_id = ?) "
+                "OR to_symbol_id IN (SELECT id FROM symbols WHERE file_id = ?)",
+                (file_id, file_id)
+            )
             self.conn.execute(
                 "DELETE FROM symbols WHERE file_id = ?",
                 (file_id,)
