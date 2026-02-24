@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "tessera": {
+      "command": "uv",
+      "args": [
+        "--directory", "/Users/danieliser/Toolkit/codemem",
+        "run",
+        "python", "-m", "tessera", "serve",
+        "--project", "/Users/danieliser/Toolkit/codemem"
+      ]
+    }
+  }
+}

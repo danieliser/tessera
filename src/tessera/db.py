@@ -994,6 +994,8 @@ class ProjectDB:
         Returns:
             List of matching chunks with score
         """
+        if not query or not query.strip():
+            return []
         cursor = self.conn.execute(
             """
             SELECT cm.*, fts.rank as score
