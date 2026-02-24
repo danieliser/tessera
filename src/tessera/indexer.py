@@ -313,65 +313,99 @@ class IndexerPipeline:
         except Exception as e:
             return {'status': 'failed', 'reason': f'parse error: {e}'}
 
-        # Clear old data only after successful parse
-        self.project_db.clear_file_data(file_id)
-        self.project_db.update_file_status(file_id, 'pending')
+        # Wrap clear + insert in a transaction for atomicity
+        with self.project_db.conn:
+            # Clear old data only after successful parse
+            self.project_db.clear_file_data(file_id)
+            self.project_db.update_file_status(file_id, 'pending')
 
-        # Store symbols
-        symbol_dicts = [
-            {
+            # Store symbols
+            symbol_dicts = [
+                {
+                    'project_id': self.project_id,
+                    'file_id': file_id,
+                    'name': s.name,
+                    'kind': s.kind,
+                    'line': s.line,
+                    'col': s.col,
+                    'scope': s.scope,
+                    'signature': s.signature,
+                }
+                for s in symbols
+            ]
+            symbol_ids = self.project_db.insert_symbols(symbol_dicts) if symbol_dicts else []
+
+            # Insert a pseudo-symbol for module-level code so <module> refs have a from_id
+            module_sym = {
                 'project_id': self.project_id,
                 'file_id': file_id,
-                'name': s.name,
-                'kind': s.kind,
-                'line': s.line,
-                'col': s.col,
-                'scope': s.scope,
-                'signature': s.signature,
+                'name': '<module>',
+                'kind': 'module',
+                'line': 0,
+                'col': 0,
+                'scope': '',
+                'signature': '',
             }
-            for s in symbols
-        ]
-        symbol_ids = self.project_db.insert_symbols(symbol_dicts) if symbol_dicts else []
+            module_ids = self.project_db.insert_symbols([module_sym])
+            module_id = module_ids[0] if module_ids else None
 
-        # Store references
-        name_to_id = {}
-        for s, sid in zip(symbols, symbol_ids):
-            name_to_id[s.name] = sid
+            # Store references
+            # Build name→id map with both qualified and short names for lookup.
+            # PHP symbols may be namespace-qualified (App\Analytics\Tracker) but
+            # refs use short names (Tracker). Also map scope-qualified method names.
+            name_to_id = {}
+            for s, sid in zip(symbols, symbol_ids):
+                name_to_id[s.name] = sid
+                # For namespaced symbols, also index the short name (last segment)
+                if '\\' in s.name:
+                    short = s.name.rsplit('\\', 1)[-1]
+                    # Only set if not already mapped (avoid overwriting)
+                    if short not in name_to_id:
+                        name_to_id[short] = sid
+                # For scoped methods, also index "scope.method" short form
+                if s.scope and s.kind == 'method':
+                    # Map short scope name → method for ref resolution
+                    short_scope = s.scope.rsplit('\\', 1)[-1] if '\\' in s.scope else s.scope
+                    name_to_id.setdefault(f"{short_scope}.{s.name}", sid)
 
-        ref_dicts = []
-        for r in references:
-            from_id = name_to_id.get(r.from_symbol)
-            to_id = name_to_id.get(r.to_symbol)
-            if from_id:  # from must exist; to can be None (external)
-                ref_dicts.append({
-                    'project_id': self.project_id,
-                    'from_symbol_id': from_id,
-                    'to_symbol_id': to_id,
-                    'to_symbol_name': r.to_symbol,
-                    'kind': r.kind,
-                    'context': r.context,
-                    'line': r.line
-                })
+            # Map <module> pseudo-symbol to module-level references
+            if module_id:
+                name_to_id['<module>'] = module_id
 
-        if ref_dicts:
-            self.project_db.insert_refs(ref_dicts)
+            ref_dicts = []
+            for r in references:
+                from_id = name_to_id.get(r.from_symbol)
+                to_id = name_to_id.get(r.to_symbol)
+                if from_id:  # from must exist; to can be None (external)
+                    ref_dicts.append({
+                        'project_id': self.project_id,
+                        'from_symbol_id': from_id,
+                        'to_symbol_id': to_id,
+                        'to_symbol_name': r.to_symbol,
+                        'kind': r.kind,
+                        'context': r.context,
+                        'line': r.line
+                    })
 
-        # Store edges
-        edge_dicts = []
-        for e in edges:
-            from_id = name_to_id.get(e.from_name)
-            to_id = name_to_id.get(e.to_name)
-            if from_id and to_id:
-                edge_dicts.append({
-                    'project_id': self.project_id,
-                    'from_id': from_id,
-                    'to_id': to_id,
-                    'type': e.type,
-                    'weight': e.weight
-                })
+            if ref_dicts:
+                self.project_db.insert_refs(ref_dicts)
 
-        if edge_dicts:
-            self.project_db.insert_edges(edge_dicts)
+            # Store edges
+            edge_dicts = []
+            for e in edges:
+                from_id = name_to_id.get(e.from_name)
+                to_id = name_to_id.get(e.to_name)
+                if from_id and to_id:
+                    edge_dicts.append({
+                        'project_id': self.project_id,
+                        'from_id': from_id,
+                        'to_id': to_id,
+                        'type': e.type,
+                        'weight': e.weight
+                    })
+
+            if edge_dicts:
+                self.project_db.insert_edges(edge_dicts)
 
         # Chunk
         chunks = chunk_with_cast(source_code, language)

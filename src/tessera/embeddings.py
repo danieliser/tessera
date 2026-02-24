@@ -38,7 +38,8 @@ class EmbeddingClient:
         self.endpoint = endpoint
         self.model = model
         self._client = httpx.Client(timeout=timeout)
-        self._cache = {}  # Simple text -> embedding cache
+        self._cache_max = 10000
+        self._cache = {}  # Bounded text -> embedding cache (LRU eviction)
 
     def embed(self, texts: list[str]) -> list[list[float]]:
         """
@@ -113,6 +114,11 @@ class EmbeddingClient:
 
                         text = texts_to_embed[i]
                         self._cache[text] = embedding
+                        # Evict oldest entries if cache exceeds max size
+                        if len(self._cache) > self._cache_max:
+                            # Remove first (oldest) entry
+                            oldest_key = next(iter(self._cache))
+                            del self._cache[oldest_key]
                         batch_results[uncached_indices[i]] = embedding
                 except (KeyError, ValueError, IndexError) as e:
                     raise EmbeddingUnavailableError(

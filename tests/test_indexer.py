@@ -42,6 +42,15 @@ class MockEdge:
         self.weight = weight
 
 
+class MockConnection:
+    """Mock SQLite connection for transaction context manager."""
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pass
+
+
 class MockProjectDB:
     """Mock ProjectDB for testing."""
     def __init__(self):
@@ -52,6 +61,7 @@ class MockProjectDB:
         self.next_symbol_id = 1
         self.next_chunk_id = 1
         self._old_hash = None
+        self.conn = MockConnection()  # Support transaction wrapping
 
     def upsert_file(self, project_id, path, language, file_hash):
         """Upsert a file record, return file_id."""

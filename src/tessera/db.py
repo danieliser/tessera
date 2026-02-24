@@ -682,30 +682,13 @@ class ProjectDB:
         Args:
             rel_path: Relative file path within the project
         """
+        cursor = self.conn.execute("SELECT id FROM files WHERE path = ?", (rel_path,))
+        row = cursor.fetchone()
+        if not row:
+            return
+        file_id = row["id"]
+        self.clear_file_data(file_id)
         with self.conn:
-            # Find the file
-            cursor = self.conn.execute("SELECT id FROM files WHERE path = ?", (rel_path,))
-            row = cursor.fetchone()
-            if not row:
-                return
-
-            file_id = row["id"]
-            # Delete chunks: FTS5, embeddings, then metadata
-            self.conn.execute("DELETE FROM chunks_fts WHERE chunk_id IN (SELECT id FROM chunk_meta WHERE file_id = ?)", (file_id,))
-            self.conn.execute("DELETE FROM chunk_embeddings WHERE chunk_id IN (SELECT id FROM chunk_meta WHERE file_id = ?)", (file_id,))
-            self.conn.execute("DELETE FROM chunk_meta WHERE file_id = ?", (file_id,))
-            # Delete refs linked to this file's symbols
-            self.conn.execute("""
-                DELETE FROM refs WHERE from_symbol_id IN (SELECT id FROM symbols WHERE file_id = ?)
-                   OR to_symbol_id IN (SELECT id FROM symbols WHERE file_id = ?)
-            """, (file_id, file_id))
-            self.conn.execute("DELETE FROM symbols WHERE file_id = ?", (file_id,))
-            # Delete edges involving this file's symbols
-            self.conn.execute("""
-                DELETE FROM edges WHERE from_id IN (SELECT id FROM symbols WHERE file_id = ?)
-                   OR to_id IN (SELECT id FROM symbols WHERE file_id = ?)
-            """, (file_id, file_id))
-            # Delete the file record
             self.conn.execute("DELETE FROM files WHERE id = ?", (file_id,))
 
     def get_pending_files(self) -> List[Dict[str, Any]]:
@@ -937,8 +920,12 @@ class ProjectDB:
         params = []
 
         if symbol_id is not None:
-            conditions.append("cr.to_symbol_id = ?")
-            params.append(symbol_id)
+            # Match by resolved ID OR by name (for cross-file unresolved refs)
+            conditions.append(
+                "(cr.to_symbol_id = ? OR cr.to_symbol_name IN "
+                "(SELECT name FROM symbols WHERE id = ?))"
+            )
+            params.extend([symbol_id, symbol_id])
         elif symbol_name is not None:
             # Match by resolved ID or unresolved name
             conditions.append(
@@ -1113,6 +1100,7 @@ class ProjectDB:
             List of inserted chunk IDs
         """
         ids = []
+        file_path_cache = {}
         with self.conn:
             for chunk in chunks:
                 # Insert into chunk_meta
@@ -1140,8 +1128,11 @@ class ProjectDB:
                 ids.append(chunk_id)
 
                 # Insert into FTS5
-                file_info = self.get_file(file_id=chunk["file_id"])
-                file_path = file_info["path"] if file_info else ""
+                fid = chunk["file_id"]
+                if fid not in file_path_cache:
+                    file_info = self.get_file(file_id=fid)
+                    file_path_cache[fid] = file_info["path"] if file_info else ""
+                file_path = file_path_cache[fid]
 
                 self.conn.execute(
                     """
