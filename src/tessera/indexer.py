@@ -344,6 +344,7 @@ class IndexerPipeline:
                     'project_id': self.project_id,
                     'from_symbol_id': from_id,
                     'to_symbol_id': to_id,
+                    'to_symbol_name': r.to_symbol,
                     'kind': r.kind,
                     'context': r.context,
                     'line': r.line

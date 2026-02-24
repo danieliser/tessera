@@ -413,6 +413,7 @@ class ProjectDB:
                     project_id INTEGER NOT NULL,
                     from_symbol_id INTEGER NOT NULL,
                     to_symbol_id INTEGER,
+                    to_symbol_name TEXT,
                     kind TEXT NOT NULL,
                     context TEXT,
                     line INTEGER,
@@ -425,6 +426,17 @@ class ProjectDB:
             )
             self.conn.execute(
                 "CREATE INDEX IF NOT EXISTS idx_refs_to ON refs(to_symbol_id)"
+            )
+
+            # Migration: add to_symbol_name if upgrading from older schema
+            # Must run before index/trigger creation that references the column
+            try:
+                self.conn.execute("SELECT to_symbol_name FROM refs LIMIT 0")
+            except Exception:
+                self.conn.execute("ALTER TABLE refs ADD COLUMN to_symbol_name TEXT")
+
+            self.conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_refs_to_name ON refs(project_id, to_symbol_name)"
             )
 
             # Edges table
@@ -448,6 +460,59 @@ class ProjectDB:
                 "CREATE INDEX IF NOT EXISTS idx_edges_to_from "
                 "ON edges(to_id, from_id)"
             )
+
+            # Caller refs: materialized reverse index for "who calls X?"
+            # Maintained by triggers on refs table — zero application code.
+            self.conn.execute("""
+                CREATE TABLE IF NOT EXISTS caller_refs (
+                    to_symbol_id INTEGER NOT NULL DEFAULT 0,
+                    to_symbol_name TEXT,
+                    from_symbol_id INTEGER NOT NULL,
+                    ref_id INTEGER NOT NULL,
+                    kind TEXT NOT NULL,
+                    PRIMARY KEY (to_symbol_id, from_symbol_id, ref_id),
+                    FOREIGN KEY (from_symbol_id) REFERENCES symbols(id),
+                    FOREIGN KEY (ref_id) REFERENCES refs(id)
+                )
+            """)
+            self.conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_caller_refs_name "
+                "ON caller_refs(to_symbol_name)"
+            )
+
+            # Triggers to keep caller_refs in sync with refs
+            self.conn.execute("""
+                CREATE TRIGGER IF NOT EXISTS trg_caller_refs_insert
+                AFTER INSERT ON refs
+                WHEN NEW.to_symbol_id IS NOT NULL OR NEW.to_symbol_name IS NOT NULL
+                BEGIN
+                    INSERT OR IGNORE INTO caller_refs
+                        (to_symbol_id, to_symbol_name, from_symbol_id, ref_id, kind)
+                    VALUES (
+                        COALESCE(NEW.to_symbol_id, 0),
+                        NEW.to_symbol_name,
+                        NEW.from_symbol_id,
+                        NEW.id,
+                        NEW.kind
+                    );
+                END
+            """)
+            self.conn.execute("""
+                CREATE TRIGGER IF NOT EXISTS trg_caller_refs_delete
+                AFTER DELETE ON refs
+                BEGIN
+                    DELETE FROM caller_refs WHERE ref_id = OLD.id;
+                END
+            """)
+
+            # Backfill caller_refs from existing refs (migration path)
+            self.conn.execute("""
+                INSERT OR IGNORE INTO caller_refs
+                    (to_symbol_id, to_symbol_name, from_symbol_id, ref_id, kind)
+                SELECT COALESCE(to_symbol_id, 0), to_symbol_name, from_symbol_id, id, kind
+                FROM refs
+                WHERE to_symbol_id IS NOT NULL OR to_symbol_name IS NOT NULL
+            """)
 
             # Chunk metadata table
             self.conn.execute("""
@@ -760,14 +825,15 @@ class ProjectDB:
                 cursor = self.conn.execute(
                     """
                     INSERT INTO refs (
-                        project_id, from_symbol_id, to_symbol_id, kind, context, line
+                        project_id, from_symbol_id, to_symbol_id, to_symbol_name, kind, context, line
                     )
-                    VALUES (?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         ref.get("project_id"),
                         ref.get("from_symbol_id"),
                         ref.get("to_symbol_id"),
+                        ref.get("to_symbol_name"),
                         ref.get("kind"),
                         ref.get("context"),
                         ref.get("line")
@@ -814,6 +880,58 @@ class ProjectDB:
         cursor = self.conn.execute(sql, params)
         return [dict(row) for row in cursor.fetchall()]
 
+    def get_callers(
+        self,
+        symbol_id: int = None,
+        symbol_name: str = None,
+        kind: str = "all"
+    ) -> List[Dict[str, Any]]:
+        """Get callers of a symbol (reverse reference lookup).
+
+        Uses the materialized caller_refs table for O(1) lookups.
+        Resolves both pre-resolved (to_symbol_id) and unresolved
+        (to_symbol_name) references.
+
+        Args:
+            symbol_id: Target symbol ID
+            symbol_name: Target symbol name
+            kind: Reference kind filter ("all" for no filter)
+
+        Returns:
+            List of caller symbol dicts with full metadata
+        """
+        conditions = []
+        params = []
+
+        if symbol_id is not None:
+            conditions.append("cr.to_symbol_id = ?")
+            params.append(symbol_id)
+        elif symbol_name is not None:
+            # Match by resolved ID or unresolved name
+            conditions.append(
+                "(cr.to_symbol_id IN (SELECT id FROM symbols WHERE name = ?) "
+                "OR cr.to_symbol_name = ?)"
+            )
+            params.extend([symbol_name, symbol_name])
+        else:
+            raise ValueError("Must provide symbol_id or symbol_name")
+
+        if kind != "all":
+            conditions.append("cr.kind = ?")
+            params.append(kind)
+
+        where = " AND ".join(conditions)
+        cursor = self.conn.execute(
+            f"""
+            SELECT DISTINCT s.* FROM symbols s
+            JOIN caller_refs cr ON cr.from_symbol_id = s.id
+            WHERE {where}
+            ORDER BY s.name
+            """,
+            params
+        )
+        return [dict(row) for row in cursor.fetchall()]
+
     # Edge operations
 
     def insert_edges(self, edges: List[Dict[str, Any]]) -> List[int]:
@@ -854,45 +972,59 @@ class ProjectDB:
     ) -> List[Dict[str, Any]]:
         """Get forward references (callees) for a symbol up to depth.
 
+        Uses query-time cross-file resolution: follows both pre-resolved
+        edges and unresolved refs (matching to_symbol_name against the
+        project-wide symbols table at query time).
+
         Args:
             symbol_id: Starting symbol ID
-            depth: Max traversal depth (number of edges to follow)
+            depth: Max traversal depth (number of hops to follow)
 
         Returns:
             List of reachable symbols (forward graph traversal)
         """
-        # Simple 1-hop for depth=1; deeper queries use recursive CTE
-        if depth == 1:
-            cursor = self.conn.execute(
-                """
-                SELECT s.* FROM symbols s
-                JOIN edges e ON e.to_id = s.id
-                WHERE e.from_id = ?
-                ORDER BY s.name
-                """,
-                (symbol_id,)
+        cursor = self.conn.execute(
+            """
+            WITH RECURSIVE forward_refs AS (
+                -- Seed: the starting symbol
+                SELECT id, 0 as depth FROM symbols WHERE id = ?
+
+                UNION
+
+                -- Follow pre-resolved refs (to_symbol_id is set)
+                SELECT r.to_symbol_id, f.depth + 1
+                FROM refs r
+                JOIN forward_refs f ON r.from_symbol_id = f.id
+                WHERE r.to_symbol_id IS NOT NULL
+                  AND f.depth < ?
+
+                UNION
+
+                -- Follow unresolved refs via query-time name resolution
+                SELECT s2.id, f.depth + 1
+                FROM refs r
+                JOIN forward_refs f ON r.from_symbol_id = f.id
+                JOIN symbols s2 ON s2.name = r.to_symbol_name
+                WHERE r.to_symbol_id IS NULL
+                  AND r.to_symbol_name IS NOT NULL
+                  AND f.depth < ?
+
+                UNION
+
+                -- Follow containment edges (outer scope → inner definitions)
+                SELECT e.to_id, f.depth + 1
+                FROM edges e
+                JOIN forward_refs f ON e.from_id = f.id
+                WHERE e.type = 'contains'
+                  AND f.depth < ?
             )
-            return [dict(row) for row in cursor.fetchall()]
-        else:
-            # Recursive CTE for arbitrary depth
-            # depth=N means traverse up to N edges, so we need f.depth <= N
-            cursor = self.conn.execute(
-                """
-                WITH RECURSIVE forward_refs AS (
-                    SELECT id, 0 as depth FROM symbols WHERE id = ?
-                    UNION ALL
-                    SELECT e.to_id, f.depth + 1
-                    FROM edges e
-                    JOIN forward_refs f ON e.from_id = f.id
-                    WHERE f.depth < ?
-                )
-                SELECT s.* FROM symbols s
-                WHERE s.id IN (SELECT id FROM forward_refs WHERE depth > 0)
-                ORDER BY s.name
-                """,
-                (symbol_id, depth)
-            )
-            return [dict(row) for row in cursor.fetchall()]
+            SELECT DISTINCT s.* FROM symbols s
+            WHERE s.id IN (SELECT id FROM forward_refs WHERE depth > 0)
+            ORDER BY s.name
+            """,
+            (symbol_id, depth, depth, depth)
+        )
+        return [dict(row) for row in cursor.fetchall()]
 
     def get_backward_refs(self, symbol_id: int) -> List[Dict[str, Any]]:
         """Get backward references (callers) for a symbol.

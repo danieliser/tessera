@@ -168,6 +168,13 @@ def build_edges(symbols: list[Symbol], references: list[Reference]) -> list[Edge
             )
             edges.append(edge)
 
+    # Containment edges from scope relationships (parent → child)
+    for sym in symbols:
+        if sym.scope and sym.scope in symbol_names:
+            edges.append(Edge(
+                from_name=sym.scope, to_name=sym.name, type="contains"
+            ))
+
     return edges
 
 
@@ -222,7 +229,7 @@ def _extract_symbols_python(tree: tree_sitter.Tree, source_code: str) -> list[Sy
                     else ""
                 ) + ")"
 
-                kind = "method" if scope else "function"
+                kind = "method" if current_class else "function"
                 sym = Symbol(
                     name=name,
                     kind=kind,
@@ -232,6 +239,10 @@ def _extract_symbols_python(tree: tree_sitter.Tree, source_code: str) -> list[Sy
                     signature=sig,
                 )
                 symbols.append(sym)
+                # Walk function body with function as scope for nested defs
+                for child in node.children:
+                    walk(child, scope=name)
+                return
 
         elif node.type == "class_definition":
             # Extract class
@@ -285,8 +296,12 @@ def _extract_symbols_typescript(tree: tree_sitter.Tree, source_code: str) -> lis
                     kind="function",
                     line=node.start_point[0] + 1,
                     col=node.start_point[1],
+                    scope=scope,
                 )
                 symbols.append(sym)
+                for child in node.children:
+                    walk(child, scope=name)
+                return
 
         elif node.type == "class_declaration":
             # Class declaration
@@ -298,6 +313,7 @@ def _extract_symbols_typescript(tree: tree_sitter.Tree, source_code: str) -> lis
                     kind="class",
                     line=node.start_point[0] + 1,
                     col=node.start_point[1],
+                    scope=scope,
                 )
                 symbols.append(sym)
                 # Walk class body
@@ -318,6 +334,9 @@ def _extract_symbols_typescript(tree: tree_sitter.Tree, source_code: str) -> lis
                     scope=scope,
                 )
                 symbols.append(sym)
+                for child in node.children:
+                    walk(child, scope=name)
+                return
 
         elif node.type == "variable_declarator":
             # Arrow function or const function
@@ -330,8 +349,12 @@ def _extract_symbols_typescript(tree: tree_sitter.Tree, source_code: str) -> lis
                     kind="function",
                     line=node.start_point[0] + 1,
                     col=node.start_point[1],
+                    scope=scope,
                 )
                 symbols.append(sym)
+                for child in node.children:
+                    walk(child, scope=name)
+                return
 
         elif node.type in (
             "import_statement",
@@ -370,8 +393,12 @@ def _extract_symbols_php(tree: tree_sitter.Tree, source_code: str) -> list[Symbo
                     kind="function",
                     line=node.start_point[0] + 1,
                     col=node.start_point[1],
+                    scope=scope,
                 )
                 symbols.append(sym)
+                for child in node.children:
+                    walk(child, scope=name)
+                return
 
         elif node.type == "class_declaration":
             # Class declaration
@@ -383,6 +410,7 @@ def _extract_symbols_php(tree: tree_sitter.Tree, source_code: str) -> list[Symbo
                     kind="class",
                     line=node.start_point[0] + 1,
                     col=node.start_point[1],
+                    scope=scope,
                 )
                 symbols.append(sym)
                 # Walk class body
@@ -403,6 +431,9 @@ def _extract_symbols_php(tree: tree_sitter.Tree, source_code: str) -> list[Symbo
                     scope=scope,
                 )
                 symbols.append(sym)
+                for child in node.children:
+                    walk(child, scope=name)
+                return
 
         elif node.type == "namespace_use_declaration":
             # Use statement (import)

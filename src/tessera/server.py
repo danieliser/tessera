@@ -165,8 +165,17 @@ def create_server(project_path: str, global_db_path: str) -> FastMCP:
             return "Error: Project database not initialized"
 
         try:
-            results = await asyncio.to_thread(_project_db.get_refs, symbol_name=symbol_name, kind=kind)
-            _log_audit("references", len(results), agent_id=agent_id)
+            # Outgoing refs (what this symbol calls)
+            outgoing = await asyncio.to_thread(_project_db.get_refs, symbol_name=symbol_name, kind=kind)
+            # Incoming refs (who calls this symbol)
+            callers = await asyncio.to_thread(_project_db.get_callers, symbol_name=symbol_name, kind=kind)
+
+            results = {
+                "outgoing": outgoing,
+                "callers": [{"name": c["name"], "kind": c["kind"], "file_id": c["file_id"], "line": c["line"], "scope": c.get("scope", "")} for c in callers],
+            }
+            total = len(outgoing) + len(callers)
+            _log_audit("references", total, agent_id=agent_id)
             return json.dumps(results, indent=2)
         except Exception as e:
             logger.exception("References tool error")

@@ -67,6 +67,35 @@ def list_files(directory: str) -> list:
     return [str(f) for f in p.iterdir()]
 '''
 
+# Cross-file: imports from animals.py and calls its symbols
+SAMPLE_CODE_3 = '''\
+"""App module that uses animals."""
+
+from animals import Dog, make_dog
+
+
+def run_app():
+    """Create a dog and make it speak."""
+    dog = make_dog("Rex")
+    result = dog.fetch("ball")
+    return result
+'''
+
+# Nested functions: outer_func contains inner_func
+SAMPLE_CODE_4 = '''\
+"""Module with nested function definitions."""
+
+
+def outer_func():
+    """Outer function that contains a nested function."""
+
+    def inner_func():
+        """Inner function defined inside outer_func."""
+        return "inner"
+
+    return inner_func()
+'''
+
 
 @pytest.fixture
 def indexed_server():
@@ -82,6 +111,12 @@ def indexed_server():
         with open(os.path.join(src_dir, "helpers.py"), "w") as f:
             f.write(SAMPLE_CODE_2)
 
+        with open(os.path.join(src_dir, "app.py"), "w") as f:
+            f.write(SAMPLE_CODE_3)
+
+        with open(os.path.join(src_dir, "nested.py"), "w") as f:
+            f.write(SAMPLE_CODE_4)
+
         # Index
         global_db_path = os.path.join(tmpdir, "global.db")
         pipeline = IndexerPipeline(tmpdir)
@@ -96,6 +131,56 @@ async def get_json(server, tool_name, args=None):
     """Call a tool and parse the JSON result."""
     content, _ = await server.call_tool(tool_name, args or {})
     return json.loads(content[0].text)
+
+
+class TestServerStartup:
+    """Smoke tests: server must start without errors."""
+
+    def test_fresh_db_startup(self):
+        """Server starts cleanly with a fresh (empty) database."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            global_db_path = os.path.join(tmpdir, "global.db")
+            server = create_server(tmpdir, global_db_path)
+            assert server is not None
+
+    def test_existing_db_migration(self):
+        """Server starts against a pre-existing DB missing new columns."""
+        import sqlite3
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create an old-schema DB (refs without to_symbol_name)
+            tessera_dir = os.path.join(tmpdir, ".tessera")
+            os.makedirs(tessera_dir)
+            db_path = os.path.join(tessera_dir, "index.db")
+            conn = sqlite3.connect(db_path)
+            conn.execute("""
+                CREATE TABLE files (
+                    id INTEGER PRIMARY KEY, project_id INTEGER NOT NULL,
+                    path TEXT NOT NULL, language TEXT, hash TEXT,
+                    index_status TEXT DEFAULT 'pending', indexed_at TIMESTAMP,
+                    UNIQUE(project_id, path)
+                )
+            """)
+            conn.execute("""
+                CREATE TABLE symbols (
+                    id INTEGER PRIMARY KEY, project_id INTEGER NOT NULL,
+                    file_id INTEGER NOT NULL, name TEXT NOT NULL, kind TEXT NOT NULL,
+                    line INTEGER, col INTEGER, scope TEXT, signature TEXT
+                )
+            """)
+            conn.execute("""
+                CREATE TABLE refs (
+                    id INTEGER PRIMARY KEY, project_id INTEGER NOT NULL,
+                    from_symbol_id INTEGER NOT NULL, to_symbol_id INTEGER,
+                    kind TEXT NOT NULL, context TEXT, line INTEGER
+                )
+            """)
+            conn.commit()
+            conn.close()
+
+            # Server should start and migrate without error
+            global_db_path = os.path.join(tmpdir, "global.db")
+            server = create_server(tmpdir, global_db_path)
+            assert server is not None
 
 
 class TestSearchE2E:
@@ -149,25 +234,41 @@ class TestSymbolsE2E:
 
 
 class TestReferencesE2E:
-    """References tool returns non-empty refs for symbols that have them."""
+    """References tool returns outgoing refs and callers."""
 
-    async def test_references_for_function_with_calls(self, indexed_server):
+    async def test_references_outgoing_calls(self, indexed_server):
         results = await get_json(indexed_server, "references", {"symbol_name": "make_dog"})
-        assert len(results) > 0
-        # make_dog calls Dog() and dog.speak() — should have refs
-        kinds = [r["kind"] for r in results]
+        assert "outgoing" in results
+        assert len(results["outgoing"]) > 0
+        # make_dog calls Dog() and dog.speak()
+        kinds = [r["kind"] for r in results["outgoing"]]
         assert "calls" in kinds
 
-    async def test_references_for_class_with_extends(self, indexed_server):
+    async def test_references_outgoing_extends(self, indexed_server):
         results = await get_json(indexed_server, "references", {"symbol_name": "Dog"})
-        assert len(results) > 0
-        # Dog extends Animal
-        kinds = [r["kind"] for r in results]
+        assert "outgoing" in results
+        assert len(results["outgoing"]) > 0
+        kinds = [r["kind"] for r in results["outgoing"]]
         assert "extends" in kinds
+
+    async def test_references_callers_cross_file(self, indexed_server):
+        """run_app calls make_dog — make_dog should show run_app as a caller."""
+        results = await get_json(indexed_server, "references", {"symbol_name": "make_dog"})
+        assert "callers" in results
+        caller_names = [c["name"] for c in results["callers"]]
+        assert "run_app" in caller_names
+
+    async def test_references_callers_same_file(self, indexed_server):
+        """Dog is called by make_dog — should appear as caller."""
+        results = await get_json(indexed_server, "references", {"symbol_name": "Dog"})
+        assert "callers" in results
+        caller_names = [c["name"] for c in results["callers"]]
+        assert "make_dog" in caller_names
 
     async def test_references_nonexistent_symbol(self, indexed_server):
         results = await get_json(indexed_server, "references", {"symbol_name": "NoSuchThing"})
-        assert results == []
+        assert results["outgoing"] == []
+        assert results["callers"] == []
 
 
 class TestFileContextE2E:
@@ -208,11 +309,30 @@ class TestImpactE2E:
     async def test_impact_function_with_calls(self, indexed_server):
         """make_dog calls Dog and speak — impact should show downstream symbols."""
         results = await get_json(indexed_server, "impact", {"symbol_name": "make_dog"})
-        # make_dog has outgoing edges to Dog and speak
-        if len(results) > 0:
-            names = [r["name"] for r in results]
-            # At least one downstream dependency
-            assert len(names) > 0
+        names = [r["name"] for r in results]
+        assert len(names) > 0
+        # make_dog calls Dog() and dog.speak()
+        assert "Dog" in names or "speak" in names
+
+    async def test_impact_cross_file(self, indexed_server):
+        """run_app (app.py) calls make_dog (animals.py) — cross-file resolution."""
+        results = await get_json(indexed_server, "impact", {"symbol_name": "run_app"})
+        names = [r["name"] for r in results]
+        # run_app calls make_dog which is in a different file
+        assert "make_dog" in names
+
+    async def test_impact_cross_file_depth(self, indexed_server):
+        """run_app → make_dog → Dog: depth 2 should reach Dog across two files."""
+        results = await get_json(indexed_server, "impact", {"symbol_name": "run_app", "depth": 2})
+        names = [r["name"] for r in results]
+        assert "make_dog" in names
+        assert "Dog" in names
+
+    async def test_impact_nested_scope(self, indexed_server):
+        """outer_func contains inner_func — impact should find inner_func via containment edge."""
+        results = await get_json(indexed_server, "impact", {"symbol_name": "outer_func"})
+        names = [r["name"] for r in results]
+        assert "inner_func" in names
 
     async def test_impact_nonexistent_symbol(self, indexed_server):
         results = await get_json(indexed_server, "impact", {"symbol_name": "NoSuchThing"})
