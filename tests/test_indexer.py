@@ -593,3 +593,39 @@ class TestSearch:
         results = pipeline.search('query', limit=10)
 
         assert mock_embedding_client.embed_single.called
+
+
+class TestParseFailurePreservesData:
+    """Test that parse failure doesn't destroy existing symbol data."""
+
+    def test_parse_failure_keeps_old_symbols(self, temp_project_dir):
+        """If parse_and_extract raises, old data should still exist."""
+        # Create a real file to index
+        test_file = temp_project_dir / "module.py"
+        test_file.write_text("def existing_func():\n    pass\n")
+
+        pipeline = IndexerPipeline(str(temp_project_dir))
+        pipeline.register()
+
+        # First index: should succeed
+        result = pipeline.index_file(str(test_file))
+        assert result["status"] == "indexed"
+        assert result["symbols"] > 0
+
+        # Verify symbols exist
+        syms = pipeline.project_db.lookup_symbols("existing_func")
+        assert len(syms) > 0
+
+        # Now update the file so hash changes (triggers re-index)
+        test_file.write_text("def existing_func():\n    pass\n# changed\n")
+
+        # Mock parse_and_extract to raise on the second call
+        with patch('tessera.indexer.parse_and_extract', side_effect=RuntimeError("parse crash")):
+            result = pipeline.index_file(str(test_file))
+            assert result["status"] == "failed"
+
+        # Old symbols should still exist (not cleared before failed parse)
+        syms = pipeline.project_db.lookup_symbols("existing_func")
+        assert len(syms) > 0
+
+        pipeline.project_db.close()

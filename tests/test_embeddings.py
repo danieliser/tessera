@@ -228,6 +228,75 @@ class TestEmbeddingContextManager:
             assert client.endpoint == "http://localhost:8000/v1/embeddings"
 
 
+class TestEmbeddingDuplicateTexts:
+    """Test handling of duplicate text inputs."""
+
+    @patch.object(httpx.Client, 'post')
+    def test_duplicate_texts_all_get_embeddings(self, mock_post):
+        """Two identical texts should both receive embeddings (both sent to API, both filled)."""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.raise_for_status = Mock()
+        # Both duplicates are sent to API (neither is cached yet in same batch)
+        mock_response.json.return_value = {
+            "data": [
+                {"embedding": [0.1, 0.2, 0.3]},
+                {"embedding": [0.1, 0.2, 0.3]},
+            ]
+        }
+        mock_post.return_value = mock_response
+
+        client = EmbeddingClient()
+        results = client.embed(["hello world", "hello world"])
+
+        assert len(results) == 2
+        assert results[0] == [0.1, 0.2, 0.3]
+        assert results[1] == [0.1, 0.2, 0.3]
+        client.close()
+
+    @patch.object(httpx.Client, 'post')
+    def test_duplicate_texts_across_batches_use_cache(self, mock_post):
+        """Second call with same text should use cache, not API."""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.raise_for_status = Mock()
+        mock_response.json.return_value = {
+            "data": [{"embedding": [0.1, 0.2, 0.3]}]
+        }
+        mock_post.return_value = mock_response
+
+        client = EmbeddingClient()
+        # First call populates cache
+        r1 = client.embed(["hello world"])
+        assert r1[0] == [0.1, 0.2, 0.3]
+        assert mock_post.call_count == 1
+
+        # Second call should use cache — no API call
+        r2 = client.embed(["hello world"])
+        assert r2[0] == [0.1, 0.2, 0.3]
+        assert mock_post.call_count == 1  # Still 1, cache hit
+        client.close()
+
+    @patch.object(httpx.Client, 'post')
+    def test_count_mismatch_raises(self, mock_post):
+        """Response with wrong count should raise."""
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.raise_for_status = Mock()
+        mock_response.json.return_value = {
+            "data": [
+                {"embedding": [0.1, 0.2]},
+                # Missing second item
+            ]
+        }
+        mock_post.return_value = mock_response
+
+        client = EmbeddingClient()
+        with pytest.raises(EmbeddingUnavailableError, match="count mismatch"):
+            client.embed(["text1", "text2"])
+        client.close()
+
+
 class TestEmbeddingEmpty:
     """Test handling of empty inputs."""
 

@@ -307,12 +307,15 @@ class IndexerPipeline:
         ):
             return {'status': 'skipped', 'reason': 'unchanged'}
 
-        # Clear old data for re-indexing
+        # Parse FIRST (before clearing old data — if parsing fails, old data preserved)
+        try:
+            symbols, references, edges = parse_and_extract(file_path, source_code)
+        except Exception as e:
+            return {'status': 'failed', 'reason': f'parse error: {e}'}
+
+        # Clear old data only after successful parse
         self.project_db.clear_file_data(file_id)
         self.project_db.update_file_status(file_id, 'pending')
-
-        # Parse
-        symbols, references, edges = parse_and_extract(file_path, source_code)
 
         # Store symbols
         symbol_dicts = [

@@ -70,13 +70,13 @@ class EmbeddingClient:
             # Separate cached and uncached texts
             batch_results = []
             texts_to_embed = []
-            text_to_result_index = {}  # Maps text to index in batch_results
+            uncached_indices = []  # indices into batch_results needing API fill
 
             for i, text in enumerate(batch):
                 if text in self._cache:
                     batch_results.append(self._cache[text])
                 else:
-                    text_to_result_index[text] = len(batch_results)
+                    uncached_indices.append(len(batch_results))
                     batch_results.append(None)  # Placeholder
                     texts_to_embed.append(text)
 
@@ -100,7 +100,12 @@ class EmbeddingClient:
                     data = response.json()
                     embeddings_data = data.get("data", [])
 
-                    # Cache and fill in results
+                    if len(embeddings_data) != len(texts_to_embed):
+                        raise EmbeddingUnavailableError(
+                            f"Embedding count mismatch: sent {len(texts_to_embed)}, got {len(embeddings_data)}"
+                        )
+
+                    # Cache and fill in results by position (not text key)
                     for i, item in enumerate(embeddings_data):
                         embedding = item.get("embedding")
                         if embedding is None:
@@ -108,8 +113,7 @@ class EmbeddingClient:
 
                         text = texts_to_embed[i]
                         self._cache[text] = embedding
-                        result_idx = text_to_result_index[text]
-                        batch_results[result_idx] = embedding
+                        batch_results[uncached_indices[i]] = embedding
                 except (KeyError, ValueError, IndexError) as e:
                     raise EmbeddingUnavailableError(
                         f"Invalid response format from embedding endpoint: {e}"

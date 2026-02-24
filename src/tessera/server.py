@@ -282,6 +282,9 @@ def create_server(project_path: str, global_db_path: str) -> FastMCP:
                 language or None, collection_id or None
             )
             project = await asyncio.to_thread(_global_db.get_project, project_id)
+            if not project:
+                _log_audit("register_project", 0, scope_level="global")
+                return f"Error: Project registered (id={project_id}) but retrieval failed"
             _log_audit("register_project", 1, scope_level="global")
             return json.dumps(project, indent=2)
         except Exception as e:
@@ -345,7 +348,9 @@ def create_server(project_path: str, global_db_path: str) -> FastMCP:
         try:
             sid = await asyncio.to_thread(
                 create_scope, _global_db.conn, agent_id, scope_level,
-                project_ids or None, collection_ids or None, ttl_minutes=ttl_minutes
+                [str(p) for p in project_ids] if project_ids is not None else [],
+                [str(c) for c in collection_ids] if collection_ids is not None else [],
+                ttl_minutes=ttl_minutes
             )
             result = {"session_id": sid, "agent_id": agent_id, "scope_level": scope_level, "ttl_minutes": ttl_minutes}
             _log_audit("create_scope", 1, scope_level="global")
