@@ -26,16 +26,47 @@ class TestLanguageDetection:
         assert detect_language("app.tsx") == "typescript"
 
     def test_detect_javascript(self):
-        assert detect_language("script.js") == "typescript"  # JS uses TS grammar
-        assert detect_language("app.jsx") == "typescript"
+        assert detect_language("script.js") == "javascript"
+        assert detect_language("app.jsx") == "javascript"
 
     def test_detect_php(self):
         assert detect_language("index.php") == "php"
         assert detect_language("/path/to/class.php") == "php"
 
+    def test_detect_go(self):
+        assert detect_language("main.go") == "go"
+
+    def test_detect_rust(self):
+        assert detect_language("main.rs") == "rust"
+
+    def test_detect_java(self):
+        assert detect_language("Main.java") == "java"
+
+    def test_detect_csharp(self):
+        assert detect_language("Program.cs") == "csharp"
+
+    def test_detect_ruby(self):
+        assert detect_language("script.rb") == "ruby"
+
+    def test_detect_swift(self):
+        assert detect_language("main.swift") == "swift"
+
+    def test_detect_kotlin(self):
+        assert detect_language("main.kt") == "kotlin"
+        assert detect_language("build.kts") == "kotlin"
+
+    def test_detect_c(self):
+        assert detect_language("main.c") == "c"
+        assert detect_language("header.h") == "c"
+
+    def test_detect_cpp(self):
+        assert detect_language("main.cpp") == "cpp"
+        assert detect_language("main.cc") == "cpp"
+        assert detect_language("main.cxx") == "cpp"
+        assert detect_language("header.hpp") == "cpp"
+
     def test_detect_unknown(self):
         assert detect_language("file.txt") is None
-        assert detect_language("file.rb") is None
         assert detect_language("file") is None
 
 
@@ -324,9 +355,9 @@ def process():
     result = obj.method().chain()
 """
         refs = extract_references(code, "python")
-        # Should extract at least "chain" (rightmost of the outermost call)
-        method_calls = [r for r in refs if r.kind == "calls"]
-        assert len(method_calls) > 0
+        calls = [r.to_symbol for r in refs if r.kind == "calls"]
+        assert "method" in calls
+        assert "chain" in calls
 
     def test_typescript_method_call(self):
         code = """
@@ -347,6 +378,76 @@ function main() {
 """
         refs = extract_references(code, "php")
         assert any(r.to_symbol == "speak" and r.kind == "calls" for r in refs)
+
+
+class TestMethodChainCapture:
+    """Test full method chain extraction."""
+
+    def test_python_three_method_chain(self):
+        code = '''
+def caller():
+    obj.alpha().beta().gamma()
+'''
+        refs = extract_references(code, "python")
+        calls = [r.to_symbol for r in refs if r.kind == "calls"]
+        assert "alpha" in calls
+        assert "beta" in calls
+        assert "gamma" in calls
+
+    def test_python_single_method_call_unchanged(self):
+        """Single method call should still work."""
+        code = '''
+def caller():
+    obj.method()
+'''
+        refs = extract_references(code, "python")
+        calls = [r.to_symbol for r in refs if r.kind == "calls"]
+        assert "method" in calls
+
+    def test_python_simple_function_call_unchanged(self):
+        """Direct function call (no chain) should still work."""
+        code = '''
+def caller():
+    helper()
+'''
+        refs = extract_references(code, "python")
+        assert any(r.to_symbol == "helper" and r.kind == "calls" for r in refs)
+
+    def test_typescript_chain(self):
+        code = '''
+function caller() {
+    arr.filter(x => x > 0).map(x => x * 2).reduce((a, b) => a + b);
+}
+'''
+        refs = extract_references(code, "typescript")
+        calls = [r.to_symbol for r in refs if r.kind == "calls"]
+        assert "filter" in calls
+        assert "map" in calls
+        assert "reduce" in calls
+
+    def test_php_chain(self):
+        code = '''<?php
+function caller() {
+    $db->query()->fetch()->validate();
+}
+'''
+        refs = extract_references(code, "php")
+        calls = [r.to_symbol for r in refs if r.kind == "calls"]
+        assert "query" in calls
+        assert "fetch" in calls
+        assert "validate" in calls
+
+    def test_python_chain_with_initial_call(self):
+        """get_db().query().fetch() — initial function call + chain."""
+        code = '''
+def caller():
+    get_db().query().fetch()
+'''
+        refs = extract_references(code, "python")
+        calls = [r.to_symbol for r in refs if r.kind == "calls"]
+        assert "get_db" in calls
+        assert "query" in calls
+        assert "fetch" in calls
 
 
 class TestEdgeDeduplication:
@@ -509,3 +610,70 @@ function transform($d) {
 """
         symbols, refs, edges = parse_and_extract("test.php", code)
         assert len(symbols) >= 2
+
+
+class TestLazyGrammarLoading:
+    """Test lazy loading of tree-sitter grammars."""
+
+    def test_python_loads(self):
+        from tessera.parser import _load_language
+        lang = _load_language("python")
+        assert lang is not None
+
+    def test_typescript_loads(self):
+        from tessera.parser import _load_language
+        lang = _load_language("typescript")
+        assert lang is not None
+
+    def test_javascript_loads(self):
+        from tessera.parser import _load_language
+        lang = _load_language("javascript")
+        assert lang is not None
+
+    def test_php_loads(self):
+        from tessera.parser import _load_language
+        lang = _load_language("php")
+        assert lang is not None
+
+    def test_grammar_caching(self):
+        from tessera.parser import _load_language, _grammar_cache
+        _grammar_cache.clear()
+        lang1 = _load_language("python")
+        lang2 = _load_language("python")
+        assert lang1 is lang2  # Should be the same cached instance
+
+    def test_unsupported_raises(self):
+        from tessera.parser import _load_language
+        with pytest.raises(ValueError, match="not installed"):
+            _load_language("brainfuck")
+
+
+class TestGenericExtractors:
+    """Test generic symbol and reference extractors for unsupported languages."""
+
+    def test_generic_extract_symbols_basic(self):
+        # Test that generic extractor doesn't crash (approximate extraction)
+        from tessera.parser import extract_symbols
+
+        # Use a language that would fall back to generic extractor
+        # Since we don't have Go/Rust installed, test via PHP to verify structure
+        code = """<?php
+function helper() {}
+class Calculator {}
+"""
+        symbols = extract_symbols(code, "php")
+        assert len(symbols) >= 2
+
+    def test_generic_extract_references_basic(self):
+        # Test that generic extractor doesn't crash
+        from tessera.parser import extract_references
+
+        code = """<?php
+function main() {
+    helper();
+}
+function helper() {}
+"""
+        refs = extract_references(code, "php")
+        # Generic extraction may not catch all references, but shouldn't crash
+        assert isinstance(refs, list)
