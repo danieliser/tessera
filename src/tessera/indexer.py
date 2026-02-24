@@ -9,6 +9,7 @@ Implements:
   - Progress tracking and error recovery
 """
 
+import json
 import os
 import hashlib
 import logging
@@ -25,6 +26,65 @@ from .embeddings import EmbeddingClient, EmbeddingUnavailableError
 from .search import hybrid_search
 
 logger = logging.getLogger(__name__)
+
+
+def _detect_package_name(file_dir: str, project_root: str, cache: dict) -> str:
+    """Detect package name by walking upward from file_dir to project_root.
+
+    Checks for package.json, pyproject.toml, or composer.json and extracts
+    the package name. Results are cached per directory.
+
+    Returns:
+        Package name string, or empty string if not found.
+    """
+    current = os.path.abspath(file_dir)
+    root = os.path.abspath(project_root)
+
+    while current.startswith(root):
+        if current in cache:
+            return cache[current]
+
+        for manifest, extractor in [
+            ("package.json", lambda c: json.loads(c).get("name", "")),
+            ("composer.json", lambda c: json.loads(c).get("name", "")),
+            ("pyproject.toml", _extract_pyproject_name),
+        ]:
+            path = os.path.join(current, manifest)
+            if os.path.isfile(path):
+                try:
+                    with open(path, "r") as f:
+                        name = extractor(f.read())
+                    if name:
+                        cache[current] = name
+                        return name
+                except (json.JSONDecodeError, OSError, KeyError):
+                    pass
+
+        parent = os.path.dirname(current)
+        if parent == current:
+            break
+        current = parent
+
+    cache[file_dir] = ""
+    return ""
+
+
+def _extract_pyproject_name(content: str) -> str:
+    """Extract project name from pyproject.toml without tomllib dependency."""
+    in_project = False
+    for line in content.splitlines():
+        stripped = line.strip()
+        if stripped == "[project]":
+            in_project = True
+            continue
+        if in_project:
+            if stripped.startswith("[") and stripped != "[project]":
+                break
+            if stripped.startswith("name"):
+                # name = "foo"
+                _, _, value = stripped.partition("=")
+                return value.strip().strip('"').strip("'")
+    return ""
 
 
 @dataclass
@@ -66,6 +126,7 @@ class IndexerPipeline:
         self.embedding_client = embedding_client
         self.languages = languages or ['php', 'typescript', 'python', 'javascript']
         self.project_id = None  # set during register
+        self._package_cache: Dict[str, str] = {}  # dir → package name
 
     def register(self, name: Optional[str] = None) -> int:
         """
@@ -335,16 +396,19 @@ class IndexerPipeline:
             ]
             symbol_ids = self.project_db.insert_symbols(symbol_dicts) if symbol_dicts else []
 
-            # Insert a pseudo-symbol for module-level code so <module> refs have a from_id
+            # Insert a module symbol with the file's relative path as name
+            pkg_name = _detect_package_name(
+                os.path.dirname(file_path), self.project_path, self._package_cache
+            )
             module_sym = {
                 'project_id': self.project_id,
                 'file_id': file_id,
-                'name': '<module>',
+                'name': rel_path,
                 'kind': 'module',
                 'line': 0,
                 'col': 0,
                 'scope': '',
-                'signature': '',
+                'signature': pkg_name,
             }
             module_ids = self.project_db.insert_symbols([module_sym])
             module_id = module_ids[0] if module_ids else None
@@ -368,9 +432,10 @@ class IndexerPipeline:
                     short_scope = s.scope.rsplit('\\', 1)[-1] if '\\' in s.scope else s.scope
                     name_to_id.setdefault(f"{short_scope}.{s.name}", sid)
 
-            # Map <module> pseudo-symbol to module-level references
+            # Map module symbol — parser refs use '<module>' as from_symbol
             if module_id:
                 name_to_id['<module>'] = module_id
+                name_to_id[rel_path] = module_id
 
             ref_dicts = []
             for r in references:
