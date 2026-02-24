@@ -356,3 +356,49 @@ class TestImpactE2E:
         r1 = await get_json(indexed_server, "impact", {"symbol_name": "make_dog", "depth": 1})
         r3 = await get_json(indexed_server, "impact", {"symbol_name": "make_dog", "depth": 3})
         assert len(r1) <= len(r3)
+
+
+class TestAdminTools:
+    """Tests for admin/global-scope tools."""
+
+    @pytest.mark.asyncio
+    async def test_status_returns_projects(self, indexed_server):
+        """Status tool should return project info."""
+        result = await get_json(indexed_server, "status", {})
+        assert "projects" in result or "error" not in str(result).lower()
+
+    @pytest.mark.asyncio
+    async def test_create_scope_valid(self, indexed_server):
+        """Create a project-scope session token."""
+        result = await get_json(indexed_server, "create_scope_tool", {
+            "agent_id": "test-agent",
+            "scope_level": "project",
+        })
+        assert "session_id" in result
+        assert result["agent_id"] == "test-agent"
+        assert result["scope_level"] == "project"
+
+    @pytest.mark.asyncio
+    async def test_create_scope_invalid_level(self, indexed_server):
+        """Invalid scope level should return error."""
+        content, _ = await indexed_server.call_tool("create_scope_tool", {
+            "agent_id": "test-agent",
+            "scope_level": "invalid",
+        })
+        assert "Error" in content[0].text
+
+    @pytest.mark.asyncio
+    async def test_revoke_scope(self, indexed_server):
+        """Revoke sessions for an agent."""
+        # First create a session
+        result = await get_json(indexed_server, "create_scope_tool", {
+            "agent_id": "test-revoke",
+            "scope_level": "project",
+        })
+        assert "session_id" in result
+
+        # Then revoke
+        revoke_result = await get_json(indexed_server, "revoke_scope_tool", {
+            "agent_id": "test-revoke",
+        })
+        assert "revoked" in str(revoke_result).lower() or "agent_id" in revoke_result

@@ -171,8 +171,8 @@ def create_server(project_path: str, global_db_path: str) -> FastMCP:
             callers = await asyncio.to_thread(_project_db.get_callers, symbol_name=symbol_name, kind=kind)
 
             results = {
-                "outgoing": outgoing,
-                "callers": [{"name": c["name"], "kind": c["kind"], "file_id": c["file_id"], "line": c["line"], "scope": c.get("scope", "")} for c in callers],
+                "outgoing": [{"to_symbol": r.get("to_symbol_name", ""), "kind": r.get("kind", ""), "line": r.get("line", 0)} for r in outgoing],
+                "callers": [{"name": c.get("name", ""), "kind": c.get("kind", ""), "file_id": c.get("file_id"), "line": c.get("line", 0), "scope": c.get("scope", "")} for c in callers],
             }
             total = len(outgoing) + len(callers)
             _log_audit("references", total, agent_id=agent_id)
@@ -333,11 +333,14 @@ def create_server(project_path: str, global_db_path: str) -> FastMCP:
             return f"Error: {str(e)}"
 
     @mcp.tool()
-    async def create_scope_tool(agent_id: str, scope_level: str, project_ids: list[int] = [], collection_ids: list[int] = [], ttl_minutes: int = 30, session_id: str = "") -> str:
+    async def create_scope_tool(agent_id: str, scope_level: str, project_ids: list[int] = None, collection_ids: list[int] = None, ttl_minutes: int = 30, session_id: str = "") -> str:
         """Create a session token for a task agent (global scope only)."""
         scope, err = _check_session({"session_id": session_id}, "global")
         if err:
             return err
+
+        project_ids = project_ids or []
+        collection_ids = collection_ids or []
 
         if scope_level not in ("project", "collection", "global"):
             return "Error: scope_level must be 'project', 'collection', or 'global'"
