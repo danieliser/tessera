@@ -255,6 +255,53 @@ def process():
         assert any(r.from_symbol == "handler" and r.to_symbol == "process" for r in refs)
 
 
+class TestDecoratedDefinitions:
+    """Test decorated function and class extraction in Python."""
+
+    def test_extract_decorated_function(self):
+        code = """
+@cache
+def decorated_func():
+    pass
+"""
+        symbols = extract_symbols(code, "python")
+        funcs = [s for s in symbols if s.kind == "function"]
+        assert len(funcs) == 1
+        assert funcs[0].name == "decorated_func"
+
+    def test_extract_decorated_class(self):
+        code = """
+@dataclass
+class DecoratedClass:
+    pass
+"""
+        symbols = extract_symbols(code, "python")
+        classes = [s for s in symbols if s.kind == "class"]
+        assert len(classes) == 1
+        assert classes[0].name == "DecoratedClass"
+
+    def test_decorated_function_with_body(self):
+        code = """
+@cache
+def cached_func(x):
+    return compute(x)
+
+def compute(x):
+    return x * 2
+"""
+        symbols = extract_symbols(code, "python")
+        funcs = [s for s in symbols if s.kind == "function"]
+        func_names = {f.name for f in funcs}
+        assert "cached_func" in func_names
+        assert "compute" in func_names
+
+        refs = extract_references(code, "python")
+        assert any(
+            r.from_symbol == "cached_func" and r.to_symbol == "compute"
+            for r in refs
+        )
+
+
 class TestMethodCallExtraction:
     """Test method call (obj.method()) extraction across languages."""
 

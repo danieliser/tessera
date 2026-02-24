@@ -280,6 +280,13 @@ def _extract_symbols_python(tree: tree_sitter.Tree, source_code: str) -> list[Sy
             )
             symbols.append(sym)
 
+        elif node.type == "decorated_definition":
+            # Unwrap: walk the inner function/class definition directly
+            for child in node.children:
+                if child.type in ("function_definition", "async_function_definition", "class_definition"):
+                    walk(child, scope)
+            return
+
         for child in node.children:
             walk(child, scope)
 
@@ -467,6 +474,40 @@ def _extract_symbols_php(tree: tree_sitter.Tree, source_code: str) -> list[Symbo
             )
             symbols.append(sym)
 
+        elif node.type == "trait_declaration":
+            name_node = _find_child_by_type(node, "name")
+            if name_node:
+                name = name_node.text.decode("utf-8")
+                qualified = f"{current_namespace}\\{name}" if current_namespace else name
+                sym = Symbol(
+                    name=qualified,
+                    kind="trait",
+                    line=node.start_point[0] + 1,
+                    col=node.start_point[1],
+                    scope=scope,
+                )
+                symbols.append(sym)
+                for child in node.children:
+                    walk(child, scope=qualified)
+                return
+
+        elif node.type == "interface_declaration":
+            name_node = _find_child_by_type(node, "name")
+            if name_node:
+                name = name_node.text.decode("utf-8")
+                qualified = f"{current_namespace}\\{name}" if current_namespace else name
+                sym = Symbol(
+                    name=qualified,
+                    kind="interface",
+                    line=node.start_point[0] + 1,
+                    col=node.start_point[1],
+                    scope=scope,
+                )
+                symbols.append(sym)
+                for child in node.children:
+                    walk(child, scope=qualified)
+                return
+
         for child in node.children:
             walk(child, scope)
 
@@ -545,6 +586,13 @@ def _extract_references_python(
                 walk(child, current_function=func_name)
             return
 
+        elif node.type == "decorated_definition":
+            # Unwrap: walk the inner function/class definition directly
+            for child in node.children:
+                if child.type in ("function_definition", "async_function_definition", "class_definition"):
+                    walk(child, current_function)
+            return
+
         for child in node.children:
             walk(child, current_function)
 
@@ -579,6 +627,20 @@ def _extract_references_typescript(
                         line=node.start_point[0] + 1,
                     )
                     references.append(ref)
+
+        # Handle constructor calls: new Foo()
+        elif node.type == "new_expression":
+            for child in node.children:
+                if child.type == "identifier":
+                    class_name = child.text.decode("utf-8")
+                    ref = Reference(
+                        from_symbol=current_function or "<module>",
+                        to_symbol=class_name,
+                        kind="calls",
+                        line=node.start_point[0] + 1,
+                    )
+                    references.append(ref)
+                    break
 
         # Handle class inheritance (extends)
         elif node.type == "class_declaration":
@@ -702,6 +764,20 @@ def _extract_references_php(
                         line=node.start_point[0] + 1,
                     )
                     references.append(ref)
+
+        # Handle constructor calls: new Foo()
+        elif node.type == "object_creation_expression":
+            for child in node.children:
+                if child.type in ("name", "qualified_name"):
+                    class_name = child.text.decode("utf-8")
+                    ref = Reference(
+                        from_symbol=current_function or "<module>",
+                        to_symbol=class_name,
+                        kind="calls",
+                        line=node.start_point[0] + 1,
+                    )
+                    references.append(ref)
+                    break
 
         # Handle class declarations with inheritance
         elif node.type == "class_declaration":
