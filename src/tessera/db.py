@@ -786,8 +786,8 @@ class ProjectDB:
             sql += " AND s.project_id = ?"
             params.append(project_id)
 
+        exact_query = False
         if query != "*":
-            # Simple wildcard matching
             if "*" in query:
                 pattern = query.replace("*", "%")
                 sql += " AND s.name LIKE ?"
@@ -795,6 +795,7 @@ class ProjectDB:
             else:
                 sql += " AND s.name = ?"
                 params.append(query)
+                exact_query = True
 
         if kind is not None:
             sql += " AND s.kind = ?"
@@ -812,7 +813,16 @@ class ProjectDB:
         sql += " ORDER BY s.name"
 
         cursor = self.conn.execute(sql, params)
-        return [dict(row) for row in cursor.fetchall()]
+        results = [dict(row) for row in cursor.fetchall()]
+
+        # Exact match returned nothing → retry as substring match
+        if not results and exact_query:
+            return self.lookup_symbols(
+                f"*{query}*", kind=kind, language=language,
+                file_pattern=file_pattern, project_id=project_id
+            )
+
+        return results
 
     def get_symbol(self, symbol_id: int) -> Optional[Dict[str, Any]]:
         """Get a symbol by ID.

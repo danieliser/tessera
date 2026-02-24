@@ -232,6 +232,19 @@ class TestSymbolsE2E:
         sig = results[0].get("signature", "")
         assert "name" in sig  # should contain parameter name
 
+    async def test_symbols_substring_fallback(self, indexed_server):
+        """Query 'dog' (no wildcards, no exact match) should fall back to substring and find make_dog, Dog."""
+        results = await get_json(indexed_server, "symbols", {"query": "dog"})
+        assert len(results) > 0
+        names = [s["name"].lower() for s in results]
+        assert any("dog" in n for n in names)
+
+    async def test_symbols_exact_match_preferred(self, indexed_server):
+        """Exact match 'Dog' should return Dog directly (not fall back)."""
+        results = await get_json(indexed_server, "symbols", {"query": "Dog"})
+        assert len(results) > 0
+        assert results[0]["name"] == "Dog"
+
 
 class TestReferencesE2E:
     """References tool returns outgoing refs and callers."""
