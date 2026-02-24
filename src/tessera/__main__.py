@@ -32,8 +32,9 @@ def main() -> int:
     serve_parser = subparsers.add_parser("serve", help="Start the MCP server")
     serve_parser.add_argument(
         "--project",
-        required=True,
-        help="Path to project directory"
+        required=False,
+        default=None,
+        help="Path to project directory (locks server to this project; omit for multi-project mode)"
     )
     serve_parser.add_argument(
         "--global-db",

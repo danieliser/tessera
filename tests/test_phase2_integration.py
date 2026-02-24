@@ -49,9 +49,10 @@ class TestServerWiring:
     """Test that server is wired to real databases."""
 
     def test_server_uses_real_db(self, wired_server):
-        assert server_mod._project_db is not None
+        assert server_mod._locked_project is not None
         assert server_mod._global_db is not None
-        assert isinstance(server_mod._project_db, ProjectDB)
+        assert server_mod._locked_project in server_mod._db_cache
+        assert isinstance(server_mod._db_cache[server_mod._locked_project], ProjectDB)
         assert isinstance(server_mod._global_db, GlobalDB)
 
     async def test_server_lists_10_tools(self, wired_server):

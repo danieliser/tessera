@@ -22,6 +22,7 @@ Audit logging tracks: agent_id, scope_level, tool_called, result_count, timestam
 import json
 import logging
 import asyncio
+import os
 from pathlib import Path
 from typing import Optional, Any
 from datetime import datetime
@@ -42,8 +43,9 @@ _SCOPE_LEVELS = {"project": 0, "collection": 1, "global": 2}
 logger = logging.getLogger(__name__)
 audit_logger = logging.getLogger(__name__ + ".audit")
 
-# Global database references (set during lifespan)
-_project_db: Optional[ProjectDB] = None
+# Global database references (set during create_server)
+_db_cache: dict[int, ProjectDB] = {}       # project_id → ProjectDB (lazy-loaded)
+_locked_project: Optional[int] = None      # If --project given, only this project is queryable
 _global_db: Optional[GlobalDB] = None
 
 
@@ -93,15 +95,101 @@ def _check_session(arguments: dict[str, Any], required_level: str = "project") -
     return scope, None
 
 
-def create_server(project_path: str, global_db_path: str) -> FastMCP:
-    """Create and configure the MCP server."""
-    global _project_db, _global_db
+def _get_project_dbs(scope: Optional[ScopeInfo]) -> list[tuple[int, str, ProjectDB]]:
+    """Resolve which ProjectDBs the current request can access.
 
-    # Initialize databases
+    Returns:
+        List of (project_id, project_name, ProjectDB) tuples.
+        Lazily loads ProjectDB instances into _db_cache.
+    """
+    if not _global_db:
+        return []
+
+    # Determine allowed project IDs
+    if _locked_project is not None:
+        # Server locked to single project via --project flag
+        allowed_ids = [_locked_project]
+    elif scope and scope.projects:
+        # Session specifies allowed projects
+        allowed_ids = [int(p) for p in scope.projects]
+    else:
+        # Dev mode with no lock — all registered projects
+        projects = _global_db.list_projects()
+        allowed_ids = [p["id"] for p in projects]
+
+    result = []
+    for pid in allowed_ids:
+        if pid in _db_cache:
+            project = _global_db.get_project(pid)
+            name = project["name"] if project else f"project-{pid}"
+            result.append((pid, name, _db_cache[pid]))
+            continue
+
+        # Lazy-load from GlobalDB
+        project = _global_db.get_project(pid)
+        if not project:
+            logger.warning("Project %d not found in global DB, skipping", pid)
+            continue
+
+        project_path = project["path"]
+        if not os.path.isdir(project_path):
+            logger.warning("Project %d path %s does not exist, skipping", pid, project_path)
+            continue
+
+        db_dir = os.path.join(project_path, ".tessera")
+        if not os.path.isdir(db_dir):
+            logger.warning("Project %d has no .tessera index at %s, skipping", pid, project_path)
+            continue
+
+        try:
+            db = ProjectDB(project_path)
+            _db_cache[pid] = db
+            result.append((pid, project["name"], db))
+        except Exception as e:
+            logger.warning("Failed to open ProjectDB for %d (%s): %s", pid, project_path, e)
+
+    return result
+
+
+def create_server(project_path: Optional[str], global_db_path: str) -> FastMCP:
+    """Create and configure the MCP server.
+
+    Args:
+        project_path: Optional path to lock server to a single project.
+                      If None, server operates in multi-project mode.
+        global_db_path: Path to the global.db file.
+    """
+    global _db_cache, _locked_project, _global_db
+
+    # Reset state
+    _db_cache = {}
+    _locked_project = None
+
+    # Initialize global database
     Path(global_db_path).parent.mkdir(parents=True, exist_ok=True)
-
-    _project_db = ProjectDB(project_path)
     _global_db = GlobalDB(global_db_path)
+
+    # If project_path given, lock to that project
+    if project_path:
+        project_path = os.path.abspath(project_path)
+        db = ProjectDB(project_path)
+
+        # Find or register in global DB
+        projects = _global_db.list_projects()
+        matched = [p for p in projects if os.path.abspath(p["path"]) == project_path]
+        if matched:
+            pid = matched[0]["id"]
+        else:
+            pid = _global_db.register_project(
+                path=project_path,
+                name=os.path.basename(project_path)
+            )
+
+        _db_cache[pid] = db
+        _locked_project = pid
+        logger.info("Server locked to project %d at %s", pid, project_path)
+    else:
+        logger.info("Server in multi-project mode")
 
     mcp = FastMCP("tessera")
 
@@ -115,14 +203,26 @@ def create_server(project_path: str, global_db_path: str) -> FastMCP:
             return err
         agent_id = scope.agent_id if scope else "dev"
 
-        if not _project_db:
+        dbs = _get_project_dbs(scope)
+        if not dbs:
             _log_audit("search", 0, agent_id=agent_id)
-            return "Error: Project database not initialized"
+            return "Error: No accessible projects"
 
         try:
-            results = await asyncio.to_thread(_project_db.keyword_search, query, limit)
-            _log_audit("search", len(results), agent_id=agent_id)
-            return json.dumps(results, indent=2)
+            all_results = []
+            for pid, pname, db in dbs:
+                results = await asyncio.to_thread(db.keyword_search, query, limit)
+                for r in results:
+                    r["project_id"] = pid
+                    r["project_name"] = pname
+                all_results.extend(results)
+
+            # Sort by score descending, cap at limit
+            all_results.sort(key=lambda r: r.get("score", 0), reverse=True)
+            all_results = all_results[:limit]
+
+            _log_audit("search", len(all_results), agent_id=agent_id)
+            return json.dumps(all_results, indent=2)
         except Exception as e:
             logger.exception("Search tool error")
             _log_audit("search", 0, agent_id=agent_id)
@@ -136,17 +236,25 @@ def create_server(project_path: str, global_db_path: str) -> FastMCP:
             return err
         agent_id = scope.agent_id if scope else "dev"
 
-        if not _project_db:
+        dbs = _get_project_dbs(scope)
+        if not dbs:
             _log_audit("symbols", 0, agent_id=agent_id)
-            return "Error: Project database not initialized"
+            return "Error: No accessible projects"
 
         try:
-            results = await asyncio.to_thread(
-                _project_db.lookup_symbols, query,
-                kind or None, language or None
-            )
-            _log_audit("symbols", len(results), agent_id=agent_id)
-            return json.dumps(results, indent=2)
+            all_results = []
+            for pid, pname, db in dbs:
+                results = await asyncio.to_thread(
+                    db.lookup_symbols, query,
+                    kind or None, language or None
+                )
+                for r in results:
+                    r["project_id"] = pid
+                    r["project_name"] = pname
+                all_results.extend(results)
+
+            _log_audit("symbols", len(all_results), agent_id=agent_id)
+            return json.dumps(all_results, indent=2)
         except Exception as e:
             logger.exception("Symbols tool error")
             _log_audit("symbols", 0, agent_id=agent_id)
@@ -160,21 +268,38 @@ def create_server(project_path: str, global_db_path: str) -> FastMCP:
             return err
         agent_id = scope.agent_id if scope else "dev"
 
-        if not _project_db:
+        dbs = _get_project_dbs(scope)
+        if not dbs:
             _log_audit("references", 0, agent_id=agent_id)
-            return "Error: Project database not initialized"
+            return "Error: No accessible projects"
 
         try:
-            # Outgoing refs (what this symbol calls)
-            outgoing = await asyncio.to_thread(_project_db.get_refs, symbol_name=symbol_name, kind=kind)
-            # Incoming refs (who calls this symbol)
-            callers = await asyncio.to_thread(_project_db.get_callers, symbol_name=symbol_name, kind=kind)
+            all_outgoing = []
+            all_callers = []
+            for pid, pname, db in dbs:
+                outgoing = await asyncio.to_thread(db.get_refs, symbol_name=symbol_name, kind=kind)
+                callers = await asyncio.to_thread(db.get_callers, symbol_name=symbol_name, kind=kind)
+                for r in outgoing:
+                    all_outgoing.append({
+                        "to_symbol": r.get("to_symbol_name", ""),
+                        "kind": r.get("kind", ""),
+                        "line": r.get("line", 0),
+                        "project_id": pid,
+                        "project_name": pname,
+                    })
+                for c in callers:
+                    all_callers.append({
+                        "name": c.get("name", ""),
+                        "kind": c.get("kind", ""),
+                        "file_id": c.get("file_id"),
+                        "line": c.get("line", 0),
+                        "scope": c.get("scope", ""),
+                        "project_id": pid,
+                        "project_name": pname,
+                    })
 
-            results = {
-                "outgoing": [{"to_symbol": r.get("to_symbol_name", ""), "kind": r.get("kind", ""), "line": r.get("line", 0)} for r in outgoing],
-                "callers": [{"name": c.get("name", ""), "kind": c.get("kind", ""), "file_id": c.get("file_id"), "line": c.get("line", 0), "scope": c.get("scope", "")} for c in callers],
-            }
-            total = len(outgoing) + len(callers)
+            results = {"outgoing": all_outgoing, "callers": all_callers}
+            total = len(all_outgoing) + len(all_callers)
             _log_audit("references", total, agent_id=agent_id)
             return json.dumps(results, indent=2)
         except Exception as e:
@@ -194,44 +319,51 @@ def create_server(project_path: str, global_db_path: str) -> FastMCP:
             _log_audit("file_context", 0, agent_id=agent_id)
             return "Error: Invalid file path (path traversal detected)"
 
-        if not _project_db:
+        dbs = _get_project_dbs(scope)
+        if not dbs:
             _log_audit("file_context", 0, agent_id=agent_id)
-            return "Error: Project database not initialized"
+            return "Error: No accessible projects"
 
         try:
-            file_info = await asyncio.to_thread(_project_db.get_file, path=file_path)
-            if not file_info:
-                _log_audit("file_context", 0, agent_id=agent_id)
-                return json.dumps(None, indent=2)
-            file_id = file_info["id"]
+            # Try each project until file is found
+            for pid, pname, db in dbs:
+                file_info = await asyncio.to_thread(db.get_file, path=file_path)
+                if not file_info:
+                    continue
 
-            # Get symbols for this file
-            all_symbols = await asyncio.to_thread(
-                lambda: [dict(r) for r in _project_db.conn.execute(
-                    "SELECT id, name, kind, line, col, scope, signature FROM symbols WHERE file_id = ? ORDER BY line",
-                    (file_id,)
-                ).fetchall()]
-            )
+                file_id = file_info["id"]
+                file_info_dict = dict(file_info)
+                file_info_dict["project_id"] = pid
+                file_info_dict["project_name"] = pname
 
-            # Get refs from symbols in this file
-            symbol_ids = [s["id"] for s in all_symbols]
-            file_refs = []
-            if symbol_ids:
-                placeholders = ",".join("?" * len(symbol_ids))
-                file_refs = await asyncio.to_thread(
-                    lambda: [dict(r) for r in _project_db.conn.execute(
-                        f"SELECT from_symbol_id, to_symbol_id, kind, line FROM refs WHERE from_symbol_id IN ({placeholders}) ORDER BY line",
-                        symbol_ids
+                all_symbols = await asyncio.to_thread(
+                    lambda: [dict(r) for r in db.conn.execute(
+                        "SELECT id, name, kind, line, col, scope, signature FROM symbols WHERE file_id = ? ORDER BY line",
+                        (file_id,)
                     ).fetchall()]
                 )
 
-            result = {
-                "file": file_info,
-                "symbols": all_symbols,
-                "references": file_refs,
-            }
-            _log_audit("file_context", 1, agent_id=agent_id)
-            return json.dumps(result, indent=2)
+                symbol_ids = [s["id"] for s in all_symbols]
+                file_refs = []
+                if symbol_ids:
+                    placeholders = ",".join("?" * len(symbol_ids))
+                    file_refs = await asyncio.to_thread(
+                        lambda: [dict(r) for r in db.conn.execute(
+                            f"SELECT from_symbol_id, to_symbol_id, kind, line FROM refs WHERE from_symbol_id IN ({placeholders}) ORDER BY line",
+                            symbol_ids
+                        ).fetchall()]
+                    )
+
+                result = {
+                    "file": file_info_dict,
+                    "symbols": all_symbols,
+                    "references": file_refs,
+                }
+                _log_audit("file_context", 1, agent_id=agent_id)
+                return json.dumps(result, indent=2)
+
+            _log_audit("file_context", 0, agent_id=agent_id)
+            return json.dumps(None, indent=2)
         except Exception as e:
             logger.exception("File context tool error")
             _log_audit("file_context", 0, agent_id=agent_id)
@@ -245,20 +377,26 @@ def create_server(project_path: str, global_db_path: str) -> FastMCP:
             return err
         agent_id = scope.agent_id if scope else "dev"
 
-        if not _project_db:
+        dbs = _get_project_dbs(scope)
+        if not dbs:
             _log_audit("impact", 0, agent_id=agent_id)
-            return "Error: Project database not initialized"
+            return "Error: No accessible projects"
 
         try:
-            # Resolve symbol name to ID first
-            symbols = await asyncio.to_thread(_project_db.lookup_symbols, symbol_name)
-            if not symbols:
-                _log_audit("impact", 0, agent_id=agent_id)
-                return json.dumps([], indent=2)
-            symbol_id = symbols[0]["id"]
-            results = await asyncio.to_thread(_project_db.get_forward_refs, symbol_id, depth)
-            _log_audit("impact", len(results), agent_id=agent_id)
-            return json.dumps(results, indent=2)
+            all_results = []
+            for pid, pname, db in dbs:
+                syms = await asyncio.to_thread(db.lookup_symbols, symbol_name)
+                if not syms:
+                    continue
+                symbol_id = syms[0]["id"]
+                results = await asyncio.to_thread(db.get_forward_refs, symbol_id, depth)
+                for r in results:
+                    r["project_id"] = pid
+                    r["project_name"] = pname
+                all_results.extend(results)
+
+            _log_audit("impact", len(all_results), agent_id=agent_id)
+            return json.dumps(all_results, indent=2)
         except Exception as e:
             logger.exception("Impact tool error")
             _log_audit("impact", 0, agent_id=agent_id)
@@ -316,6 +454,10 @@ def create_server(project_path: str, global_db_path: str) -> FastMCP:
             pipeline.project_id = project_id
 
             stats = await asyncio.to_thread(pipeline.index_project)
+
+            # Invalidate cache so next query picks up fresh data
+            _db_cache.pop(project_id, None)
+
             result = {
                 "project_id": project_id,
                 "files_processed": stats.files_processed,
@@ -420,7 +562,7 @@ def create_server(project_path: str, global_db_path: str) -> FastMCP:
     return mcp
 
 
-async def run_server(project_path: str, global_db_path: Optional[str] = None) -> int:
+async def run_server(project_path: Optional[str] = None, global_db_path: Optional[str] = None) -> int:
     """Run the MCP server on stdio transport."""
     if not global_db_path:
         home = Path.home()
