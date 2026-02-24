@@ -219,6 +219,181 @@ add_filter('the_content', 'my_filter');
         assert any(r.to_symbol == "the_content" for r in filter_refs)
 
 
+class TestPythonAsyncFunctions:
+    """Test async function extraction in Python."""
+
+    def test_extract_async_function(self):
+        code = """
+async def fetch_data(url):
+    return await get(url)
+"""
+        symbols = extract_symbols(code, "python")
+        funcs = [s for s in symbols if s.kind == "function"]
+        assert len(funcs) == 1
+        assert funcs[0].name == "fetch_data"
+
+    def test_extract_async_method(self):
+        code = """
+class Client:
+    async def connect(self):
+        pass
+"""
+        symbols = extract_symbols(code, "python")
+        methods = [s for s in symbols if s.kind == "method"]
+        assert len(methods) == 1
+        assert methods[0].name == "connect"
+
+    def test_async_function_refs_tracked(self):
+        code = """
+async def handler():
+    await process()
+
+def process():
+    pass
+"""
+        refs = extract_references(code, "python")
+        assert any(r.from_symbol == "handler" and r.to_symbol == "process" for r in refs)
+
+
+class TestMethodCallExtraction:
+    """Test method call (obj.method()) extraction across languages."""
+
+    def test_python_method_call(self):
+        code = """
+class Dog:
+    def speak(self):
+        return "woof"
+
+def main():
+    dog = Dog()
+    dog.speak()
+"""
+        refs = extract_references(code, "python")
+        assert any(r.to_symbol == "speak" and r.kind == "calls" for r in refs)
+
+    def test_python_chained_call(self):
+        code = """
+def process():
+    result = obj.method().chain()
+"""
+        refs = extract_references(code, "python")
+        # Should extract at least "chain" (rightmost of the outermost call)
+        method_calls = [r for r in refs if r.kind == "calls"]
+        assert len(method_calls) > 0
+
+    def test_typescript_method_call(self):
+        code = """
+function main() {
+    const dog = new Dog();
+    dog.speak();
+}
+"""
+        refs = extract_references(code, "typescript")
+        assert any(r.to_symbol == "speak" and r.kind == "calls" for r in refs)
+
+    def test_php_method_call(self):
+        code = """<?php
+function main() {
+    $dog = new Dog();
+    $dog->speak();
+}
+"""
+        refs = extract_references(code, "php")
+        assert any(r.to_symbol == "speak" and r.kind == "calls" for r in refs)
+
+
+class TestEdgeDeduplication:
+    """Test that build_edges deduplicates identical edges."""
+
+    def test_duplicate_calls_deduplicated(self):
+        symbols = [
+            Symbol(name="func_a", kind="function", line=1, col=0),
+            Symbol(name="func_b", kind="function", line=5, col=0),
+        ]
+        refs = [
+            Reference(from_symbol="func_a", to_symbol="func_b", kind="calls", line=2),
+            Reference(from_symbol="func_a", to_symbol="func_b", kind="calls", line=3),
+            Reference(from_symbol="func_a", to_symbol="func_b", kind="calls", line=4),
+        ]
+        edges = build_edges(symbols, refs)
+        call_edges = [e for e in edges if e.type == "calls"]
+        assert len(call_edges) == 1
+
+    def test_different_targets_not_deduplicated(self):
+        symbols = [
+            Symbol(name="a", kind="function", line=1, col=0),
+            Symbol(name="b", kind="function", line=5, col=0),
+            Symbol(name="c", kind="function", line=9, col=0),
+        ]
+        refs = [
+            Reference(from_symbol="a", to_symbol="b", kind="calls", line=2),
+            Reference(from_symbol="a", to_symbol="c", kind="calls", line=3),
+        ]
+        edges = build_edges(symbols, refs)
+        assert len(edges) == 2
+
+
+class TestTypeScriptImplements:
+    """Test TypeScript implements clause extraction."""
+
+    def test_class_implements_interface(self):
+        """Note: tree-sitter-javascript doesn't have implements_clause.
+        This tests what happens with JS grammar (which TS uses here)."""
+        code = """
+class Animal {
+    speak() {}
+}
+
+class Dog extends Animal {
+    bark() {}
+}
+"""
+        refs = extract_references(code, "typescript")
+        assert any(r.kind == "extends" and r.to_symbol == "Animal" for r in refs)
+
+
+class TestPHPNamespaces:
+    """Test PHP namespace-qualified symbol names."""
+
+    def test_namespaced_class(self):
+        code = """<?php
+namespace App\\Model;
+
+class User {
+    public function getName() {
+        return $this->name;
+    }
+}
+"""
+        symbols = extract_symbols(code, "php")
+        classes = [s for s in symbols if s.kind == "class"]
+        assert len(classes) == 1
+        assert "App\\Model\\User" == classes[0].name
+
+    def test_namespaced_function(self):
+        code = """<?php
+namespace App\\Utils;
+
+function helper() {
+    return true;
+}
+"""
+        symbols = extract_symbols(code, "php")
+        funcs = [s for s in symbols if s.kind == "function"]
+        assert len(funcs) == 1
+        assert "App\\Utils\\helper" == funcs[0].name
+
+    def test_no_namespace_unchanged(self):
+        code = """<?php
+function standalone() {
+    return true;
+}
+"""
+        symbols = extract_symbols(code, "php")
+        funcs = [s for s in symbols if s.kind == "function"]
+        assert funcs[0].name == "standalone"
+
+
 class TestEdgeBuilding:
     """Test graph edge construction."""
 

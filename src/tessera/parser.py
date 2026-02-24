@@ -157,23 +157,29 @@ def build_edges(symbols: list[Symbol], references: list[Reference]) -> list[Edge
         List of Edge objects representing the dependency graph
     """
     edges = []
+    seen = set()  # (from_name, to_name, type) for deduplication
     symbol_names = {s.name for s in symbols}
 
     for ref in references:
         # Only create edges for references that resolve to known symbols
         # or for special cases like hooks which may not be defined in the file
         if ref.to_symbol in symbol_names or ref.kind == "hooks_into":
-            edge = Edge(
-                from_name=ref.from_symbol, to_name=ref.to_symbol, type=ref.kind
-            )
-            edges.append(edge)
+            key = (ref.from_symbol, ref.to_symbol, ref.kind)
+            if key not in seen:
+                seen.add(key)
+                edges.append(Edge(
+                    from_name=ref.from_symbol, to_name=ref.to_symbol, type=ref.kind
+                ))
 
     # Containment edges from scope relationships (parent → child)
     for sym in symbols:
         if sym.scope and sym.scope in symbol_names:
-            edges.append(Edge(
-                from_name=sym.scope, to_name=sym.name, type="contains"
-            ))
+            key = (sym.scope, sym.name, "contains")
+            if key not in seen:
+                seen.add(key)
+                edges.append(Edge(
+                    from_name=sym.scope, to_name=sym.name, type="contains"
+                ))
 
     return edges
 
@@ -216,8 +222,8 @@ def _extract_symbols_python(tree: tree_sitter.Tree, source_code: str) -> list[Sy
     def walk(node, scope=""):
         nonlocal current_class
 
-        if node.type == "function_definition":
-            # Extract function/method
+        if node.type in ("function_definition", "async_function_definition"):
+            # Extract function/method (sync or async)
             name_node = _find_child_by_type(node, "identifier")
             if name_node:
                 name = name_node.text.decode("utf-8")
@@ -381,13 +387,28 @@ def _extract_symbols_typescript(tree: tree_sitter.Tree, source_code: str) -> lis
 def _extract_symbols_php(tree: tree_sitter.Tree, source_code: str) -> list[Symbol]:
     """Extract PHP symbols."""
     symbols = []
+    current_namespace = ""
 
     def walk(node, scope=""):
+        nonlocal current_namespace
+
+        if node.type == "namespace_definition":
+            # Track current namespace — persists for sibling declarations
+            name_node = _find_child_by_type(node, "namespace_name")
+            if name_node:
+                current_namespace = name_node.text.decode("utf-8")
+            # Walk namespace body (braced style)
+            for child in node.children:
+                walk(child, scope)
+            return
+
         if node.type == "function_definition":
             # Function definition
             name_node = _find_child_by_type(node, "name")
             if name_node:
                 name = name_node.text.decode("utf-8")
+                if current_namespace and not scope:
+                    name = f"{current_namespace}\\{name}"
                 sym = Symbol(
                     name=name,
                     kind="function",
@@ -405,8 +426,9 @@ def _extract_symbols_php(tree: tree_sitter.Tree, source_code: str) -> list[Symbo
             name_node = _find_child_by_type(node, "name")
             if name_node:
                 name = name_node.text.decode("utf-8")
+                qualified = f"{current_namespace}\\{name}" if current_namespace else name
                 sym = Symbol(
-                    name=name,
+                    name=qualified,
                     kind="class",
                     line=node.start_point[0] + 1,
                     col=node.start_point[1],
@@ -415,7 +437,7 @@ def _extract_symbols_php(tree: tree_sitter.Tree, source_code: str) -> list[Symbo
                 symbols.append(sym)
                 # Walk class body
                 for child in node.children:
-                    walk(child, scope=name)
+                    walk(child, scope=qualified)
                 return
 
         elif node.type == "method_declaration":
@@ -464,8 +486,15 @@ def _extract_references_python(
         if node.type == "call":
             func_node = node.children[0] if node.children else None
             if func_node:
+                func_name = None
                 if func_node.type == "identifier":
                     func_name = func_node.text.decode("utf-8")
+                elif func_node.type == "attribute":
+                    # obj.method() → extract "method" (rightmost identifier)
+                    for child in func_node.children:
+                        if child.type == "identifier":
+                            func_name = child.text.decode("utf-8")
+                if func_name:
                     ref = Reference(
                         from_symbol=current_function or "<module>",
                         to_symbol=func_name,
@@ -504,7 +533,7 @@ def _extract_references_python(
             return
 
         # Track current function for references
-        elif node.type == "function_definition":
+        elif node.type in ("function_definition", "async_function_definition"):
             name_node = _find_child_by_type(node, "identifier")
             func_name = (
                 name_node.text.decode("utf-8")
@@ -533,15 +562,23 @@ def _extract_references_typescript(
         # Handle function calls
         if node.type == "call_expression":
             func_node = node.children[0] if node.children else None
-            if func_node and func_node.type == "identifier":
-                func_name = func_node.text.decode("utf-8")
-                ref = Reference(
-                    from_symbol=current_function or "<module>",
-                    to_symbol=func_name,
-                    kind="calls",
-                    line=node.start_point[0] + 1,
-                )
-                references.append(ref)
+            if func_node:
+                func_name = None
+                if func_node.type == "identifier":
+                    func_name = func_node.text.decode("utf-8")
+                elif func_node.type == "member_expression":
+                    # obj.method() → extract "method" (property_identifier)
+                    prop = _find_child_by_type(func_node, "property_identifier")
+                    if prop:
+                        func_name = prop.text.decode("utf-8")
+                if func_name:
+                    ref = Reference(
+                        from_symbol=current_function or "<module>",
+                        to_symbol=func_name,
+                        kind="calls",
+                        line=node.start_point[0] + 1,
+                    )
+                    references.append(ref)
 
         # Handle class inheritance (extends)
         elif node.type == "class_declaration":
@@ -551,7 +588,7 @@ def _extract_references_typescript(
                 if name_node
                 else ""
             )
-            # Look for class_heritage which contains extends
+            # Look for class_heritage which contains extends/implements
             heritage_node = _find_child_by_type(node, "class_heritage")
             if heritage_node:
                 for child in heritage_node.children:
@@ -564,6 +601,18 @@ def _extract_references_typescript(
                             line=node.start_point[0] + 1,
                         )
                         references.append(ref)
+                    elif child.type == "implements_clause":
+                        # class Foo implements Bar, Baz
+                        for impl_child in child.children:
+                            if impl_child.type == "identifier":
+                                iface_name = impl_child.text.decode("utf-8")
+                                ref = Reference(
+                                    from_symbol=class_name,
+                                    to_symbol=iface_name,
+                                    kind="implements",
+                                    line=node.start_point[0] + 1,
+                                )
+                                references.append(ref)
 
             # Walk class body
             for child in node.children:
@@ -599,8 +648,22 @@ def _extract_references_php(
     references = []
 
     def walk(node, current_function=""):
-        # Handle function calls (not method calls)
-        if node.type == "function_call_expression":
+        # Handle method calls ($obj->method())
+        if node.type == "member_call_expression":
+            # Extract method name from $obj->method()
+            method_node = _find_child_by_type(node, "name")
+            if method_node:
+                func_name = method_node.text.decode("utf-8")
+                ref = Reference(
+                    from_symbol=current_function or "<module>",
+                    to_symbol=func_name,
+                    kind="calls",
+                    line=node.start_point[0] + 1,
+                )
+                references.append(ref)
+
+        # Handle function calls
+        elif node.type == "function_call_expression":
             # Get the function name
             func_node = None
             for child in node.children:

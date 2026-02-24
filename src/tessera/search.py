@@ -141,7 +141,7 @@ def hybrid_search(
     Args:
         query: Search query string
         query_embedding: Optional query embedding (1D array)
-        db: ProjectDB instance with methods: keyword_search(), get_all_embeddings(), get_chunk_meta()
+        db: ProjectDB instance with methods: keyword_search(), get_all_embeddings(), get_chunk()
         limit: Max results to return
 
     Returns:
@@ -186,7 +186,7 @@ def hybrid_search(
     for item in merged[:limit]:
         chunk_id = item["id"]
         try:
-            meta = db.get_chunk_meta(chunk_id)
+            meta = db.get_chunk(chunk_id)
             enriched = {
                 "id": chunk_id,
                 "file_path": meta.get("file_path", ""),
