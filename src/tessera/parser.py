@@ -1731,6 +1731,74 @@ def _extract_references_typescript(
     return references
 
 
+def _collect_php_type_references(
+    node,
+    from_symbol: str,
+    references: list,
+) -> None:
+    """Extract type references from a PHP type node (named_type, optional_type, union_type).
+
+    Skips primitive_type nodes (string, int, bool, float, void, etc.) since
+    tree-sitter already separates them from named_type.
+    """
+    if node.type == "named_type":
+        # Simple name or qualified_name inside
+        for child in node.children:
+            if child.type == "name":
+                references.append(Reference(
+                    from_symbol=from_symbol,
+                    to_symbol=child.text.decode("utf-8"),
+                    kind="type_reference",
+                    line=child.start_point[0] + 1,
+                ))
+                return
+            if child.type == "qualified_name":
+                # Full qualified name including namespace
+                references.append(Reference(
+                    from_symbol=from_symbol,
+                    to_symbol=child.text.decode("utf-8"),
+                    kind="type_reference",
+                    line=child.start_point[0] + 1,
+                ))
+                return
+        return
+
+    if node.type == "optional_type":
+        # ?Type — recurse into children (skips the '?' token)
+        for child in node.children:
+            _collect_php_type_references(child, from_symbol, references)
+        return
+
+    if node.type == "union_type":
+        # Type1|Type2 — recurse into each member
+        for child in node.children:
+            _collect_php_type_references(child, from_symbol, references)
+        return
+
+    if node.type == "intersection_type":
+        for child in node.children:
+            _collect_php_type_references(child, from_symbol, references)
+        return
+
+
+def _extract_php_param_types(
+    params_node,
+    from_symbol: str,
+    references: list,
+) -> None:
+    """Extract type references from PHP formal_parameters node."""
+    for child in params_node.children:
+        if child.type == "simple_parameter":
+            for param_child in child.children:
+                if param_child.type in (
+                    "named_type", "optional_type", "union_type",
+                    "intersection_type",
+                ):
+                    _collect_php_type_references(
+                        param_child, from_symbol, references,
+                    )
+
+
 def _extract_references_php(
     tree: tree_sitter.Tree, source_code: str, known_symbols: list[str] = None
 ) -> list[Reference]:
@@ -1840,7 +1908,6 @@ def _extract_references_php(
                 if name_node
                 else ""
             )
-            # Look for base class
             for child in node.children:
                 if child.type == "base_clause":
                     parent_node = _find_child_by_type(child, "name")
@@ -1853,13 +1920,43 @@ def _extract_references_php(
                             line=node.start_point[0] + 1,
                         )
                         references.append(ref)
+                elif child.type == "class_interface_clause":
+                    # class Foo implements Bar, Baz
+                    for iface_child in child.children:
+                        if iface_child.type == "name":
+                            references.append(Reference(
+                                from_symbol=class_name,
+                                to_symbol=iface_child.text.decode("utf-8"),
+                                kind="implements",
+                                line=iface_child.start_point[0] + 1,
+                            ))
+                        elif iface_child.type == "qualified_name":
+                            references.append(Reference(
+                                from_symbol=class_name,
+                                to_symbol=iface_child.text.decode("utf-8"),
+                                kind="implements",
+                                line=iface_child.start_point[0] + 1,
+                            ))
 
-            # Walk class body
+            # Walk class body (property types, method types)
             for child in node.children:
                 walk(child, current_function=class_name)
             return
 
-        # Track current function for references
+        # Handle interface declarations
+        elif node.type == "interface_declaration":
+            name_node = _find_child_by_type(node, "name")
+            iface_name = (
+                name_node.text.decode("utf-8")
+                if name_node
+                else ""
+            )
+            # Walk interface body for method signatures
+            for child in node.children:
+                walk(child, current_function=iface_name)
+            return
+
+        # Track current function for references + extract type refs
         elif node.type == "function_definition":
             name_node = _find_child_by_type(node, "name")
             func_name = (
@@ -1867,10 +1964,55 @@ def _extract_references_php(
                 if name_node
                 else ""
             )
+            # Extract parameter types and return type
+            for child in node.children:
+                if child.type == "formal_parameters":
+                    _extract_php_param_types(child, func_name, references)
+                elif child.type in (
+                    "named_type", "optional_type", "union_type",
+                    "intersection_type", "primitive_type",
+                ):
+                    # Return type
+                    _collect_php_type_references(child, func_name, references)
             # Walk function body
             for child in node.children:
                 walk(child, current_function=func_name)
             return
+
+        # Method declarations (in classes/interfaces)
+        elif node.type == "method_declaration":
+            name_node = _find_child_by_type(node, "name")
+            method_name = (
+                name_node.text.decode("utf-8")
+                if name_node
+                else ""
+            )
+            # Extract parameter types and return type
+            for child in node.children:
+                if child.type == "formal_parameters":
+                    _extract_php_param_types(child, method_name, references)
+                elif child.type in (
+                    "named_type", "optional_type", "union_type",
+                    "intersection_type", "primitive_type",
+                ):
+                    # Return type
+                    _collect_php_type_references(child, method_name, references)
+            # Walk method body
+            for child in node.children:
+                walk(child, current_function=method_name)
+            return
+
+        # Property declarations (class properties with types)
+        elif node.type == "property_declaration":
+            for child in node.children:
+                if child.type in (
+                    "named_type", "optional_type", "union_type",
+                    "intersection_type",
+                ):
+                    _collect_php_type_references(
+                        child, current_function or "<module>", references,
+                    )
+                    break
 
         for child in node.children:
             walk(child, current_function)

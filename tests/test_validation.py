@@ -378,12 +378,8 @@ class TestPHPValidation:
     """Validate PHP extraction against tests/fixtures/php_sample.php.
 
     Expected (hand-verified from parser output):
-      8 symbols (7 + 1 <module> pseudo-symbol), 8 refs stored (was 6, 2 hooks from '<module>')
-      7 edges from parser, all stored now (2 hooks_into from '<module>')
-
-    Note: Parser uses '<module>' as from_symbol for file-scope code (WordPress hooks).
-    With the <module> pseudo-symbol fix, these are now preserved.
-    Parser also attributes method-body refs to the class name rather than the enclosing method.
+      8 symbols (7 + 1 <module> pseudo-symbol), 10 refs stored
+      (3 calls, 1 extends, 2 hooks_into, 2 type_reference)
     """
 
     @pytest.fixture
@@ -439,10 +435,9 @@ class TestPHPValidation:
         assert "track" in targets
 
     def test_stored_ref_count(self, db):
-        """Parser produces 6 refs, 2 hooks from '<module>' are now stored.
-        8 refs stored total."""
+        """10 refs: 3 calls, 1 extends, 2 hooks_into, 2 type_reference (BaseEvent param, Tracker return)."""
         refs = _get_all_refs(db)
-        assert len(refs) == 8
+        assert len(refs) == 10
 
     # --- Edge correctness ---
 
@@ -481,12 +476,11 @@ class TestPHPValidation:
         assert any("Tracker" in n for n in names)
 
     def test_get_callers_track(self, db):
-        """track should be called by ClickTracker (via trackClick's ref).
-        Note: Parser attributes method-body refs to the class, not the method."""
+        """track is called by trackClick (method-level attribution)."""
         track = db.lookup_symbols("track", kind="method")[0]
         callers = db.get_callers(track["id"])
         caller_names = {c["name"] for c in callers}
-        assert any("ClickTracker" in n for n in caller_names)
+        assert "trackClick" in caller_names
 
 
 # ---------------------------------------------------------------------------

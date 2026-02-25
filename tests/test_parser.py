@@ -817,3 +817,109 @@ function main() {
         type_refs = [r for r in all_refs if r.kind == "type_reference"]
         assert any(r.to_symbol == "bar" for r in call_refs)
         assert any(r.to_symbol == "Foo" for r in type_refs)
+
+
+class TestPHPTypeReferences:
+    """Test type reference extraction from PHP code."""
+
+    def _type_refs(self, code: str) -> list[Reference]:
+        """Helper: extract references and return only type_reference kind."""
+        refs = extract_references(code, "php")
+        return [r for r in refs if r.kind == "type_reference"]
+
+    def _all_refs(self, code: str) -> list[Reference]:
+        """Helper: extract all references."""
+        return extract_references(code, "php")
+
+    def test_parameter_type(self):
+        code = "<?php function greet(UserService $svc) {}"
+        refs = self._type_refs(code)
+        assert len(refs) == 1
+        assert refs[0].to_symbol == "UserService"
+        assert refs[0].from_symbol == "greet"
+
+    def test_return_type(self):
+        code = "<?php function greet(): Response { return new Response(); }"
+        refs = self._type_refs(code)
+        assert len(refs) == 1
+        assert refs[0].to_symbol == "Response"
+        assert refs[0].from_symbol == "greet"
+
+    def test_nullable_type(self):
+        code = "<?php function find(int $id): ?User { return null; }"
+        refs = self._type_refs(code)
+        assert len(refs) == 1
+        assert refs[0].to_symbol == "User"
+
+    def test_union_type(self):
+        code = "<?php function process(Request|Response $input): void {}"
+        refs = self._type_refs(code)
+        names = {r.to_symbol for r in refs}
+        assert names == {"Request", "Response"}
+
+    def test_property_type(self):
+        code = "<?php class Foo { private UserService $service; }"
+        refs = self._type_refs(code)
+        assert len(refs) == 1
+        assert refs[0].to_symbol == "UserService"
+        assert refs[0].from_symbol == "Foo"
+
+    def test_nullable_property_type(self):
+        code = "<?php class Foo { protected ?Config $config = null; }"
+        refs = self._type_refs(code)
+        assert len(refs) == 1
+        assert refs[0].to_symbol == "Config"
+
+    def test_method_param_and_return(self):
+        code = "<?php class Ctrl { public function getUser(int $id): ?User { return null; } }"
+        refs = self._type_refs(code)
+        assert len(refs) == 1
+        assert refs[0].to_symbol == "User"
+        assert refs[0].from_symbol == "getUser"
+
+    def test_no_primitive_types(self):
+        code = "<?php function foo(string $a, int $b, bool $c, float $d): void {}"
+        refs = self._type_refs(code)
+        assert len(refs) == 0
+
+    def test_namespaced_param_type(self):
+        code = r"<?php function test(App\Models\User $user) {}"
+        refs = self._type_refs(code)
+        assert len(refs) == 1
+        assert refs[0].to_symbol == r"App\Models\User"
+
+    def test_namespaced_return_type(self):
+        code = r"<?php function test(): App\Models\Collection { return new Collection(); }"
+        refs = self._type_refs(code)
+        assert len(refs) == 1
+        assert refs[0].to_symbol == r"App\Models\Collection"
+
+    def test_fqn_return_type(self):
+        code = r"<?php function test(): \App\Response { return new \App\Response(); }"
+        refs = self._type_refs(code)
+        assert len(refs) == 1
+        assert refs[0].to_symbol == r"\App\Response"
+
+    def test_interface_method_return_type(self):
+        code = "<?php interface Repo { public function find(int $id): ?Model; }"
+        refs = self._type_refs(code)
+        assert len(refs) == 1
+        assert refs[0].to_symbol == "Model"
+
+    def test_existing_call_refs_preserved(self):
+        code = "<?php function main(UserService $svc) { $svc->find(1); }"
+        all_refs = self._all_refs(code)
+        call_refs = [r for r in all_refs if r.kind == "calls"]
+        type_refs = [r for r in all_refs if r.kind == "type_reference"]
+        assert any(r.to_symbol == "find" for r in call_refs)
+        assert any(r.to_symbol == "UserService" for r in type_refs)
+
+    def test_class_implements_not_duplicated(self):
+        """implements refs should stay as 'implements' kind, not also become type_reference."""
+        code = "<?php class Foo implements JsonSerializable {}"
+        all_refs = self._all_refs(code)
+        impl_refs = [r for r in all_refs if r.kind == "implements"]
+        type_refs = [r for r in all_refs if r.kind == "type_reference"]
+        # Should have implements ref but NOT a duplicate type_reference
+        assert any(r.to_symbol == "JsonSerializable" for r in impl_refs)
+        assert not any(r.to_symbol == "JsonSerializable" for r in type_refs)
