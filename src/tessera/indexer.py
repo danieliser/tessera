@@ -176,6 +176,9 @@ class IndexerPipeline:
                 if not d.startswith('.') and d not in ('node_modules', 'vendor', '__pycache__', '.tessera')
             ]
             for f in filenames:
+                # Skip TypeScript declaration files — generated from source .ts
+                if f.endswith('.d.ts'):
+                    continue
                 if any(f.endswith(ext) for ext in allowed_exts):
                     files.append(os.path.join(root, f))
 
