@@ -677,3 +677,143 @@ function helper() {}
         refs = extract_references(code, "php")
         # Generic extraction may not catch all references, but shouldn't crash
         assert isinstance(refs, list)
+
+
+class TestTypeScriptTypeReferences:
+    """Test type reference extraction from TypeScript code."""
+
+    def _type_refs(self, code: str) -> list[Reference]:
+        """Helper: extract references and return only type_reference kind."""
+        refs = extract_references(code, "typescript")
+        return [r for r in refs if r.kind == "type_reference"]
+
+    def _all_refs(self, code: str) -> list[Reference]:
+        """Helper: extract all references."""
+        return extract_references(code, "typescript")
+
+    def test_variable_type_annotation(self):
+        code = "const a: Foo = {}"
+        refs = self._type_refs(code)
+        assert len(refs) == 1
+        assert refs[0].to_symbol == "Foo"
+        assert refs[0].from_symbol == "<module>"
+
+    def test_parameter_type(self):
+        code = "function bar(x: Foo) {}"
+        refs = self._type_refs(code)
+        assert len(refs) == 1
+        assert refs[0].to_symbol == "Foo"
+        assert refs[0].from_symbol == "bar"
+
+    def test_return_type(self):
+        code = "function bar(): Foo { return {} as any }"
+        refs = self._type_refs(code)
+        assert len(refs) == 1
+        assert refs[0].to_symbol == "Foo"
+        assert refs[0].from_symbol == "bar"
+
+    def test_generic_type(self):
+        code = "const a: Array<Foo> = []"
+        refs = self._type_refs(code)
+        names = {r.to_symbol for r in refs}
+        assert "Array" in names
+        assert "Foo" in names
+
+    def test_union_type(self):
+        code = "type X = Foo | Bar"
+        refs = self._type_refs(code)
+        names = {r.to_symbol for r in refs}
+        assert names == {"Foo", "Bar"}
+
+    def test_intersection_type(self):
+        code = "type X = Foo & Bar"
+        refs = self._type_refs(code)
+        names = {r.to_symbol for r in refs}
+        assert names == {"Foo", "Bar"}
+
+    def test_as_expression(self):
+        code = "const x = {} as Foo"
+        refs = self._type_refs(code)
+        assert len(refs) == 1
+        assert refs[0].to_symbol == "Foo"
+
+    def test_satisfies_expression(self):
+        code = "const x = {} satisfies Foo"
+        refs = self._type_refs(code)
+        assert len(refs) == 1
+        assert refs[0].to_symbol == "Foo"
+
+    def test_type_predicate(self):
+        code = "function isFoo(x: unknown): x is Foo { return true }"
+        refs = self._type_refs(code)
+        names = {r.to_symbol for r in refs}
+        assert "Foo" in names
+
+    def test_conditional_type(self):
+        code = "type Cond = Foo extends Bar ? Baz : never"
+        refs = self._type_refs(code)
+        names = {r.to_symbol for r in refs}
+        assert "Foo" in names
+        assert "Bar" in names
+        assert "Baz" in names
+        # 'never' is predefined_type, should NOT be in refs
+        assert "never" not in names
+
+    def test_generic_constraint(self):
+        code = "function foo<T extends Foo>(x: T): void {}"
+        refs = self._type_refs(code)
+        names = {r.to_symbol for r in refs}
+        assert "Foo" in names
+        # T should be skipped (single letter)
+        assert "T" not in names
+
+    def test_interface_extends_generic(self):
+        code = "interface X extends Array<Foo> {}"
+        refs = self._type_refs(code)
+        names = {r.to_symbol for r in refs}
+        assert "Array" in names
+        assert "Foo" in names
+
+    def test_nested_type_identifier(self):
+        code = "type NS = Namespace.Foo"
+        refs = self._type_refs(code)
+        assert len(refs) == 1
+        assert refs[0].to_symbol == "Namespace.Foo"
+
+    def test_no_primitive_refs(self):
+        code = "const a: string = ''; const b: number = 0; const c: boolean = true"
+        refs = self._type_refs(code)
+        assert len(refs) == 0
+
+    def test_no_self_ref_in_alias(self):
+        code = "type Foo = Foo[]"
+        refs = self._type_refs(code)
+        # declaration_name filter skips all occurrences of 'Foo' in the RHS
+        # (recursive type references are self-referential, not cross-type)
+        assert len(refs) == 0
+
+    def test_alias_refs_other_types(self):
+        code = "type Foo = Bar & Baz"
+        refs = self._type_refs(code)
+        names = {r.to_symbol for r in refs}
+        # Foo (the declaration) should NOT appear; Bar and Baz should
+        assert "Foo" not in names
+        assert names == {"Bar", "Baz"}
+
+    def test_skips_single_letter_type_params(self):
+        code = "function id<T>(x: T): T { return x }"
+        refs = self._type_refs(code)
+        names = {r.to_symbol for r in refs}
+        assert "T" not in names
+
+    def test_existing_call_refs_preserved(self):
+        code = """
+function main() {
+    const x: Foo = bar()
+}
+"""
+        all_refs = self._all_refs(code)
+        call_refs = [r for r in all_refs if r.kind == "calls"]
+        type_refs = [r for r in all_refs if r.kind == "type_reference"]
+        assert any(r.to_symbol == "bar" for r in call_refs)
+        assert any(r.to_symbol == "Foo" for r in type_refs)

@@ -1476,6 +1476,58 @@ def _extract_references_python(
     return references
 
 
+def _collect_type_references(
+    node,
+    from_symbol: str,
+    references: list,
+    declaration_name: str = None,
+) -> None:
+    """Recursively collect type_identifier nodes from a type-context subtree.
+
+    Args:
+        node: The type-context root node to walk
+        from_symbol: The enclosing symbol (function/class name or "<module>")
+        references: List to append Reference objects to
+        declaration_name: Name being declared (to exclude self-references)
+    """
+    if node.type == "type_identifier":
+        text = node.text.decode("utf-8")
+        # Skip declaration name (avoid self-reference in type aliases)
+        if text == declaration_name:
+            return
+        # Skip single uppercase letters (likely generic type parameters)
+        if len(text) == 1 and text.isupper():
+            return
+        references.append(Reference(
+            from_symbol=from_symbol,
+            to_symbol=text,
+            kind="type_reference",
+            line=node.start_point[0] + 1,
+        ))
+        return
+
+    if node.type == "nested_type_identifier":
+        # Qualified name like Namespace.Foo — extract full name
+        parts = []
+        for child in node.children:
+            if child.type in ("identifier", "type_identifier"):
+                parts.append(child.text.decode("utf-8"))
+        if parts:
+            full_name = ".".join(parts)
+            if full_name != declaration_name:
+                references.append(Reference(
+                    from_symbol=from_symbol,
+                    to_symbol=full_name,
+                    kind="type_reference",
+                    line=node.start_point[0] + 1,
+                ))
+        return  # Don't recurse — already handled
+
+    # Recurse into children
+    for child in node.children:
+        _collect_type_references(child, from_symbol, references, declaration_name)
+
+
 def _extract_references_typescript(
     tree: tree_sitter.Tree, source_code: str, known_symbols: list[str] = None
 ) -> list[Reference]:
@@ -1619,6 +1671,57 @@ def _extract_references_typescript(
             # Walk function body
             for child in node.children:
                 walk(child, current_function=func_name)
+            return
+
+        # Type annotations (variable types, param types, return types, generics)
+        elif node.type == "type_annotation":
+            _collect_type_references(node, current_function or "<module>", references)
+            return
+
+        # Type alias declarations: type Foo = Bar & Baz
+        elif node.type == "type_alias_declaration":
+            decl_name = None
+            for child in node.children:
+                if child.type == "type_identifier" and decl_name is None:
+                    decl_name = child.text.decode("utf-8")
+                elif child.type not in ("type", "=", "type_identifier", "type_parameters"):
+                    _collect_type_references(
+                        child, decl_name or "<module>", references,
+                        declaration_name=decl_name,
+                    )
+            return
+
+        # as/satisfies expressions
+        elif node.type in ("as_expression", "satisfies_expression"):
+            for child in node.children:
+                if child.type in ("type_identifier", "generic_type", "union_type",
+                                  "intersection_type", "nested_type_identifier"):
+                    _collect_type_references(child, current_function or "<module>", references)
+                elif child.type not in ("as", "satisfies"):
+                    walk(child, current_function)
+            return
+
+        # Type predicate annotations: x is Foo
+        elif node.type in ("type_predicate_annotation", "type_predicate"):
+            _collect_type_references(node, current_function or "<module>", references)
+            return
+
+        # Interface declarations — walk extends_type_clause for generic extends
+        elif node.type == "interface_declaration":
+            for child in node.children:
+                if child.type == "extends_type_clause":
+                    _collect_type_references(child, current_function or "<module>", references)
+                else:
+                    walk(child, current_function)
+            return
+
+        # Generic type parameter constraints and defaults
+        elif node.type == "type_parameter":
+            for child in node.children:
+                if child.type == "constraint":
+                    _collect_type_references(child, current_function or "<module>", references)
+                elif child.type == "default_type":
+                    _collect_type_references(child, current_function or "<module>", references)
             return
 
         for child in node.children:
