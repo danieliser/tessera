@@ -345,7 +345,27 @@ class GlobalDB:
 
 
 class ProjectDB:
-    """Manages <project>/.tessera/index.db for symbols, references, and embeddings."""
+    """Manages ~/.tessera/data/{slug}/index.db for symbols, references, and embeddings."""
+
+    # Default base directory for project databases.
+    # Override via ProjectDB.base_dir for testing.
+    base_dir: Optional[str] = None
+
+    @staticmethod
+    def _path_to_slug(project_path: str) -> str:
+        """Convert absolute path to a human-readable slug.
+
+        Follows Claude Code convention: /Users/foo/bar → -Users-foo-bar
+        """
+        return str(project_path).replace(os.sep, "-")
+
+    @classmethod
+    def _get_data_dir(cls, project_path: str) -> Path:
+        """Get the data directory for a project's index DB."""
+        slug = cls._path_to_slug(project_path)
+        if cls.base_dir:
+            return Path(cls.base_dir) / slug
+        return Path.home() / ".tessera" / "data" / slug
 
     def __init__(self, project_path: str):
         """Initialize project database connection.
@@ -353,8 +373,8 @@ class ProjectDB:
         Args:
             project_path: Absolute path to the project root
         """
-        project_path = Path(project_path)
-        tessera_dir = project_path / ".tessera"
+        project_path = Path(os.path.abspath(project_path))
+        tessera_dir = self._get_data_dir(str(project_path))
         tessera_dir.mkdir(parents=True, exist_ok=True)
 
         self.project_path = project_path

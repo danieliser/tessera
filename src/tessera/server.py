@@ -136,9 +136,9 @@ def _get_project_dbs(scope: Optional[ScopeInfo]) -> list[tuple[int, str, Project
             logger.warning("Project %d path %s does not exist, skipping", pid, project_path)
             continue
 
-        db_dir = os.path.join(project_path, ".tessera")
+        db_dir = str(ProjectDB._get_data_dir(project_path))
         if not os.path.isdir(db_dir):
-            logger.warning("Project %d has no .tessera index at %s, skipping", pid, project_path)
+            logger.warning("Project %d has no index at %s, skipping", pid, db_dir)
             continue
 
         try:
