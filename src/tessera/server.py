@@ -385,11 +385,7 @@ def create_server(project_path: Optional[str], global_db_path: str) -> FastMCP:
         try:
             all_results = []
             for pid, pname, db in dbs:
-                syms = await asyncio.to_thread(db.lookup_symbols, symbol_name)
-                if not syms:
-                    continue
-                symbol_id = syms[0]["id"]
-                results = await asyncio.to_thread(db.get_forward_refs, symbol_id, depth)
+                results = await asyncio.to_thread(db.get_impact, symbol_name, depth)
                 for r in results:
                     r["project_id"] = pid
                     r["project_name"] = pname

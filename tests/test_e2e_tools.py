@@ -319,27 +319,29 @@ class TestFileContextE2E:
 class TestImpactE2E:
     """Impact tool traces the dependency graph."""
 
-    async def test_impact_function_with_calls(self, indexed_server):
-        """make_dog calls Dog and speak — impact should show downstream symbols."""
+    async def test_impact_backward_callers(self, indexed_server):
+        """Impact of make_dog = what depends on it. run_app calls make_dog."""
         results = await get_json(indexed_server, "impact", {"symbol_name": "make_dog"})
         names = [r["name"] for r in results]
         assert len(names) > 0
-        # make_dog calls Dog() and dog.speak()
-        assert "Dog" in names or "speak" in names
+        # run_app calls make_dog, so run_app is affected if make_dog changes
+        assert "run_app" in names
 
-    async def test_impact_cross_file(self, indexed_server):
-        """run_app (app.py) calls make_dog (animals.py) — cross-file resolution."""
+    async def test_impact_transitive(self, indexed_server):
+        """Impact of Dog: make_dog calls Dog(), run_app calls make_dog — transitive."""
+        results = await get_json(indexed_server, "impact", {"symbol_name": "Dog", "depth": 2})
+        names = [r["name"] for r in results]
+        # make_dog directly calls Dog
+        assert "make_dog" in names
+        # run_app transitively depends via make_dog
+        assert "run_app" in names
+
+    async def test_impact_leaf_symbol(self, indexed_server):
+        """run_app is a leaf — nothing calls it, so impact is empty or module-only."""
         results = await get_json(indexed_server, "impact", {"symbol_name": "run_app"})
         names = [r["name"] for r in results]
-        # run_app calls make_dog which is in a different file
-        assert "make_dog" in names
-
-    async def test_impact_cross_file_depth(self, indexed_server):
-        """run_app → make_dog → Dog: depth 2 should reach Dog across two files."""
-        results = await get_json(indexed_server, "impact", {"symbol_name": "run_app", "depth": 2})
-        names = [r["name"] for r in results]
-        assert "make_dog" in names
-        assert "Dog" in names
+        # run_app is not called by other functions, so no function-level callers
+        assert "make_dog" not in names
 
     async def test_impact_nested_scope(self, indexed_server):
         """outer_func contains inner_func — impact should find inner_func via containment edge."""
@@ -353,8 +355,8 @@ class TestImpactE2E:
 
     async def test_impact_respects_depth(self, indexed_server):
         """Depth 1 should return fewer or equal results than depth 3."""
-        r1 = await get_json(indexed_server, "impact", {"symbol_name": "make_dog", "depth": 1})
-        r3 = await get_json(indexed_server, "impact", {"symbol_name": "make_dog", "depth": 3})
+        r1 = await get_json(indexed_server, "impact", {"symbol_name": "Dog", "depth": 1})
+        r3 = await get_json(indexed_server, "impact", {"symbol_name": "Dog", "depth": 3})
         assert len(r1) <= len(r3)
 
 

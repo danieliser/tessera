@@ -1086,6 +1086,118 @@ class ProjectDB:
         )
         return [dict(row) for row in cursor.fetchall()]
 
+    def get_impact(
+        self,
+        symbol_name: str,
+        depth: int = 3,
+    ) -> List[Dict[str, Any]]:
+        """Find all symbols transitively affected by a change to the named symbol.
+
+        Uses backward BFS through caller_refs (which resolves both
+        to_symbol_id and to_symbol_name for cross-file coverage).
+
+        Args:
+            symbol_name: Symbol name to analyze impact for
+            depth: Max traversal depth (hops), capped at 10
+
+        Returns:
+            List of symbols that directly or transitively depend on this symbol
+        """
+        depth = min(depth, 10)
+
+        # Seed: all symbol IDs matching this name
+        seed_ids = set()
+        cursor = self.conn.execute(
+            "SELECT id FROM symbols WHERE name = ?", (symbol_name,)
+        )
+        for row in cursor.fetchall():
+            seed_ids.add(row[0])
+
+        if not seed_ids:
+            return []
+
+        visited_ids = set(seed_ids)
+        # Also track visited names to handle cross-file name-only refs
+        visited_names = {symbol_name}
+        frontier_ids = set(seed_ids)
+        frontier_names = {symbol_name}
+
+        for _ in range(depth):
+            if not frontier_ids and not frontier_names:
+                break
+
+            next_ids = set()
+            next_names = set()
+
+            # 1. Find callers via caller_refs by ID (pre-resolved refs)
+            if frontier_ids:
+                placeholders = ",".join("?" * len(frontier_ids))
+                rows = self.conn.execute(
+                    f"SELECT DISTINCT cr.from_symbol_id FROM caller_refs cr "
+                    f"WHERE cr.to_symbol_id IN ({placeholders})",
+                    list(frontier_ids)
+                ).fetchall()
+                for row in rows:
+                    sid = row[0]
+                    if sid not in visited_ids:
+                        next_ids.add(sid)
+
+            # 2. Find callers via caller_refs by name (unresolved cross-file refs)
+            if frontier_names:
+                placeholders = ",".join("?" * len(frontier_names))
+                rows = self.conn.execute(
+                    f"SELECT DISTINCT cr.from_symbol_id FROM caller_refs cr "
+                    f"WHERE cr.to_symbol_name IN ({placeholders})",
+                    list(frontier_names)
+                ).fetchall()
+                for row in rows:
+                    sid = row[0]
+                    if sid not in visited_ids:
+                        next_ids.add(sid)
+
+            # 3. Containment edges (forward: parent contains children)
+            # If outer_func changes, inner_func is also affected
+            if frontier_ids:
+                placeholders = ",".join("?" * len(frontier_ids))
+                rows = self.conn.execute(
+                    f"SELECT DISTINCT e.to_id FROM edges e "
+                    f"WHERE e.from_id IN ({placeholders}) AND e.type = 'contains'",
+                    list(frontier_ids)
+                ).fetchall()
+                for row in rows:
+                    sid = row[0]
+                    if sid not in visited_ids:
+                        next_ids.add(sid)
+
+            # Resolve new IDs to names for next hop
+            if next_ids:
+                placeholders = ",".join("?" * len(next_ids))
+                rows = self.conn.execute(
+                    f"SELECT DISTINCT name FROM symbols WHERE id IN ({placeholders})",
+                    list(next_ids)
+                ).fetchall()
+                for row in rows:
+                    name = row[0]
+                    if name not in visited_names:
+                        next_names.add(name)
+
+            visited_ids.update(next_ids)
+            visited_names.update(next_names)
+            frontier_ids = next_ids
+            frontier_names = next_names
+
+        # Fetch all discovered symbols (excluding seeds)
+        result_ids = visited_ids - seed_ids
+        if not result_ids:
+            return []
+
+        placeholders = ",".join("?" * len(result_ids))
+        cursor = self.conn.execute(
+            f"SELECT * FROM symbols WHERE id IN ({placeholders}) ORDER BY name",
+            list(result_ids)
+        )
+        return [dict(row) for row in cursor.fetchall()]
+
     # Chunk operations
 
     def insert_chunks(self, chunks: List[Dict[str, Any]]) -> List[int]:
