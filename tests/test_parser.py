@@ -923,3 +923,228 @@ class TestPHPTypeReferences:
         # Should have implements ref but NOT a duplicate type_reference
         assert any(r.to_symbol == "JsonSerializable" for r in impl_refs)
         assert not any(r.to_symbol == "JsonSerializable" for r in type_refs)
+
+
+class TestJSDocTypeReferences:
+    """Test type reference extraction from JSDoc/TSDoc comments."""
+
+    def _type_refs(self, code: str, lang: str = "typescript") -> list[Reference]:
+        refs = extract_references(code, lang)
+        return [r for r in refs if r.kind == "type_reference"]
+
+    def test_jsdoc_param_type(self):
+        code = """
+/** @param {UserService} svc */
+function getEntity(svc) {}
+"""
+        refs = self._type_refs(code)
+        names = {r.to_symbol for r in refs}
+        assert "UserService" in names
+
+    def test_jsdoc_returns_type(self):
+        code = """
+/** @returns {CallToAction} The entity */
+function getEntity() {}
+"""
+        refs = self._type_refs(code)
+        names = {r.to_symbol for r in refs}
+        assert "CallToAction" in names
+
+    def test_jsdoc_return_type(self):
+        code = """
+/** @return {Response} */
+function getEntity() {}
+"""
+        refs = self._type_refs(code)
+        names = {r.to_symbol for r in refs}
+        assert "Response" in names
+
+    def test_jsdoc_type_tag(self):
+        code = """
+/** @type {Config} */
+const config = {}
+"""
+        refs = self._type_refs(code)
+        names = {r.to_symbol for r in refs}
+        assert "Config" in names
+
+    def test_jsdoc_typedef(self):
+        code = "/** @typedef {import('./types').Config} Config */"
+        refs = self._type_refs(code)
+        # import() expressions aren't type identifiers — typedef with Object yields nothing
+        # since Object is a primitive. Test with a non-primitive:
+        code2 = "/** @typedef {BaseConfig} Config */"
+        refs2 = self._type_refs(code2)
+        names2 = {r.to_symbol for r in refs2}
+        assert "BaseConfig" in names2
+
+    def test_jsdoc_no_primitives(self):
+        code = """
+/** @param {string} name @param {number} age @param {boolean} active */
+function foo(name, age, active) {}
+"""
+        refs = self._type_refs(code)
+        names = {r.to_symbol for r in refs}
+        assert "string" not in names
+        assert "number" not in names
+        assert "boolean" not in names
+
+    def test_jsdoc_union_type(self):
+        code = """
+/** @param {Request|Response} input */
+function handle(input) {}
+"""
+        refs = self._type_refs(code)
+        names = {r.to_symbol for r in refs}
+        assert "Request" in names
+        assert "Response" in names
+
+    def test_jsdoc_nullable_type(self):
+        code = """
+/** @param {?User} user */
+function greet(user) {}
+"""
+        refs = self._type_refs(code)
+        names = {r.to_symbol for r in refs}
+        assert "User" in names
+
+    def test_jsdoc_generic_type(self):
+        code = """
+/** @param {Array<Item>} items */
+function process(items) {}
+"""
+        refs = self._type_refs(code)
+        names = {r.to_symbol for r in refs}
+        # Array is a primitive and gets filtered; Item is extracted
+        assert "Item" in names
+
+    def test_jsdoc_generic_nonprimitive_base(self):
+        code = """
+/** @param {Collection<Item>} items */
+function process(items) {}
+"""
+        refs = self._type_refs(code)
+        names = {r.to_symbol for r in refs}
+        assert "Collection" in names
+        assert "Item" in names
+
+    def test_jsdoc_attributed_to_function(self):
+        code = """
+/** @param {UserService} svc */
+function getEntity(svc) {}
+"""
+        refs = self._type_refs(code)
+        svc_refs = [r for r in refs if r.to_symbol == "UserService"]
+        assert len(svc_refs) == 1
+        assert svc_refs[0].from_symbol == "getEntity"
+
+    def test_jsdoc_module_level(self):
+        code = """
+/** @type {Config} */
+const config = {}
+"""
+        refs = self._type_refs(code)
+        config_refs = [r for r in refs if r.to_symbol == "Config"]
+        assert len(config_refs) == 1
+        assert config_refs[0].from_symbol == "<module>"
+
+    def test_jsdoc_namespaced_type(self):
+        code = """
+/** @param {App.Models.User} user */
+function process(user) {}
+"""
+        refs = self._type_refs(code)
+        names = {r.to_symbol for r in refs}
+        assert "App.Models.User" in names
+
+    def test_jsdoc_no_duplicate_with_ts_types(self):
+        """If TS already has typed params, JSDoc shouldn't duplicate."""
+        code = """
+/** @param {UserService} svc */
+function getEntity(svc: UserService) {}
+"""
+        refs = self._type_refs(code)
+        us_refs = [r for r in refs if r.to_symbol == "UserService"]
+        # Should have exactly 2 — one from TS annotation, one from JSDoc
+        # (dedup happens at indexer level, not parser)
+        assert len(us_refs) == 2
+
+
+class TestPHPDocTypeReferences:
+    """Test type reference extraction from PHPDoc comments."""
+
+    def _type_refs(self, code: str) -> list[Reference]:
+        refs = extract_references(code, "php")
+        return [r for r in refs if r.kind == "type_reference"]
+
+    def test_phpdoc_param_type(self):
+        code = "<?php\n/** @param UserService $svc */\nfunction getEntity($svc) {}"
+        refs = self._type_refs(code)
+        names = {r.to_symbol for r in refs}
+        assert "UserService" in names
+
+    def test_phpdoc_return_type(self):
+        code = "<?php\n/** @return CallToAction */\nfunction getEntity() {}"
+        refs = self._type_refs(code)
+        names = {r.to_symbol for r in refs}
+        assert "CallToAction" in names
+
+    def test_phpdoc_var_type(self):
+        code = "<?php\n/** @var Config $config */\n$config = null;"
+        refs = self._type_refs(code)
+        names = {r.to_symbol for r in refs}
+        assert "Config" in names
+
+    def test_phpdoc_throws_type(self):
+        code = "<?php\n/** @throws NotFoundException */\nfunction find($id) {}"
+        refs = self._type_refs(code)
+        names = {r.to_symbol for r in refs}
+        assert "NotFoundException" in names
+
+    def test_phpdoc_no_primitives(self):
+        code = "<?php\n/** @param string $name @param int $age @param bool $active @return void */\nfunction foo($name) {}"
+        refs = self._type_refs(code)
+        names = {r.to_symbol for r in refs}
+        assert "string" not in names
+        assert "int" not in names
+        assert "bool" not in names
+        assert "void" not in names
+
+    def test_phpdoc_union_type(self):
+        code = "<?php\n/** @param Request|Response $input */\nfunction handle($input) {}"
+        refs = self._type_refs(code)
+        names = {r.to_symbol for r in refs}
+        assert "Request" in names
+        assert "Response" in names
+
+    def test_phpdoc_nullable_type(self):
+        code = "<?php\n/** @param ?User $user */\nfunction greet($user) {}"
+        refs = self._type_refs(code)
+        names = {r.to_symbol for r in refs}
+        assert "User" in names
+
+    def test_phpdoc_fqn_type(self):
+        code = r"<?php" + "\n" + r"/** @param \App\Models\User $user */" + "\n" + r"function process($user) {}"
+        refs = self._type_refs(code)
+        names = {r.to_symbol for r in refs}
+        assert r"\App\Models\User" in names
+
+    def test_phpdoc_attributed_to_function(self):
+        code = "<?php\n/** @param UserService $svc */\nfunction getEntity($svc) {}"
+        refs = self._type_refs(code)
+        svc_refs = [r for r in refs if r.to_symbol == "UserService"]
+        assert len(svc_refs) == 1
+        assert svc_refs[0].from_symbol == "getEntity"
+
+    def test_phpdoc_no_duplicate_with_native_types(self):
+        """If PHP already has typed params, PHPDoc shouldn't deduplicate at parser level."""
+        code = "<?php\n/** @param UserService $svc */\nfunction getEntity(UserService $svc) {}"
+        refs = self._type_refs(code)
+        us_refs = [r for r in refs if r.to_symbol == "UserService"]
+        assert len(us_refs) == 2
+
+    def test_phpdoc_array_of_type(self):
+        code = "<?php\n/** @param User[] $users */\nfunction process($users) {}"
+        refs = self._type_refs(code)
+        names = {r.to_symbol for r in refs}
+        assert "User" in names

@@ -7,6 +7,7 @@ resolution for building code dependency graphs.
 from dataclasses import dataclass, field
 from typing import Optional
 import importlib
+import re
 import tree_sitter
 from tree_sitter import Language, Parser
 
@@ -1476,6 +1477,98 @@ def _extract_references_python(
     return references
 
 
+# JSDoc/PHPDoc type primitives to skip
+_DOCBLOCK_PRIMITIVES = frozenset({
+    "string", "number", "boolean", "undefined", "null", "void", "never",
+    "any", "unknown", "object", "symbol", "bigint",  # JS/TS
+    "int", "integer", "float", "double", "bool", "array", "callable",
+    "iterable", "mixed", "self", "static", "parent", "true", "false",
+    "resource",  # PHP
+})
+
+# JSDoc: @param {Type} name, @returns {Type}, @type {Type}, @typedef {Type}
+_JSDOC_TYPE_RE = re.compile(
+    r"@(?:param|returns?|type|typedef|throws?|callback)\s+\{([^}]+)\}"
+)
+
+# PHPDoc: @param Type $name, @return Type, @var Type, @throws Type
+# Handles: Type, ?Type, \Ns\Type, Type|Other, Type[]
+_PHPDOC_TYPE_RE = re.compile(
+    r"@(?:param|return|returns|var|throws|property(?:-read|-write)?)\s+"
+    r"((?:\??\\?[\w\\]+(?:\[\])*(?:\|\??\\?[\w\\]+(?:\[\])*)*))"
+)
+
+
+def _extract_docblock_types(comment_text: str, style: str) -> list[str]:
+    """Extract type names from a doc comment string.
+
+    Args:
+        comment_text: The raw comment text (including delimiters)
+        style: 'jsdoc' for {Type} syntax, 'phpdoc' for Type $var syntax
+
+    Returns:
+        List of individual type name strings (primitives excluded)
+    """
+    types = []
+    if style == "jsdoc":
+        for match in _JSDOC_TYPE_RE.finditer(comment_text):
+            type_expr = match.group(1)
+            # Strip nullable prefix
+            type_expr = type_expr.lstrip("?!")
+            # Split on union/intersection
+            for part in re.split(r"[|&]", type_expr):
+                part = part.strip()
+                if not part:
+                    continue
+                # Handle generic: Array<Item> → extract Array and Item
+                generic_match = re.match(r"([\w.]+)\s*<(.+)>", part)
+                if generic_match:
+                    base = generic_match.group(1)
+                    if base.lower() not in _DOCBLOCK_PRIMITIVES:
+                        types.append(base)
+                    inner = generic_match.group(2)
+                    for inner_part in re.split(r"[,|&]", inner):
+                        inner_part = inner_part.strip()
+                        if inner_part and inner_part.lower() not in _DOCBLOCK_PRIMITIVES:
+                            types.append(inner_part)
+                else:
+                    # Strip array suffix
+                    part = part.rstrip("[]")
+                    if part and part.lower() not in _DOCBLOCK_PRIMITIVES:
+                        types.append(part)
+    elif style == "phpdoc":
+        for match in _PHPDOC_TYPE_RE.finditer(comment_text):
+            type_expr = match.group(1)
+            for part in type_expr.split("|"):
+                part = part.strip().lstrip("?")
+                # Strip array suffix
+                part = part.rstrip("[]")
+                if part and part.lower() not in _DOCBLOCK_PRIMITIVES:
+                    types.append(part)
+    return types
+
+
+def _extract_docblock_refs(
+    comment_node,
+    from_symbol: str,
+    references: list,
+    style: str,
+) -> None:
+    """Extract type references from a doc comment AST node."""
+    text = comment_node.text.decode("utf-8")
+    if not text.startswith("/**"):
+        return
+    type_names = _extract_docblock_types(text, style)
+    line = comment_node.start_point[0] + 1
+    for name in type_names:
+        references.append(Reference(
+            from_symbol=from_symbol,
+            to_symbol=name,
+            kind="type_reference",
+            line=line,
+        ))
+
+
 def _collect_type_references(
     node,
     from_symbol: str,
@@ -1728,7 +1821,84 @@ def _extract_references_typescript(
             walk(child, current_function)
 
     walk(tree.root_node)
+
+    # Second pass: extract types from JSDoc comments
+    _extract_comments_pass(tree.root_node, references, "jsdoc")
+
     return references
+
+
+def _extract_comments_pass(
+    root_node,
+    references: list,
+    style: str,
+) -> None:
+    """Walk the AST and extract type references from doc comments.
+
+    Attributes refs to the next sibling declaration if present,
+    otherwise to '<module>'.
+    """
+    # Determine which node types are declarations
+    _DECL_TYPES = {
+        "function_declaration", "function_definition", "method_definition",
+        "class_declaration", "interface_declaration", "type_alias_declaration",
+        "lexical_declaration", "variable_declaration", "export_statement",
+        "method_declaration", "property_declaration",
+    }
+
+    def _walk_for_comments(node, current_function=""):
+        children = node.children
+        for i, child in enumerate(children):
+            if child.type == "comment":
+                text = child.text.decode("utf-8")
+                if not text.startswith("/**"):
+                    continue
+
+                # Find what this comment annotates
+                from_symbol = current_function or "<module>"
+
+                # Look at the next non-comment sibling
+                for j in range(i + 1, len(children)):
+                    sibling = children[j]
+                    if sibling.type == "comment":
+                        continue
+                    if sibling.type in _DECL_TYPES:
+                        # Find name of the declaration
+                        name = _get_declaration_name(sibling)
+                        if name:
+                            from_symbol = name
+                    break
+
+                _extract_docblock_refs(child, from_symbol, references, style)
+
+            elif child.type in (
+                "class_declaration", "class_definition",
+                "interface_declaration",
+            ):
+                # Enter class scope
+                name = _get_declaration_name(child)
+                _walk_for_comments(child, name or current_function)
+            elif child.type in ("declaration_list", "class_body", "statement_block"):
+                _walk_for_comments(child, current_function)
+            elif child.type == "program":
+                _walk_for_comments(child, current_function)
+
+    _walk_for_comments(root_node)
+
+
+def _get_declaration_name(node) -> Optional[str]:
+    """Extract the name from a declaration node."""
+    for child in node.children:
+        if child.type in ("identifier", "name", "property_identifier"):
+            return child.text.decode("utf-8")
+        # TS export: export function foo() {}
+        if child.type in (
+            "function_declaration", "class_declaration",
+            "interface_declaration", "type_alias_declaration",
+            "lexical_declaration",
+        ):
+            return _get_declaration_name(child)
+    return None
 
 
 def _collect_php_type_references(
@@ -2018,6 +2188,10 @@ def _extract_references_php(
             walk(child, current_function)
 
     walk(tree.root_node)
+
+    # Second pass: extract types from PHPDoc comments
+    _extract_comments_pass(tree.root_node, references, "phpdoc")
+
     return references
 
 
