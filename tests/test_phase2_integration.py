@@ -99,9 +99,8 @@ class TestJobQueue:
         pending = global_db.get_pending_jobs()
         assert any(j["id"] == job_id and j["status"] == "running" for j in pending)
 
-        count = global_db.reset_crashed_jobs()
-        assert count == 1
-        assert global_db.get_job_status(job_id)["status"] == "pending"
+        incomplete = global_db.get_incomplete_jobs()
+        assert any(j["id"] == job_id for j in incomplete)
 
     def test_get_pending_includes_running(self, global_db):
         project_id = global_db.register_project("/tmp/test4", "test4")

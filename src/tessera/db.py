@@ -287,18 +287,6 @@ class GlobalDB:
         row = cursor.fetchone()
         return dict(row) if row else None
 
-    def reset_crashed_jobs(self) -> int:
-        """Reset any 'running' jobs to 'pending' (crash recovery on startup).
-
-        Returns:
-            Number of jobs reset
-        """
-        with self.conn:
-            cursor = self.conn.execute(
-                "UPDATE indexing_jobs SET status = 'pending', started_at = NULL WHERE status = 'running'"
-            )
-            return cursor.rowcount
-
     def get_incomplete_jobs(self) -> List[Dict[str, Any]]:
         """Get all jobs with status 'running' (interrupted at crash time).
 
