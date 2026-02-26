@@ -664,65 +664,54 @@ def create_server(project_path: Optional[str], global_db_path: str) -> FastMCP:
             return "Error: No accessible projects"
 
         try:
-            # Parallel query: find definitions and references in each project
-            async def _query_symbol(db, symbol_name):
-                """Query definitions and references for a symbol in a database."""
-                definitions = await asyncio.to_thread(db.lookup_symbols, symbol_name)
-                # Get all references from all symbols (looking for those with to_symbol_name == symbol_name)
-                all_symbols = await asyncio.to_thread(db.lookup_symbols, "*")
-                all_references = []
-                for sym in all_symbols:
-                    try:
-                        refs = await asyncio.to_thread(db.get_refs, symbol_id=sym["id"], kind="all")
-                        all_references.extend(refs)
-                    except Exception:
-                        pass
-                return (definitions, all_references)
-
-            tasks = [
-                _query_symbol(db, symbol_name)
+            # Parallel query: find definitions in each project
+            def_tasks = [
+                asyncio.to_thread(db.lookup_symbols, symbol_name)
                 for pid, pname, db in dbs
             ]
-            results_list = await asyncio.gather(*tasks, return_exceptions=True)
+            def_results = await asyncio.gather(*def_tasks, return_exceptions=True)
 
-            # Build cross-project reference map
-            # definition_projects: maps project_id to project_name for projects that define the symbol
+            # Collect which projects define this symbol
             definition_projects = {}
-            cross_refs = []
-
-            # Collect all definitions
-            for (pid, pname, db), result in zip(dbs, results_list):
+            for (pid, pname, db), result in zip(dbs, def_results):
                 if isinstance(result, Exception):
                     logger.warning("Query on project %d failed: %s", pid, result)
                     continue
-                definitions, references = result
-                if definitions:
+                if result:
                     definition_projects[pid] = pname
 
-            # Find cross-project references
-            for (pid, pname, db), result in zip(dbs, results_list):
+            if not definition_projects:
+                result_dict = {"symbol": symbol_name, "definition_projects": {}, "cross_refs": []}
+                _log_audit("cross_refs", 0, agent_id=agent_id)
+                return json.dumps(result_dict, indent=2)
+
+            # Parallel query: find callers of this symbol in each project
+            # get_callers returns caller symbol records (with name, file_id, line)
+            caller_tasks = [
+                asyncio.to_thread(db.get_callers, symbol_name=symbol_name)
+                for pid, pname, db in dbs
+            ]
+            caller_results = await asyncio.gather(*caller_tasks, return_exceptions=True)
+
+            # Build cross-project references
+            cross_refs = []
+            for (pid, pname, db), result in zip(dbs, caller_results):
                 if isinstance(result, Exception):
+                    logger.warning("Query on project %d failed: %s", pid, result)
                     continue
-                definitions, references = result
-
-                # For each reference from this project to the queried symbol
-                for ref in references:
-                    to_symbol_name = ref.get("to_symbol_name", "")
-                    # Only consider references to the symbol we're querying for
-                    if to_symbol_name != symbol_name:
-                        continue
-
-                    # Check if this reference points to a symbol defined in a different project
-                    for def_proj_id, def_proj_name in definition_projects.items():
-                        if def_proj_id != pid:  # Cross-project reference
+                # Each caller is a symbol in this project that references our target
+                for caller in result:
+                    # Cross-project: caller is in this project, definition is in another
+                    for def_pid, def_pname in definition_projects.items():
+                        if def_pid != pid:
                             cross_refs.append({
                                 "from_project_id": pid,
                                 "from_project_name": pname,
-                                "to_project_id": def_proj_id,
-                                "to_project_name": def_proj_name,
-                                "file": ref.get("file_id", ""),
-                                "line": ref.get("line", 0),
-                                "kind": ref.get("kind", ""),
+                                "to_project_id": def_pid,
+                                "to_project_name": def_pname,
+                                "file": caller.get("file_id", ""),
+                                "line": caller.get("line", 0),
+                                "kind": caller.get("kind", "function"),
                             })
 
             result_dict = {
