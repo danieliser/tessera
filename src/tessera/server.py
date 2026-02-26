@@ -212,7 +212,7 @@ def create_server(project_path: Optional[str], global_db_path: str) -> FastMCP:
             logger.info("Crash recovery: job %d completed", job_id)
         except Exception as e:
             _global_db.fail_job(job_id, str(e))
-            logger.info("Crash recovery: job %d failed: %s", job_id, e)
+            logger.warning("Crash recovery: job %d failed: %s", job_id, e)
 
     mcp = FastMCP("tessera")
 

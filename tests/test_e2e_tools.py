@@ -427,9 +427,7 @@ class TestReindexMode:
 
             # Get the project_id from the status tool
             import asyncio
-            status = asyncio.get_event_loop().run_until_complete(
-                get_json(server, "status", {})
-            )
+            status = asyncio.run(get_json(server, "status", {}))
             project_id = status["projects"][0]["id"]
 
             yield server, project_id, global_db_path, tmpdir
