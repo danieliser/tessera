@@ -299,6 +299,17 @@ class GlobalDB:
             )
             return cursor.rowcount
 
+    def get_incomplete_jobs(self) -> List[Dict[str, Any]]:
+        """Get all jobs with status 'running' (interrupted at crash time).
+
+        Returns:
+            List of dicts with 'id' (job_id) and 'project_id' keys.
+        """
+        cursor = self.conn.execute(
+            "SELECT id, project_id FROM indexing_jobs WHERE status = 'running' ORDER BY id"
+        )
+        return [{"id": row["id"], "project_id": row["project_id"]} for row in cursor.fetchall()]
+
     # --- Audit log methods ---
 
     def insert_audit(self, agent_id: str, scope_level: str, tool_called: str, result_count: int) -> None:

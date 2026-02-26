@@ -404,3 +404,129 @@ class TestAdminTools:
             "agent_id": "test-revoke",
         })
         assert "revoked" in str(revoke_result).lower() or "agent_id" in revoke_result
+
+
+class TestReindexMode:
+    """Tests for the mode parameter on the reindex tool."""
+
+    @pytest.fixture
+    def server_with_info(self):
+        """Create an indexed server and expose project_id and global_db_path."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            src_dir = os.path.join(tmpdir, "src")
+            os.makedirs(src_dir)
+
+            with open(os.path.join(src_dir, "animals.py"), "w") as f:
+                f.write(SAMPLE_CODE)
+
+            global_db_path = os.path.join(tmpdir, "global.db")
+            pipeline = IndexerPipeline(tmpdir)
+            pipeline.index_project()
+
+            server = create_server(tmpdir, global_db_path)
+
+            # Get the project_id from the status tool
+            import asyncio
+            status = asyncio.run(get_json(server, "status", {}))
+            project_id = status["projects"][0]["id"]
+
+            yield server, project_id, global_db_path, tmpdir
+
+    @pytest.mark.asyncio
+    async def test_reindex_full_mode(self, server_with_info):
+        """Reindex with mode='full' returns success."""
+        server, project_id, _, _ = server_with_info
+        content, _ = await server.call_tool("reindex", {
+            "project_id": project_id,
+            "mode": "full",
+        })
+        text = content[0].text
+        assert "Error" not in text
+        result = json.loads(text)
+        assert result["project_id"] == project_id
+
+    @pytest.mark.asyncio
+    async def test_reindex_incremental_mode(self, server_with_info):
+        """Reindex with mode='incremental' returns success."""
+        server, project_id, _, _ = server_with_info
+        content, _ = await server.call_tool("reindex", {
+            "project_id": project_id,
+            "mode": "incremental",
+        })
+        text = content[0].text
+        assert "Error" not in text
+        result = json.loads(text)
+        assert result["project_id"] == project_id
+
+    @pytest.mark.asyncio
+    async def test_reindex_invalid_mode(self, server_with_info):
+        """Reindex with an invalid mode returns an error containing 'Invalid mode'."""
+        server, project_id, _, _ = server_with_info
+        content, _ = await server.call_tool("reindex", {
+            "project_id": project_id,
+            "mode": "invalid",
+        })
+        text = content[0].text
+        assert "Invalid mode" in text
+
+
+class TestCrashRecovery:
+    """Tests for crash recovery on server startup."""
+
+    @pytest.mark.asyncio
+    async def test_crash_recovery_on_startup(self):
+        """A job stuck as 'running' in GlobalDB is completed after create_server()."""
+        from tessera.db import GlobalDB
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            src_dir = os.path.join(tmpdir, "src")
+            os.makedirs(src_dir)
+            with open(os.path.join(src_dir, "animals.py"), "w") as f:
+                f.write(SAMPLE_CODE)
+
+            global_db_path = os.path.join(tmpdir, "global.db")
+
+            # Create GlobalDB and register the project with a running job
+            gdb = GlobalDB(global_db_path)
+            project_id = gdb.register_project(path=tmpdir, name="recovery-test")
+            job_id = gdb.create_job(project_id)
+            gdb.start_job(job_id)
+
+            # Confirm job is 'running' before recovery
+            job_before = gdb.get_job_status(job_id)
+            assert job_before["status"] == "running"
+            gdb.close()
+
+            # Calling create_server() should trigger crash recovery
+            create_server(tmpdir, global_db_path)
+
+            # Re-open DB and check that job is now completed or failed (not still running)
+            gdb2 = GlobalDB(global_db_path)
+            job_after = gdb2.get_job_status(job_id)
+            gdb2.close()
+            assert job_after["status"] in ("completed", "failed")
+
+    @pytest.mark.asyncio
+    async def test_crash_recovery_missing_project(self):
+        """A running job for a non-existent project path is marked 'failed' on startup."""
+        from tessera.db import GlobalDB
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            global_db_path = os.path.join(tmpdir, "global.db")
+            nonexistent_path = os.path.join(tmpdir, "does-not-exist")
+
+            # Register a project with a non-existent path and insert a running job
+            gdb = GlobalDB(global_db_path)
+            project_id = gdb.register_project(path=nonexistent_path, name="ghost-project")
+            job_id = gdb.create_job(project_id)
+            gdb.start_job(job_id)
+            gdb.close()
+
+            # Trigger crash recovery via create_server
+            create_server(None, global_db_path)
+
+            # Job should be marked failed since the path doesn't exist
+            gdb2 = GlobalDB(global_db_path)
+            job_after = gdb2.get_job_status(job_id)
+            gdb2.close()
+            assert job_after["status"] == "failed"

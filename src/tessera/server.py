@@ -191,6 +191,29 @@ def create_server(project_path: Optional[str], global_db_path: str) -> FastMCP:
     else:
         logger.info("Server in multi-project mode")
 
+    # Crash recovery: re-index any jobs that were interrupted (status='running')
+    incomplete_jobs = _global_db.get_incomplete_jobs()
+    if incomplete_jobs:
+        logger.info("Crash recovery: found %d incomplete job(s)", len(incomplete_jobs))
+    for job in incomplete_jobs:
+        job_id = job["id"]
+        project_id = job["project_id"]
+        project = _global_db.get_project(project_id)
+        if not project or not os.path.isdir(project["path"]):
+            logger.info("Crash recovery: project %d path not found, marking job %d failed", project_id, job_id)
+            _global_db.fail_job(job_id, "Project path not found")
+            continue
+        logger.info("Crash recovery: resuming job %d for project %d at %s", job_id, project_id, project["path"])
+        try:
+            pipeline = IndexerPipeline(project["path"], global_db=_global_db)
+            pipeline.project_id = project_id
+            pipeline.index_project()
+            _global_db.complete_job(job_id)
+            logger.info("Crash recovery: job %d completed", job_id)
+        except Exception as e:
+            _global_db.fail_job(job_id, str(e))
+            logger.warning("Crash recovery: job %d failed: %s", job_id, e)
+
     mcp = FastMCP("tessera")
 
     # --- Core tools (project scope) ---
@@ -427,11 +450,20 @@ def create_server(project_path: Optional[str], global_db_path: str) -> FastMCP:
             return f"Error: {str(e)}"
 
     @mcp.tool()
-    async def reindex(project_id: int, session_id: str = "") -> str:
-        """Trigger re-indexing of a project (global scope only)."""
+    async def reindex(project_id: int, mode: str = "full", session_id: str = "") -> str:
+        """Trigger re-indexing of a project (global scope only).
+
+        Args:
+            project_id: ID of the project to reindex
+            mode: 'full' (default) for complete reindex, 'incremental' for git-diff based update
+            session_id: Optional session token
+        """
         scope, err = _check_session({"session_id": session_id}, "global")
         if err:
             return err
+
+        if mode not in ("full", "incremental"):
+            return f"Error: Invalid mode '{mode}'. Must be 'full' or 'incremental'."
 
         if not _global_db:
             return "Error: Global database not initialized"
@@ -449,7 +481,10 @@ def create_server(project_path: Optional[str], global_db_path: str) -> FastMCP:
             )
             pipeline.project_id = project_id
 
-            stats = await asyncio.to_thread(pipeline.index_project)
+            if mode == "incremental":
+                stats = await asyncio.to_thread(pipeline.index_changed)
+            else:
+                stats = await asyncio.to_thread(pipeline.index_project)
 
             # Invalidate cache so next query picks up fresh data
             _db_cache.pop(project_id, None)
