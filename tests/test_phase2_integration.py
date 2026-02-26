@@ -58,9 +58,11 @@ class TestServerWiring:
     async def test_server_lists_10_tools(self, wired_server):
         tools = await wired_server.list_tools()
         tool_names = [t.name for t in tools]
-        assert len(tool_names) == 10
+        assert len(tool_names) == 16  # Updated for Phase 3 federation tools
         assert "register_project" in tool_names
         assert "status" in tool_names
+        assert "cross_refs" in tool_names
+        assert "collection_map" in tool_names
 
 
 class TestJobQueue:

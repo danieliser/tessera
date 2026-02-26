@@ -109,6 +109,18 @@ def _get_project_dbs(scope: Optional[ScopeInfo]) -> list[tuple[int, str, Project
     if _locked_project is not None:
         # Server locked to single project via --project flag
         allowed_ids = [_locked_project]
+    elif scope and scope.level == "collection" and scope.collections:
+        # Collection scope: resolve collection IDs to project memberships
+        all_allowed = set()
+        for cid in scope.collections:
+            try:
+                collection_projects = _global_db.get_collection_projects(int(cid))
+                all_allowed.update(p["id"] for p in collection_projects)
+            except Exception as e:
+                logger.warning("Failed to resolve collection %s: %s", cid, e)
+        allowed_ids = list(all_allowed)
+        if not allowed_ids:
+            logger.warning("Collection scope resolved to 0 projects")
     elif scope and scope.projects:
         # Session specifies allowed projects
         allowed_ids = [int(p) for p in scope.projects]
@@ -630,6 +642,287 @@ def create_server(project_path: Optional[str], global_db_path: str) -> FastMCP:
         except Exception as e:
             logger.exception("status error")
             _log_audit("status", 0, scope_level="global")
+            return f"Error: {str(e)}"
+
+    # --- Federation tools (project scope minimum) ---
+
+    @mcp.tool()
+    async def cross_refs(symbol_name: str, session_id: str = "") -> str:
+        """Find cross-project references for a symbol.
+
+        Returns references where the symbol is defined in one project
+        and referenced in another.
+        """
+        scope, err = _check_session({"session_id": session_id}, "project")
+        if err:
+            return err
+        agent_id = scope.agent_id if scope else "dev"
+
+        dbs = _get_project_dbs(scope)
+        if not dbs:
+            _log_audit("cross_refs", 0, agent_id=agent_id)
+            return "Error: No accessible projects"
+
+        try:
+            # Parallel query: find definitions and references in each project
+            async def _query_symbol(db, symbol_name):
+                """Query definitions and references for a symbol in a database."""
+                definitions = await asyncio.to_thread(db.lookup_symbols, symbol_name)
+                # Get all references from all symbols (looking for those with to_symbol_name == symbol_name)
+                all_symbols = await asyncio.to_thread(db.lookup_symbols, "*")
+                all_references = []
+                for sym in all_symbols:
+                    try:
+                        refs = await asyncio.to_thread(db.get_refs, symbol_id=sym["id"], kind="all")
+                        all_references.extend(refs)
+                    except Exception:
+                        pass
+                return (definitions, all_references)
+
+            tasks = [
+                _query_symbol(db, symbol_name)
+                for pid, pname, db in dbs
+            ]
+            results_list = await asyncio.gather(*tasks, return_exceptions=True)
+
+            # Build cross-project reference map
+            # definition_projects: maps project_id to project_name for projects that define the symbol
+            definition_projects = {}
+            cross_refs = []
+
+            # Collect all definitions
+            for (pid, pname, db), result in zip(dbs, results_list):
+                if isinstance(result, Exception):
+                    logger.warning("Query on project %d failed: %s", pid, result)
+                    continue
+                definitions, references = result
+                if definitions:
+                    definition_projects[pid] = pname
+
+            # Find cross-project references
+            for (pid, pname, db), result in zip(dbs, results_list):
+                if isinstance(result, Exception):
+                    continue
+                definitions, references = result
+
+                # For each reference from this project to the queried symbol
+                for ref in references:
+                    to_symbol_name = ref.get("to_symbol_name", "")
+                    # Only consider references to the symbol we're querying for
+                    if to_symbol_name != symbol_name:
+                        continue
+
+                    # Check if this reference points to a symbol defined in a different project
+                    for def_proj_id, def_proj_name in definition_projects.items():
+                        if def_proj_id != pid:  # Cross-project reference
+                            cross_refs.append({
+                                "from_project_id": pid,
+                                "from_project_name": pname,
+                                "to_project_id": def_proj_id,
+                                "to_project_name": def_proj_name,
+                                "file": ref.get("file_id", ""),
+                                "line": ref.get("line", 0),
+                                "kind": ref.get("kind", ""),
+                            })
+
+            result_dict = {
+                "symbol": symbol_name,
+                "definition_projects": {str(k): {"id": k, "name": v} for k, v in definition_projects.items()},
+                "cross_refs": cross_refs,
+            }
+
+            _log_audit("cross_refs", len(cross_refs), agent_id=agent_id)
+            return json.dumps(result_dict, indent=2)
+        except Exception as e:
+            logger.exception("cross_refs error")
+            _log_audit("cross_refs", 0, agent_id=agent_id)
+            return f"Error: {str(e)}"
+
+    @mcp.tool()
+    async def collection_map(collection_id: int = 0, session_id: str = "") -> str:
+        """Get inter-project dependency graph.
+
+        If collection_id is 0, use all allowed projects in scope.
+        """
+        scope, err = _check_session({"session_id": session_id}, "project")
+        if err:
+            return err
+        agent_id = scope.agent_id if scope else "dev"
+
+        # Get allowed projects
+        dbs = _get_project_dbs(scope)
+        if not dbs:
+            _log_audit("collection_map", 0, agent_id=agent_id)
+            return "Error: No accessible projects"
+
+        try:
+            # Query symbol definitions for each project in parallel
+            async def _query_symbols(db):
+                """Query all symbols for a database."""
+                symbols = await asyncio.to_thread(db.lookup_symbols, "*")
+                return symbols
+
+            tasks = [
+                _query_symbols(db)
+                for pid, pname, db in dbs
+            ]
+            symbols_list = await asyncio.gather(*tasks, return_exceptions=True)
+
+            # Build project node info and symbol index (name → project_ids)
+            projects_dict = {}
+            symbol_definitions = {}  # symbol_name → set of project_ids that define it
+
+            for (pid, pname, db), symbols_result in zip(dbs, symbols_list):
+                if isinstance(symbols_result, Exception):
+                    logger.warning("Symbol query on project %d failed: %s", pid, symbols_result)
+                    symbol_count = 0
+                    all_symbols = []
+                else:
+                    all_symbols = symbols_result
+                    symbol_count = len(all_symbols)
+
+                projects_dict[pname] = {"id": pid, "symbol_count": symbol_count}
+
+                # Index symbol definitions
+                for symbol in all_symbols:
+                    sym_name = symbol.get("name", "")
+                    if sym_name:
+                        if sym_name not in symbol_definitions:
+                            symbol_definitions[sym_name] = set()
+                        symbol_definitions[sym_name].add(pid)
+
+            # Find edges: for each reference from project A to symbol in project B
+            edges = {}  # (from_pid, to_pid) → {cross_refs: count, symbols: set}
+
+            for (pid, pname, db), symbols_result in zip(dbs, symbols_list):
+                if isinstance(symbols_result, Exception):
+                    continue
+
+                # Get all references from this project
+                all_symbols = symbols_result
+                for symbol in all_symbols:
+                    refs = await asyncio.to_thread(
+                        db.get_refs, symbol_id=symbol["id"], kind="all"
+                    )
+                    for ref in refs:
+                        to_symbol_name = ref.get("to_symbol_name", "")
+                        # Check if this symbol is defined in another project
+                        if to_symbol_name in symbol_definitions:
+                            for target_pid in symbol_definitions[to_symbol_name]:
+                                if target_pid != pid:  # Cross-project reference
+                                    edge_key = (pid, target_pid)
+                                    if edge_key not in edges:
+                                        edges[edge_key] = {"cross_refs": 0, "symbols": set()}
+                                    edges[edge_key]["cross_refs"] += 1
+                                    edges[edge_key]["symbols"].add(to_symbol_name)
+
+            # Convert edges to list format, mapping project IDs to names
+            pid_to_name = {pid: pname for pid, pname, _ in dbs}
+            edges_list = [
+                {
+                    "from": pid_to_name.get(from_pid, f"project-{from_pid}"),
+                    "to": pid_to_name.get(to_pid, f"project-{to_pid}"),
+                    "cross_refs": v["cross_refs"],
+                    "symbols": sorted(list(v["symbols"])),
+                }
+                for (from_pid, to_pid), v in edges.items()
+            ]
+
+            result_dict = {
+                "collection_id": collection_id,
+                "projects": projects_dict,
+                "edges": edges_list,
+            }
+
+            _log_audit("collection_map", len(edges_list), agent_id=agent_id)
+            return json.dumps(result_dict, indent=2)
+        except Exception as e:
+            logger.exception("collection_map error")
+            _log_audit("collection_map", 0, agent_id=agent_id)
+            return f"Error: {str(e)}"
+
+    # --- Collection admin tools (global scope only) ---
+
+    @mcp.tool()
+    async def create_collection_tool(name: str, project_ids: list[int] = None, session_id: str = "") -> str:
+        """Create a new collection (global scope only)."""
+        scope, err = _check_session({"session_id": session_id}, "global")
+        if err:
+            return err
+
+        if not _global_db:
+            return "Error: Global database not initialized"
+
+        project_ids = project_ids or []
+
+        try:
+            coll_id = await asyncio.to_thread(_global_db.create_collection, name, project_ids)
+            collection = await asyncio.to_thread(_global_db.get_collection, coll_id)
+            _log_audit("create_collection_tool", 1, scope_level="global")
+            return json.dumps(collection, indent=2)
+        except Exception as e:
+            logger.exception("create_collection_tool error")
+            _log_audit("create_collection_tool", 0, scope_level="global")
+            return f"Error: {str(e)}"
+
+    @mcp.tool()
+    async def add_to_collection_tool(collection_id: int, project_id: int, session_id: str = "") -> str:
+        """Add a project to a collection (global scope only)."""
+        scope, err = _check_session({"session_id": session_id}, "global")
+        if err:
+            return err
+
+        if not _global_db:
+            return "Error: Global database not initialized"
+
+        try:
+            await asyncio.to_thread(_global_db.add_project_to_collection, collection_id, project_id)
+            collection = await asyncio.to_thread(_global_db.get_collection, collection_id)
+            _log_audit("add_to_collection_tool", 1, scope_level="global")
+            return json.dumps(collection, indent=2)
+        except Exception as e:
+            logger.exception("add_to_collection_tool error")
+            _log_audit("add_to_collection_tool", 0, scope_level="global")
+            return f"Error: {str(e)}"
+
+    @mcp.tool()
+    async def list_collections_tool(session_id: str = "") -> str:
+        """List all collections (global scope only)."""
+        scope, err = _check_session({"session_id": session_id}, "global")
+        if err:
+            return err
+
+        if not _global_db:
+            return "Error: Global database not initialized"
+
+        try:
+            collections = await asyncio.to_thread(_global_db.list_collections)
+            result = {"collections": collections}
+            _log_audit("list_collections_tool", len(collections), scope_level="global")
+            return json.dumps(result, indent=2)
+        except Exception as e:
+            logger.exception("list_collections_tool error")
+            _log_audit("list_collections_tool", 0, scope_level="global")
+            return f"Error: {str(e)}"
+
+    @mcp.tool()
+    async def delete_collection_tool(collection_id: int, session_id: str = "") -> str:
+        """Delete a collection (global scope only)."""
+        scope, err = _check_session({"session_id": session_id}, "global")
+        if err:
+            return err
+
+        if not _global_db:
+            return "Error: Global database not initialized"
+
+        try:
+            await asyncio.to_thread(_global_db.delete_collection, collection_id)
+            result = {"deleted": True, "collection_id": collection_id}
+            _log_audit("delete_collection_tool", 1, scope_level="global")
+            return json.dumps(result, indent=2)
+        except Exception as e:
+            logger.exception("delete_collection_tool error")
+            _log_audit("delete_collection_tool", 0, scope_level="global")
             return f"Error: {str(e)}"
 
     return mcp
