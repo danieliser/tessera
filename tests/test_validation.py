@@ -482,6 +482,67 @@ class TestPHPValidation:
         caller_names = {c["name"] for c in callers}
         assert "trackClick" in caller_names
 
+    def test_impact_include_types_default(self, db):
+        """Tracker has type_reference from create_tracker (return type).
+        Default include_types=True includes all edge kinds."""
+        results = db.get_impact("App\\Analytics\\Tracker")
+        names = {r["name"] for r in results}
+        # create_tracker calls Tracker (new) AND has type_reference
+        assert "App\\Analytics\\create_tracker" in names
+
+    def test_impact_include_types_false(self, db):
+        """With include_types=False, type_reference edges are excluded.
+        create_tracker still appears because it also has a calls ref to Tracker."""
+        results = db.get_impact("App\\Analytics\\Tracker", include_types=False)
+        names = {r["name"] for r in results}
+        # Still found via calls edge (new Tracker())
+        assert "App\\Analytics\\create_tracker" in names
+
+
+# ---------------------------------------------------------------------------
+# Impact include_types filtering
+# ---------------------------------------------------------------------------
+
+class TestImpactIncludeTypes:
+    """Validate include_types parameter on get_impact().
+
+    Uses ts_type_impact.ts fixture where:
+    - Config is ONLY referenced via type_reference (param type annotation)
+    - Logger is referenced via calls (new Logger())
+    - processData references both Config (type) and Logger (call)
+    """
+
+    @pytest.fixture
+    def db(self, tmp_path):
+        pipeline = _index_fixtures(str(tmp_path), ["ts_type_impact.ts"])
+        return pipeline.project_db
+
+    def test_impact_default_includes_type_refs(self, db):
+        """Default include_types=True: Config impact includes processData."""
+        results = db.get_impact("Config")
+        names = {r["name"] for r in results}
+        assert "processData" in names
+
+    def test_impact_exclude_types(self, db):
+        """include_types=False: Config has no runtime refs, so impact is empty."""
+        results = db.get_impact("Config", include_types=False)
+        names = {r["name"] for r in results}
+        assert "processData" not in names
+
+    def test_impact_exclude_types_keeps_calls(self, db):
+        """include_types=False: Logger still found via calls edge."""
+        results = db.get_impact("Logger", include_types=False)
+        names = {r["name"] for r in results}
+        assert "processData" in names
+
+    def test_impact_both_modes_same_for_calls(self, db):
+        """For call-only symbols, include_types doesn't change results."""
+        results_all = db.get_impact("Logger", include_types=True)
+        results_no_types = db.get_impact("Logger", include_types=False)
+        names_all = {r["name"] for r in results_all}
+        names_no_types = {r["name"] for r in results_no_types}
+        assert names_all == names_no_types
+
 
 # ---------------------------------------------------------------------------
 # Cross-file validation

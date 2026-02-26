@@ -1110,6 +1110,7 @@ class ProjectDB:
         self,
         symbol_name: str,
         depth: int = 3,
+        include_types: bool = True,
     ) -> List[Dict[str, Any]]:
         """Find all symbols transitively affected by a change to the named symbol.
 
@@ -1119,6 +1120,8 @@ class ProjectDB:
         Args:
             symbol_name: Symbol name to analyze impact for
             depth: Max traversal depth (hops), capped at 10
+            include_types: Include type_reference edges (default True).
+                Set False to limit to runtime dependencies only.
 
         Returns:
             List of symbols that directly or transitively depend on this symbol
@@ -1152,9 +1155,10 @@ class ProjectDB:
             # 1. Find callers via caller_refs by ID (pre-resolved refs)
             if frontier_ids:
                 placeholders = ",".join("?" * len(frontier_ids))
+                kind_filter = " AND cr.kind != 'type_reference'" if not include_types else ""
                 rows = self.conn.execute(
                     f"SELECT DISTINCT cr.from_symbol_id FROM caller_refs cr "
-                    f"WHERE cr.to_symbol_id IN ({placeholders})",
+                    f"WHERE cr.to_symbol_id IN ({placeholders}){kind_filter}",
                     list(frontier_ids)
                 ).fetchall()
                 for row in rows:
@@ -1165,9 +1169,10 @@ class ProjectDB:
             # 2. Find callers via caller_refs by name (unresolved cross-file refs)
             if frontier_names:
                 placeholders = ",".join("?" * len(frontier_names))
+                kind_filter = " AND cr.kind != 'type_reference'" if not include_types else ""
                 rows = self.conn.execute(
                     f"SELECT DISTINCT cr.from_symbol_id FROM caller_refs cr "
-                    f"WHERE cr.to_symbol_name IN ({placeholders})",
+                    f"WHERE cr.to_symbol_name IN ({placeholders}){kind_filter}",
                     list(frontier_names)
                 ).fetchall()
                 for row in rows:

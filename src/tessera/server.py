@@ -370,7 +370,7 @@ def create_server(project_path: Optional[str], global_db_path: str) -> FastMCP:
             return f"Error retrieving file context: {str(e)}"
 
     @mcp.tool()
-    async def impact(symbol_name: str, depth: int = 3, session_id: str = "") -> str:
+    async def impact(symbol_name: str, depth: int = 3, include_types: bool = True, session_id: str = "") -> str:
         """Analyze what breaks if a symbol is changed — traverses the dependency graph."""
         scope, err = _check_session({"session_id": session_id}, "project")
         if err:
@@ -385,7 +385,7 @@ def create_server(project_path: Optional[str], global_db_path: str) -> FastMCP:
         try:
             all_results = []
             for pid, pname, db in dbs:
-                results = await asyncio.to_thread(db.get_impact, symbol_name, depth)
+                results = await asyncio.to_thread(db.get_impact, symbol_name, depth, include_types)
                 for r in results:
                     r["project_id"] = pid
                     r["project_name"] = pname
