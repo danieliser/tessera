@@ -5,9 +5,11 @@ import asyncio
 import json
 import tempfile
 import os
+from unittest.mock import patch, MagicMock
 
 from tessera.server import create_server
 from tessera.db import ProjectDB, GlobalDB
+from tessera.indexer import IndexStats
 
 
 @pytest.fixture
@@ -312,3 +314,77 @@ class TestMultiProjectServerCreation:
             srv = create_server(project_path=None, global_db_path=global_db_path)
             content, _ = await srv.call_tool("symbols", {"query": "*"})
             assert "Error" in content[0].text or "[]" in content[0].text
+
+
+class TestReindexMode:
+    """Test reindex tool mode parameter."""
+
+    @pytest.fixture
+    def reindex_server(self):
+        """Create a server with a registered project for reindex tests."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            global_db_path = os.path.join(tmpdir, "global.db")
+            global_db = GlobalDB(global_db_path)
+            proj_path = os.path.join(tmpdir, "project_a")
+            os.makedirs(proj_path, exist_ok=True)
+            pid = global_db.register_project(path=proj_path, name="test-project")
+            srv = create_server(project_path=None, global_db_path=global_db_path)
+            yield srv, pid
+
+    async def test_reindex_full_mode_calls_index_project(self, reindex_server):
+        """reindex with mode='full' calls pipeline.index_project()."""
+        srv, pid = reindex_server
+        fake_stats = IndexStats(files_processed=3, files_skipped=1, files_failed=0, symbols_extracted=10, chunks_created=5, time_elapsed=0.5)
+
+        with patch("tessera.server.IndexerPipeline") as MockPipeline:
+            instance = MockPipeline.return_value
+            instance.index_project.return_value = fake_stats
+            instance.project_id = pid
+
+            content, _ = await srv.call_tool("reindex", {"project_id": pid, "mode": "full"})
+            result = json.loads(content[0].text)
+
+            instance.index_project.assert_called_once()
+            instance.index_changed.assert_not_called()
+            assert result["files_processed"] == 3
+
+    async def test_reindex_default_mode_is_full(self, reindex_server):
+        """reindex without mode param defaults to full reindex."""
+        srv, pid = reindex_server
+        fake_stats = IndexStats(files_processed=2, time_elapsed=0.1)
+
+        with patch("tessera.server.IndexerPipeline") as MockPipeline:
+            instance = MockPipeline.return_value
+            instance.index_project.return_value = fake_stats
+            instance.project_id = pid
+
+            content, _ = await srv.call_tool("reindex", {"project_id": pid})
+            result = json.loads(content[0].text)
+
+            instance.index_project.assert_called_once()
+            instance.index_changed.assert_not_called()
+            assert result["files_processed"] == 2
+
+    async def test_reindex_incremental_mode_calls_index_changed(self, reindex_server):
+        """reindex with mode='incremental' calls pipeline.index_changed()."""
+        srv, pid = reindex_server
+        fake_stats = IndexStats(files_processed=1, files_skipped=2, time_elapsed=0.2)
+
+        with patch("tessera.server.IndexerPipeline") as MockPipeline:
+            instance = MockPipeline.return_value
+            instance.index_changed.return_value = fake_stats
+            instance.project_id = pid
+
+            content, _ = await srv.call_tool("reindex", {"project_id": pid, "mode": "incremental"})
+            result = json.loads(content[0].text)
+
+            instance.index_changed.assert_called_once()
+            instance.index_project.assert_not_called()
+            assert result["files_processed"] == 1
+
+    async def test_reindex_invalid_mode_returns_error(self, reindex_server):
+        """reindex with invalid mode returns an error message."""
+        srv, pid = reindex_server
+
+        content, _ = await srv.call_tool("reindex", {"project_id": pid, "mode": "turbo"})
+        assert "Error" in content[0].text
