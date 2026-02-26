@@ -37,7 +37,13 @@ class TestServerCreation:
         assert "impact" in tool_names
         assert "register_project" in tool_names
         assert "reindex" in tool_names
-        assert len(tool_names) == 10
+        assert "cross_refs" in tool_names
+        assert "collection_map" in tool_names
+        assert "create_collection_tool" in tool_names
+        assert "add_to_collection_tool" in tool_names
+        assert "list_collections_tool" in tool_names
+        assert "delete_collection_tool" in tool_names
+        assert len(tool_names) == 16
 
 
 class TestSearchTool:
@@ -305,7 +311,7 @@ class TestMultiProjectServerCreation:
             global_db_path = os.path.join(tmpdir, "global.db")
             srv = create_server(project_path=None, global_db_path=global_db_path)
             tools = await srv.list_tools()
-            assert len([t.name for t in tools]) == 10
+            assert len([t.name for t in tools]) == 16
 
     async def test_no_projects_returns_error(self):
         """Multi-project mode with no registered projects returns error."""

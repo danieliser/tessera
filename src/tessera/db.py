@@ -338,6 +338,139 @@ class GlobalDB:
             )
         return [dict(row) for row in cursor.fetchall()]
 
+    # --- Collection CRUD methods ---
+
+    def create_collection(self, name: str, project_ids: List[int] = None) -> int:
+        """Create a new collection, optionally assigning projects.
+
+        Args:
+            name: Unique collection name
+            project_ids: Optional list of project IDs to assign
+
+        Returns:
+            Collection ID
+
+        Raises:
+            sqlite3.IntegrityError: If name already exists (UNIQUE constraint)
+        """
+        scope_id = str(uuid.uuid4())
+        with self.conn:
+            cursor = self.conn.execute(
+                "INSERT INTO collections (name, scope_id) VALUES (?, ?)",
+                (name, scope_id)
+            )
+            collection_id = cursor.lastrowid
+            if project_ids:
+                for project_id in project_ids:
+                    self.conn.execute(
+                        "UPDATE projects SET collection_id = ? WHERE id = ?",
+                        (collection_id, project_id)
+                    )
+        return collection_id
+
+    def get_collection(self, collection_id: int) -> Optional[Dict[str, Any]]:
+        """Retrieve a collection with its metadata and member projects.
+
+        Args:
+            collection_id: Collection ID
+
+        Returns:
+            Dict with {id, name, scope_id, created_at, projects: [...]}, or None if not found
+        """
+        cursor = self.conn.execute(
+            "SELECT id, name, scope_id, created_at FROM collections WHERE id = ?",
+            (collection_id,)
+        )
+        row = cursor.fetchone()
+        if not row:
+            return None
+
+        coll = dict(row)
+        coll["projects"] = self.get_collection_projects(collection_id)
+        return coll
+
+    def list_collections(self) -> List[Dict[str, Any]]:
+        """List all collections ordered by name.
+
+        Returns:
+            List of collection dicts, each with {id, name, scope_id, created_at, projects: [...]}
+        """
+        cursor = self.conn.execute(
+            "SELECT id, name, scope_id, created_at FROM collections ORDER BY name"
+        )
+        collections = []
+        for row in cursor.fetchall():
+            coll = dict(row)
+            coll["projects"] = self.get_collection_projects(coll["id"])
+            collections.append(coll)
+        return collections
+
+    def get_collection_projects(self, collection_id: int) -> List[Dict[str, Any]]:
+        """Get member projects of a collection.
+
+        Args:
+            collection_id: Collection ID
+
+        Returns:
+            List of project dicts {id, name, path, language} ordered by name
+        """
+        cursor = self.conn.execute(
+            "SELECT id, name, path, language FROM projects WHERE collection_id = ? ORDER BY name",
+            (collection_id,)
+        )
+        return [dict(row) for row in cursor.fetchall()]
+
+    def add_project_to_collection(self, collection_id: int, project_id: int) -> None:
+        """Add a project to a collection.
+
+        Args:
+            collection_id: Collection ID
+            project_id: Project ID
+
+        Raises:
+            ValueError: If collection_id or project_id do not exist
+        """
+        # Validate collection exists
+        cursor = self.conn.execute(
+            "SELECT id FROM collections WHERE id = ?",
+            (collection_id,)
+        )
+        if not cursor.fetchone():
+            raise ValueError(f"Collection {collection_id} not found")
+
+        # Validate project exists
+        cursor = self.conn.execute(
+            "SELECT id FROM projects WHERE id = ?",
+            (project_id,)
+        )
+        if not cursor.fetchone():
+            raise ValueError(f"Project {project_id} not found")
+
+        # Update project's collection_id FK
+        with self.conn:
+            self.conn.execute(
+                "UPDATE projects SET collection_id = ? WHERE id = ?",
+                (collection_id, project_id)
+            )
+
+    def delete_collection(self, collection_id: int) -> None:
+        """Delete a collection and clear its project assignments.
+
+        Args:
+            collection_id: Collection ID
+        """
+        with self.conn:
+            # Clear collection_id from member projects (SET NULL)
+            self.conn.execute(
+                "UPDATE projects SET collection_id = NULL WHERE collection_id = ?",
+                (collection_id,)
+            )
+            # Delete the collection row
+            self.conn.execute(
+                "DELETE FROM collections WHERE id = ?",
+                (collection_id,)
+            )
+
     def close(self):
         """Close the global database connection."""
         self.conn.close()
