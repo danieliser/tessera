@@ -232,13 +232,22 @@ def create_server(project_path: Optional[str], global_db_path: str) -> FastMCP:
             return "Error: No accessible projects"
 
         try:
+            # Parallel query pattern
+            tasks = [
+                asyncio.to_thread(db.keyword_search, query, limit)
+                for pid, pname, db in dbs
+            ]
+            results_list = await asyncio.gather(*tasks, return_exceptions=True)
+
             all_results = []
-            for pid, pname, db in dbs:
-                results = await asyncio.to_thread(db.keyword_search, query, limit)
-                for r in results:
+            for (pid, pname, db), result in zip(dbs, results_list):
+                if isinstance(result, Exception):
+                    logger.warning("Query on project %d failed: %s", pid, result)
+                    continue
+                for r in result:
                     r["project_id"] = pid
                     r["project_name"] = pname
-                all_results.extend(results)
+                all_results.extend(result)
 
             # Sort by score descending, cap at limit
             all_results.sort(key=lambda r: r.get("score", 0), reverse=True)
@@ -265,16 +274,25 @@ def create_server(project_path: Optional[str], global_db_path: str) -> FastMCP:
             return "Error: No accessible projects"
 
         try:
-            all_results = []
-            for pid, pname, db in dbs:
-                results = await asyncio.to_thread(
+            # Parallel query pattern
+            tasks = [
+                asyncio.to_thread(
                     db.lookup_symbols, query,
                     kind or None, language or None
                 )
-                for r in results:
+                for pid, pname, db in dbs
+            ]
+            results_list = await asyncio.gather(*tasks, return_exceptions=True)
+
+            all_results = []
+            for (pid, pname, db), result in zip(dbs, results_list):
+                if isinstance(result, Exception):
+                    logger.warning("Query on project %d failed: %s", pid, result)
+                    continue
+                for r in result:
                     r["project_id"] = pid
                     r["project_name"] = pname
-                all_results.extend(results)
+                all_results.extend(result)
 
             _log_audit("symbols", len(all_results), agent_id=agent_id)
             return json.dumps(all_results, indent=2)
@@ -297,11 +315,26 @@ def create_server(project_path: Optional[str], global_db_path: str) -> FastMCP:
             return "Error: No accessible projects"
 
         try:
-            all_outgoing = []
-            all_callers = []
-            for pid, pname, db in dbs:
+            # Parallel query pattern: fetch both outgoing and callers for each DB in parallel
+            async def _query_references(db, symbol_name, kind):
+                """Query both references and callers for a database."""
                 outgoing = await asyncio.to_thread(db.get_refs, symbol_name=symbol_name, kind=kind)
                 callers = await asyncio.to_thread(db.get_callers, symbol_name=symbol_name, kind=kind)
+                return (outgoing, callers)
+
+            tasks = [
+                _query_references(db, symbol_name, kind)
+                for pid, pname, db in dbs
+            ]
+            results_list = await asyncio.gather(*tasks, return_exceptions=True)
+
+            all_outgoing = []
+            all_callers = []
+            for (pid, pname, db), result in zip(dbs, results_list):
+                if isinstance(result, Exception):
+                    logger.warning("Query on project %d failed: %s", pid, result)
+                    continue
+                outgoing, callers = result
                 for r in outgoing:
                     all_outgoing.append({
                         "to_symbol": r.get("to_symbol_name", ""),
@@ -406,13 +439,22 @@ def create_server(project_path: Optional[str], global_db_path: str) -> FastMCP:
             return "Error: No accessible projects"
 
         try:
+            # Parallel query pattern
+            tasks = [
+                asyncio.to_thread(db.get_impact, symbol_name, depth, include_types)
+                for pid, pname, db in dbs
+            ]
+            results_list = await asyncio.gather(*tasks, return_exceptions=True)
+
             all_results = []
-            for pid, pname, db in dbs:
-                results = await asyncio.to_thread(db.get_impact, symbol_name, depth, include_types)
-                for r in results:
+            for (pid, pname, db), result in zip(dbs, results_list):
+                if isinstance(result, Exception):
+                    logger.warning("Query on project %d failed: %s", pid, result)
+                    continue
+                for r in result:
                     r["project_id"] = pid
                     r["project_name"] = pname
-                all_results.extend(results)
+                all_results.extend(result)
 
             _log_audit("impact", len(all_results), agent_id=agent_id)
             return json.dumps(all_results, indent=2)
