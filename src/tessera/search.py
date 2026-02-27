@@ -19,6 +19,12 @@ from typing import Optional
 import numpy as np
 import faiss
 
+# Over-fetch multiplier for source_type post-filtering.
+# When source_type filter is active, fetch this many times the limit from FAISS,
+# then post-filter. 3x validated as sufficient for most corpora; increase to 5x
+# if >5% of queries return insufficient results (CTO Condition C4).
+SEMANTIC_SEARCH_OVER_FETCH_MULTIPLIER = 3
+
 
 def rrf_merge(ranked_lists: list[list[dict]], k: int = 60) -> list[dict]:
     """
@@ -127,7 +133,8 @@ def hybrid_search(
     query: str,
     query_embedding: Optional[np.ndarray],
     db,
-    limit: int = 10
+    limit: int = 10,
+    source_type: Optional[list[str]] = None,
 ) -> list[dict]:
     """
     Hybrid search combining keyword (FTS5) and semantic (vector) results.
@@ -143,16 +150,23 @@ def hybrid_search(
         query_embedding: Optional query embedding (1D array)
         db: ProjectDB instance with methods: keyword_search(), get_all_embeddings(), get_chunk()
         limit: Max results to return
+        source_type: Optional list of source types to filter by (e.g., ['code', 'markdown'])
 
     Returns:
         list of SearchResult dicts with:
-            id, file_path, start_line, end_line, content, score, rank_sources
+            id, file_path, start_line, end_line, content, score, rank_sources,
+            source_type, trusted, section_heading, key_path, page_number, parent_section
     """
     ranked_lists = []
 
     # 1. Keyword search
     try:
         keyword_results = db.keyword_search(query, limit=limit)
+        if source_type and keyword_results:
+            keyword_results = [
+                r for r in keyword_results
+                if r.get("source_type", "code") in source_type
+            ]
         if keyword_results:
             ranked_lists.append(keyword_results)
     except Exception:
@@ -164,12 +178,21 @@ def hybrid_search(
             all_embeddings = db.get_all_embeddings()
             if all_embeddings and len(all_embeddings) > 0:
                 chunk_ids, embedding_vectors = all_embeddings
+                fetch_limit = limit * SEMANTIC_SEARCH_OVER_FETCH_MULTIPLIER if source_type else limit
                 semantic_results = cosine_search(
                     query_embedding,
                     chunk_ids,
                     embedding_vectors,
-                    limit=limit
+                    limit=fetch_limit
                 )
+                if source_type and semantic_results:
+                    # Post-filter by source_type using chunk_meta lookup
+                    filtered = []
+                    for result in semantic_results:
+                        chunk = db.get_chunk(result["id"])
+                        if chunk and chunk.get("source_type", "code") in source_type:
+                            filtered.append(result)
+                    semantic_results = filtered[:limit]
                 if semantic_results:
                     ranked_lists.append(semantic_results)
         except Exception:
@@ -187,6 +210,7 @@ def hybrid_search(
         chunk_id = item["id"]
         try:
             meta = db.get_chunk(chunk_id)
+            chunk_source_type = meta.get("source_type", "code")
             enriched = {
                 "id": chunk_id,
                 "file_path": meta.get("file_path", ""),
@@ -194,7 +218,13 @@ def hybrid_search(
                 "end_line": meta.get("end_line", 0),
                 "content": meta.get("content", ""),
                 "score": item.get("rrf_score", item.get("score", 0.0)),
-                "rank_sources": ["keyword", "semantic"]  # simplified
+                "rank_sources": ["keyword", "semantic"],  # simplified
+                "source_type": chunk_source_type,
+                "trusted": chunk_source_type == "code",
+                "section_heading": meta.get("section_heading", ""),
+                "key_path": meta.get("key_path", ""),
+                "page_number": meta.get("page_number"),
+                "parent_section": meta.get("parent_section", ""),
             }
         except Exception:
             enriched = {
@@ -204,12 +234,45 @@ def hybrid_search(
                 "end_line": 0,
                 "content": "",
                 "score": item.get("rrf_score", item.get("score", 0.0)),
-                "rank_sources": []
+                "rank_sources": [],
+                "source_type": "code",
+                "trusted": True,
+                "section_heading": "",
+                "key_path": "",
+                "page_number": None,
+                "parent_section": "",
             }
 
         results.append(enriched)
 
     return results
+
+
+def doc_search(
+    query: str,
+    query_embedding: Optional[np.ndarray],
+    db,
+    limit: int = 10,
+    formats: Optional[list[str]] = None,
+) -> list[dict]:
+    """Search non-code documents only.
+
+    Convenience wrapper for hybrid_search with source_type filter
+    set to document types only.
+
+    Args:
+        query: Search query string
+        query_embedding: Optional query embedding
+        db: ProjectDB instance
+        limit: Max results
+        formats: Document formats to search. Defaults to all document types.
+
+    Returns:
+        List of document search results
+    """
+    if formats is None:
+        formats = ['markdown', 'pdf', 'yaml', 'json']
+    return hybrid_search(query, query_embedding, db, limit=limit, source_type=formats)
 
 
 if __name__ == "__main__":
