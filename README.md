@@ -1,42 +1,53 @@
 # Tessera
 
-Instant codebase search and navigation for AI agents. Tessera indexes your code, documents, and config files into a structured, searchable database — then exposes it all through MCP tools that any AI agent can call.
+Persistent codebase intelligence for autonomous AI agents. Tessera gives agents bottom-up file access and top-down code understanding — across every project they're authorized to touch, with security from the ground up.
 
-## Why Tessera?
+## The Problem
 
-AI agents working on codebases spend most of their time searching — finding where a function is defined, understanding what calls what, figuring out which files are related. Generic search tools return noisy results. Tessera gives agents the same level of code understanding that an IDE provides: symbol lookups, reference tracing, impact analysis, and semantic search — across multiple projects, with scope-gated access control.
+Persistent AI agents — orchestrators like AutoJack, task agents like OpenClaw — need to understand codebases the way a senior developer does. Not just "find this string in a file," but "what calls this function, across which projects, and what breaks if I change it?"
 
-**What it replaces:** Repeated `grep` / `find` / `cat` cycles, manual file discovery, losing track of project structure across conversations.
+Today's agents burn context window and wall-clock time on repeated `grep` / `find` / `cat` cycles. They lose track of project structure between conversations. They can't safely delegate to sub-agents without leaking access to projects those agents shouldn't see. And they can't search documentation, config files, or assets alongside code.
 
-**What it enables:** An agent can ask "what calls this function?" and get an answer in milliseconds, across every project it has access to.
+## What Tessera Does
 
-## Capabilities
+Tessera indexes everything — code, documents, config files, text assets — into a structured, chunked, searchable database. It exposes that through 18 MCP tools that any agent can call. Responses come back in milliseconds, not seconds.
+
+**For orchestrator agents:** Full system visibility. Register projects, group them into collections, search across all of them. Understand cross-project dependencies. Delegate scoped access to sub-agents via session tokens.
+
+**For task agents:** Deep code intelligence within their authorized scope. Symbol lookup, reference tracing, impact analysis, document search — everything an IDE provides, but through tool calls.
+
+**For security:** Deny-by-default scope gating. Sub-agents only see what the orchestrator explicitly grants. Credentials and secrets are blocked from indexing by un-negatable security patterns. No ambient access, no scope creep.
 
 ### Code Intelligence
-- **Symbol search** — Find functions, classes, methods, hooks by name or pattern across your codebase
-- **Reference tracing** — "Who calls this?" / "What does this depend on?" with full call graph edges
-- **Impact analysis** — Trace downstream effects of changing a symbol, N levels deep
-- **File context** — Get all symbols, references, and structure for any file in one call
-- **Cross-project references** — Track symbol usage across federated project collections
+- **Symbol search** — Functions, classes, methods, hooks by name or pattern
+- **Reference tracing** — Call graphs, imports, inheritance chains
+- **Impact analysis** — "What breaks if I change this?" — traced N levels deep
+- **File context** — Complete structural overview of any file in one call
+- **Cross-project references** — Track where project A's exports are used in project B
 
 ### Document & Text Search
-- **Chunked indexing** — Documents are split into searchable chunks (by header, key path, or line groups), not stored as monolithic blobs
-- **PDF, Markdown, YAML, JSON** — Structural chunking that preserves document hierarchy
-- **HTML, XML** — Tag stripping with visible-text extraction
-- **Plaintext formats** — `.txt`, `.rst`, `.csv`, `.log`, `.ini`, `.cfg`, `.toml`, config files, dotfiles
-- **Unified search** — Query code and docs together, or filter by source type
-- **`doc_search`** — Dedicated tool for document-only queries
+- **Chunked indexing** — Files are split into focused, searchable chunks with metadata (by header, key path, or line group) — not stored as monolithic blobs
+- **Code + docs unified** — Query across everything, or filter by source type
+- **Structural formats** — PDF, Markdown (header hierarchy), YAML/JSON (key-path chunking)
+- **Markup** — HTML/XML with tag stripping
+- **Plaintext** — `.txt`, `.rst`, `.csv`, `.log`, `.ini`, `.cfg`, `.toml`, config files, dotfiles
 
 ### Multi-Project Federation
-- **Project collections** — Group related projects (e.g., a plugin ecosystem) and search across them
-- **Scope-gated access** — Session tokens control which projects/collections an agent can see
-- **Cross-project symbol lookup** — Find where a function defined in project A is used in project B
+- **Project collections** — Group related projects (e.g., a plugin ecosystem) and query across them
+- **Scope-gated access** — Session tokens control what each agent can see. Orchestrators create scoped tokens for sub-agents.
+- **Search-time federation** — Data stays at project level, merged at query time. No duplication.
+
+### Security
+- **Deny-by-default** — No access without a valid session token
+- **`.tesseraignore`** — Per-project ignore config with `.gitignore` syntax
+- **Two-tier ignore system** — Security-critical patterns (`.env*`, `*.pem`, `*credentials*`) are locked and cannot be overridden by project config
+- **`trusted` field** — Search results from code are marked trusted; document content is marked untrusted so agents can handle prompt injection risk
 
 ### Infrastructure
-- **Incremental indexing** — Only re-indexes changed files (git-aware)
+- **Fully embedded** — SQLite + FAISS. No Docker, no daemons, no external servers
+- **Incremental indexing** — Git-aware, only re-indexes changed files
 - **Schema migration** — Versioned database schema with automatic upgrades
-- **Embedding model migration** — Drift adapter (Orthogonal Procrustes) lets you switch embedding models without re-indexing everything
-- **`.tesseraignore`** — Per-project ignore config with `.gitignore` syntax. Security-critical patterns (`.env*`, `*.pem`) are locked and can't be overridden.
+- **Drift adapter** — Switch embedding models without re-indexing (Orthogonal Procrustes)
 
 ## Supported Languages
 
@@ -44,21 +55,30 @@ PHP, TypeScript, JavaScript, Python, Swift — via tree-sitter grammars.
 
 ## MCP Tools (18)
 
+### Search & Navigation
 | Tool | Purpose |
 |------|---------|
 | `search` | Hybrid keyword + semantic search across code and documents |
-| `doc_search_tool` | Search non-code documents only (filterable by format) |
+| `doc_search_tool` | Document-only search (filterable by format) |
 | `symbols` | Look up functions, classes, methods by name/pattern/kind |
 | `references` | Find all references to a symbol (calls, imports, extends) |
-| `file_context` | Get complete context for a file (symbols, refs, structure) |
+| `file_context` | Complete context for a file (symbols, refs, structure) |
 | `impact` | Trace downstream impact of changing a symbol |
-| `cross_refs` | Find cross-project references to a symbol |
+| `cross_refs` | Cross-project references to a symbol |
 | `collection_map` | Overview of projects in a collection with stats |
-| `register_project` | Register a new project for indexing |
+
+### Administration
+| Tool | Purpose |
+|------|---------|
+| `register_project` | Register a project for indexing |
 | `reindex` | Trigger full or incremental re-index |
 | `status` | Project indexing status and health |
 | `drift_train` | Train embedding drift adapter for model migration |
-| `create_scope_tool` | Create scoped session tokens for agents |
+
+### Access Control
+| Tool | Purpose |
+|------|---------|
+| `create_scope_tool` | Create scoped session tokens for sub-agents |
 | `revoke_scope_tool` | Revoke agent session tokens |
 | `create_collection_tool` | Create a project collection |
 | `add_to_collection_tool` | Add a project to a collection |
@@ -95,19 +115,16 @@ Add to your `.mcp.json`:
 }
 ```
 
-Or lock to a specific project:
+Lock to a specific project (single-project mode):
 ```bash
 uv run python -m tessera serve --project /path/to/your/project
 ```
 
-### Index a Project
+### Embedding Setup (Optional)
 
-Indexing happens automatically when you use `register_project` + `reindex` through the MCP tools. For CLI indexing (requires an embedding endpoint):
+Tessera works without embeddings (keyword search only via FTS5). For semantic search, point it at any local OpenAI-compatible embedding endpoint. The embedding dimension is auto-detected — no configuration needed.
 
-```bash
-uv run python -m tessera index /path/to/project \
-  --embedding-endpoint http://localhost:8000/v1
-```
+Recommended: [LM Studio](https://lmstudio.ai) with `nomic-embed-text` or any embedding model serving on `/v1/embeddings`.
 
 ### Run Tests
 ```bash
@@ -133,30 +150,20 @@ MCP Server (stdio)
     ├── Tree-sitter parser (PHP, TS, JS, Python, Swift)
     ├── AST-aware code chunking
     ├── Document extraction (PDF, MD, YAML, JSON, HTML, XML, plaintext)
-    └── Ignore filter (.tesseraignore)
+    └── Ignore filter (.tesseraignore, two-tier security)
 ```
 
-### Key Design Decisions
+### Design Principles
 
-- **No external servers** — fully embedded (SQLite + FAISS), no Docker, no daemons
-- **Tree-sitter for parsing** — deterministic, fast, 100+ language support
-- **Chunked indexing** — every file is split into focused, searchable chunks with metadata
-- **Search-time federation** — data stays at project level, merged at query time
-- **Scope gating** — agents only see what they're authorized to see
-
-## Embedding Setup (Optional)
-
-Tessera works without embeddings (keyword search only via FTS5). For semantic search, point it at any local OpenAI-compatible embedding endpoint:
-
-- [Ollama](https://ollama.com) — `ollama serve` + any embedding model
-- [LM Studio](https://lmstudio.ai) — local model server
-- [vLLM](https://docs.vllm.ai) — production-grade serving
-
-The embedding dimension is auto-detected from the model output. No configuration needed.
+- **No external dependencies at runtime** — SQLite + FAISS, fully embedded
+- **Tree-sitter for deterministic parsing** — no LLM-extracted graphs, no hallucinated edges
+- **Chunked everything** — every file is split into focused, searchable units with structural metadata
+- **Security-first scope model** — deny-by-default, session-scoped, un-negatable credential protection
+- **Federation over duplication** — data stays at project level, merged at query time
 
 ## Project Status
 
-**v0.2.0** — Production-ready for single-user, local-machine use.
+**v0.2.0** — Core system operational. Code intelligence, document indexing, federation, and access control all working.
 
 | Phase | Status | What |
 |-------|--------|------|
