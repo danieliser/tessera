@@ -21,6 +21,8 @@ dependencies = [
     "mcp",
     "httpx",
     "pathspec>=0.12",
+    "pyyaml",
+    "pymupdf4llm",
 ]
 
 [project.optional-dependencies]
