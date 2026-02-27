@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tessera"
-version = "0.1.0"
+version = "0.10.0"
 description = "Hierarchical, scope-gated codebase indexing and persistent memory system for AI agents"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -20,6 +20,10 @@ dependencies = [
     "numpy>=2.0",
     "mcp",
     "httpx",
+    "pathspec>=0.12",
+    "pyyaml",
+    "pymupdf4llm",
+    "scipy>=1.10",
 ]
 
 [project.optional-dependencies]

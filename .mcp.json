@@ -5,8 +5,7 @@
       "args": [
         "--directory", "/Users/danieliser/Toolkit/codemem",
         "run",
-        "python", "-m", "tessera", "serve",
-        "--project", "/Users/danieliser/Toolkit/codemem"
+        "python", "-m", "tessera", "serve"
       ]
     }
   }

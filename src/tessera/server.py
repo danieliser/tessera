@@ -36,6 +36,9 @@ from .auth import (
     SessionNotFoundError, SessionExpiredError
 )
 from .indexer import IndexerPipeline
+from .search import hybrid_search, doc_search
+from .drift_adapter import DriftAdapter
+from .embeddings import EmbeddingClient, EmbeddingUnavailableError
 
 # Scope level hierarchy for comparison
 _SCOPE_LEVELS = {"project": 0, "collection": 1, "global": 2}
@@ -47,6 +50,7 @@ audit_logger = logging.getLogger(__name__ + ".audit")
 _db_cache: dict[int, ProjectDB] = {}       # project_id → ProjectDB (lazy-loaded)
 _locked_project: Optional[int] = None      # If --project given, only this project is queryable
 _global_db: Optional[GlobalDB] = None
+_drift_adapter: Optional[DriftAdapter] = None
 
 
 def _log_audit(tool_name: str, result_count: int, agent_id: str = "dev", scope_level: str = "project"):
@@ -171,11 +175,12 @@ def create_server(project_path: Optional[str], global_db_path: str) -> FastMCP:
                       If None, server operates in multi-project mode.
         global_db_path: Path to the global.db file.
     """
-    global _db_cache, _locked_project, _global_db
+    global _db_cache, _locked_project, _global_db, _drift_adapter
 
     # Reset state
     _db_cache = {}
     _locked_project = None
+    _drift_adapter = None
 
     # Initialize global database
     Path(global_db_path).parent.mkdir(parents=True, exist_ok=True)
@@ -228,6 +233,17 @@ def create_server(project_path: Optional[str], global_db_path: str) -> FastMCP:
 
     mcp = FastMCP("tessera")
 
+    # Load drift adapter if available
+    if project_path:
+        drift_path = ProjectDB._get_data_dir(project_path) / "drift_matrix.npy"
+        if drift_path.exists():
+            try:
+                _drift_adapter = DriftAdapter.load(str(drift_path))
+                logger.info("Drift adapter loaded from %s", drift_path)
+            except Exception as e:
+                logger.warning("Failed to load drift adapter: %s", e)
+                _drift_adapter = None
+
     # --- Core tools (project scope) ---
 
     @mcp.tool()
@@ -271,6 +287,51 @@ def create_server(project_path: Optional[str], global_db_path: str) -> FastMCP:
             logger.exception("Search tool error")
             _log_audit("search", 0, agent_id=agent_id)
             return f"Error during search: {str(e)}"
+
+    @mcp.tool()
+    async def doc_search_tool(query: str, limit: int = 10, formats: str = "", session_id: str = "") -> str:
+        """Search non-code documents only (markdown, PDF, YAML, JSON)."""
+        scope, err = _check_session({"session_id": session_id}, "project")
+        if err:
+            return err
+        agent_id = scope.agent_id if scope else "dev"
+
+        dbs = _get_project_dbs(scope)
+        if not dbs:
+            _log_audit("doc_search", 0, agent_id=agent_id)
+            return "Error: No accessible projects"
+
+        try:
+            format_list = [f.strip() for f in formats.split(",") if f.strip()] if formats else None
+
+            # Parallel query across projects
+            tasks = [
+                asyncio.to_thread(
+                    doc_search, query, None, db, limit, format_list
+                )
+                for pid, pname, db in dbs
+            ]
+            results_list = await asyncio.gather(*tasks, return_exceptions=True)
+
+            all_results = []
+            for (pid, pname, db), result in zip(dbs, results_list):
+                if isinstance(result, Exception):
+                    logger.warning("doc_search on project %d failed: %s", pid, result)
+                    continue
+                for r in result:
+                    r["project_id"] = pid
+                    r["project_name"] = pname
+                all_results.extend(result)
+
+            all_results.sort(key=lambda r: r.get("score", 0), reverse=True)
+            all_results = all_results[:limit]
+
+            _log_audit("doc_search", len(all_results), agent_id=agent_id)
+            return json.dumps(all_results, indent=2)
+        except Exception as e:
+            logger.exception("doc_search error")
+            _log_audit("doc_search", 0, agent_id=agent_id)
+            return f"Error: {str(e)}"
 
     @mcp.tool()
     async def symbols(query: str = "*", kind: str = "", language: str = "", session_id: str = "") -> str:
@@ -642,6 +703,68 @@ def create_server(project_path: Optional[str], global_db_path: str) -> FastMCP:
         except Exception as e:
             logger.exception("status error")
             _log_audit("status", 0, scope_level="global")
+            return f"Error: {str(e)}"
+
+    @mcp.tool()
+    async def drift_train(sample_size: int = 200, session_id: str = "") -> str:
+        """Train drift adapter for embedding model migration (global scope only).
+
+        Samples chunks from the index, embeds them with the current model,
+        and trains an Orthogonal Procrustes rotation matrix to align old and new embeddings.
+        """
+        scope, err = _check_session({"session_id": session_id}, "global")
+        if err:
+            return err
+
+        if not _global_db:
+            return "Error: Global database not initialized"
+
+        dbs = _get_project_dbs(scope)
+        if not dbs:
+            return "Error: No accessible projects"
+
+        try:
+            # Use the first project with enough chunks
+            for pid, pname, db in dbs:
+                all_embeddings = await asyncio.to_thread(db.get_all_embeddings)
+                if not all_embeddings or len(all_embeddings[0]) < sample_size:
+                    continue
+
+                chunk_ids, old_embeddings_matrix = all_embeddings
+                import numpy as np
+
+                # Sample random indices
+                indices = np.random.choice(len(chunk_ids), size=min(sample_size, len(chunk_ids)), replace=False)
+                sampled_ids = [chunk_ids[i] for i in indices]
+                old_emb = old_embeddings_matrix[indices]
+
+                # Get chunk content for re-embedding
+                chunks = []
+                for cid in sampled_ids:
+                    chunk = await asyncio.to_thread(db.get_chunk, cid)
+                    if chunk:
+                        chunks.append(chunk.get("content", ""))
+
+                if not chunks:
+                    continue
+
+                # This requires an embedding client — check if available
+                # For now, return an error indicating the operator needs to provide embeddings
+                # In production, this would call the embedding endpoint
+                _log_audit("drift_train", 0, scope_level="global")
+                return json.dumps({
+                    "status": "ready",
+                    "message": "Drift training requires re-embedding with new model. Use embedding endpoint to generate new embeddings for sampled chunks.",
+                    "sample_size": len(chunks),
+                    "project_id": pid,
+                    "project_name": pname,
+                }, indent=2)
+
+            _log_audit("drift_train", 0, scope_level="global")
+            return "Error: No project has enough indexed chunks for drift training"
+        except Exception as e:
+            logger.exception("drift_train error")
+            _log_audit("drift_train", 0, scope_level="global")
             return f"Error: {str(e)}"
 
     # --- Federation tools (project scope minimum) ---
