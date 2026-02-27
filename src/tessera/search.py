@@ -159,14 +159,9 @@ def hybrid_search(
     """
     ranked_lists = []
 
-    # 1. Keyword search
+    # 1. Keyword search (SQL-level filtering when source_type is active)
     try:
-        keyword_results = db.keyword_search(query, limit=limit)
-        if source_type and keyword_results:
-            keyword_results = [
-                r for r in keyword_results
-                if r.get("source_type", "code") in source_type
-            ]
+        keyword_results = db.keyword_search(query, limit=limit, source_type=source_type)
         if keyword_results:
             ranked_lists.append(keyword_results)
     except Exception:
@@ -190,7 +185,7 @@ def hybrid_search(
                     filtered = []
                     for result in semantic_results:
                         chunk = db.get_chunk(result["id"])
-                        if chunk and chunk.get("source_type", "code") in source_type:
+                        if chunk and (chunk.get("source_type") or "code") in source_type:
                             filtered.append(result)
                     semantic_results = filtered[:limit]
                 if semantic_results:

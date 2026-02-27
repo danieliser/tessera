@@ -1494,29 +1494,47 @@ class ProjectDB:
 
         return ids
 
-    def keyword_search(self, query: str, limit: int = 10) -> List[Dict[str, Any]]:
+    def keyword_search(self, query: str, limit: int = 10,
+                       source_type: Optional[List[str]] = None) -> List[Dict[str, Any]]:
         """Full-text search on chunks using FTS5 BM25.
 
         Args:
             query: Search query
             limit: Max results
+            source_type: Optional list of source types to filter by (e.g., ['code', 'markdown'])
 
         Returns:
             List of matching chunks with score
         """
         if not query or not query.strip():
             return []
-        cursor = self.conn.execute(
-            """
-            SELECT cm.*, fts.rank as score
-            FROM chunks_fts fts
-            JOIN chunk_meta cm ON fts.chunk_id = cm.id
-            WHERE chunks_fts MATCH ?
-            ORDER BY fts.rank DESC
-            LIMIT ?
-            """,
-            (query, limit)
-        )
+
+        if source_type:
+            placeholders = ','.join('?' for _ in source_type)
+            cursor = self.conn.execute(
+                f"""
+                SELECT cm.*, fts.rank as score
+                FROM chunks_fts fts
+                JOIN chunk_meta cm ON fts.chunk_id = cm.id
+                WHERE chunks_fts MATCH ?
+                  AND COALESCE(cm.source_type, 'code') IN ({placeholders})
+                ORDER BY fts.rank DESC
+                LIMIT ?
+                """,
+                (query, *source_type, limit)
+            )
+        else:
+            cursor = self.conn.execute(
+                """
+                SELECT cm.*, fts.rank as score
+                FROM chunks_fts fts
+                JOIN chunk_meta cm ON fts.chunk_id = cm.id
+                WHERE chunks_fts MATCH ?
+                ORDER BY fts.rank DESC
+                LIMIT ?
+                """,
+                (query, limit)
+            )
         return [dict(row) for row in cursor.fetchall()]
 
     def get_chunk(self, chunk_id: int) -> Optional[Dict[str, Any]]:
