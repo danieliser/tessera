@@ -4,4 +4,4 @@ A scope-gated MCP server providing search, symbol navigation, reference tracing,
 and impact analysis across multi-language, multi-repo projects.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.10.0"
