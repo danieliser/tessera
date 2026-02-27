@@ -24,8 +24,15 @@ from .parser import detect_language, parse_and_extract, Symbol, Reference, Edge
 from .chunker import chunk_with_cast
 from .embeddings import EmbeddingClient, EmbeddingUnavailableError
 from .search import hybrid_search
+from .document import (
+    DocumentExtractionError, DocumentChunk,
+    extract_pdf, chunk_markdown, chunk_yaml, chunk_json
+)
+from .ignore import IgnoreFilter
 
 logger = logging.getLogger(__name__)
+
+DOCUMENT_EXTENSIONS = ['.pdf', '.md', '.yaml', '.yml', '.json']
 
 
 def _detect_package_name(file_dir: str, project_root: str, cache: dict) -> str:
@@ -127,6 +134,7 @@ class IndexerPipeline:
         self.languages = languages or ['php', 'typescript', 'python', 'javascript']
         self.project_id = None  # set during register
         self._package_cache: Dict[str, str] = {}  # dir → package name
+        self.ignore_filter = IgnoreFilter(self.project_path)
 
     def register(self, name: Optional[str] = None) -> int:
         """
@@ -167,6 +175,7 @@ class IndexerPipeline:
         allowed_exts = set()
         for lang in self.languages:
             allowed_exts.update(extensions.get(lang, []))
+        allowed_exts.update(ext for ext in DOCUMENT_EXTENSIONS)
 
         files = []
         for root, dirs, filenames in os.walk(self.project_path):
@@ -180,7 +189,10 @@ class IndexerPipeline:
                 if f.endswith('.d.ts'):
                     continue
                 if any(f.endswith(ext) for ext in allowed_exts):
-                    files.append(os.path.join(root, f))
+                    abs_path = os.path.join(root, f)
+                    rel_path = os.path.relpath(abs_path, self.project_path)
+                    if not self.ignore_filter.should_ignore(rel_path):
+                        files.append(abs_path)
 
         return sorted(files)
 
@@ -226,6 +238,7 @@ class IndexerPipeline:
         allowed_exts = set()
         for lang in self.languages:
             allowed_exts.update(extensions.get(lang, []))
+        allowed_exts.update(ext for ext in DOCUMENT_EXTENSIONS)
 
         changed = []
         for line in result.stdout.strip().split('\n'):
@@ -324,6 +337,140 @@ class IndexerPipeline:
         with open(file_path, 'rb') as f:
             return hashlib.sha256(f.read()).hexdigest()
 
+    def _is_document_file(self, file_path: str) -> bool:
+        """Check if file is a document (not code)."""
+        return any(file_path.endswith(ext) for ext in DOCUMENT_EXTENSIONS)
+
+    def _index_document_file(self, file_path: str) -> Dict[str, Any]:
+        """Index a single document file with error isolation."""
+        rel_path = os.path.relpath(file_path, self.project_path)
+
+        try:
+            # Determine file type and extract content
+            if file_path.endswith('.pdf'):
+                # Use pymupdf4llm directly for synchronous extraction
+                try:
+                    import pymupdf4llm
+                except ImportError:
+                    raise DocumentExtractionError(
+                        "pymupdf4llm not installed. Install with: pip install pymupdf4llm"
+                    )
+                markdown_text = pymupdf4llm.to_markdown(file_path)
+                chunks = chunk_markdown(markdown_text)
+            elif file_path.endswith('.md'):
+                content = Path(file_path).read_text(encoding='utf-8', errors='replace')
+                chunks = chunk_markdown(content)
+            elif file_path.endswith(('.yaml', '.yml')):
+                chunks = chunk_yaml(file_path)
+            elif file_path.endswith('.json'):
+                chunks = chunk_json(file_path)
+            else:
+                return {'status': 'skipped', 'reason': 'unsupported document type'}
+
+            # Compute file hash
+            file_hash = self._file_hash(file_path)
+
+            # Upsert file record (language='document')
+            file_id = self.project_db.upsert_file(
+                project_id=self.project_id,
+                path=rel_path,
+                language='document',
+                file_hash=file_hash
+            )
+
+            # Check if file changed
+            old_hash = self.project_db.get_old_hash() if hasattr(self.project_db, 'get_old_hash') else None
+            existing = self.project_db.get_file(file_id=file_id)
+
+            if (
+                existing
+                and existing.get('index_status') == 'indexed'
+                and old_hash is not None
+                and old_hash == file_hash
+            ):
+                return {'status': 'skipped', 'reason': 'unchanged'}
+
+            # Clear old data and mark as pending
+            with self.project_db.conn:
+                self.project_db.clear_file_data(file_id)
+                self.project_db.update_file_status(file_id, 'pending')
+
+            # Convert DocumentChunk objects to chunk dicts
+            chunk_dicts = []
+            for chunk in chunks:
+                chunk_dict = {
+                    'project_id': self.project_id,
+                    'file_id': file_id,
+                    'start_line': chunk.start_line,
+                    'end_line': chunk.end_line,
+                    'symbol_ids': [],
+                    'ast_type': 'document',
+                    'chunk_type': 'document',
+                    'content': chunk.content,
+                    'source_type': chunk.source_type,
+                    'section_heading': chunk.section_heading,
+                    'key_path': chunk.key_path,
+                    'page_number': chunk.page_number,
+                    'parent_section': chunk.parent_section,
+                    'file_path': rel_path,
+                }
+                chunk_dicts.append(chunk_dict)
+
+            # Embed chunks if client available
+            embeddings = None
+            if self.embedding_client:
+                try:
+                    texts = [c['content'] for c in chunk_dicts]
+                    embeddings = self.embedding_client.embed(texts) if texts else []
+                except EmbeddingUnavailableError:
+                    logger.warning("Embedding endpoint unavailable, storing document chunks without embeddings")
+                    embeddings = None
+
+            # Add embeddings to chunk dicts
+            for i, chunk_dict in enumerate(chunk_dicts):
+                if embeddings and i < len(embeddings):
+                    chunk_dict['embedding'] = embeddings[i]
+
+            # Store chunks
+            if chunk_dicts:
+                self.project_db.insert_chunks(chunk_dicts)
+
+            # Mark file indexed
+            self.project_db.update_file_status(file_id, 'indexed')
+
+            return {
+                'status': 'indexed',
+                'chunks': len(chunks),
+                'embedded': len(embeddings) if embeddings else 0
+            }
+
+        except DocumentExtractionError as e:
+            logger.error(f"Document extraction error in {file_path}: {e}")
+            try:
+                file_id = self.project_db.upsert_file(
+                    project_id=self.project_id,
+                    path=rel_path,
+                    language='document',
+                    file_hash=self._file_hash(file_path)
+                )
+                self.project_db.update_file_status(file_id, 'failed')
+            except Exception:
+                pass
+            return {'status': 'failed', 'reason': f'document extraction error: {e}'}
+        except Exception as e:
+            logger.error(f"Failed to index document {file_path}: {e}")
+            try:
+                file_id = self.project_db.upsert_file(
+                    project_id=self.project_id,
+                    path=rel_path,
+                    language='document',
+                    file_hash=self._file_hash(file_path)
+                )
+                self.project_db.update_file_status(file_id, 'failed')
+            except Exception:
+                pass
+            return {'status': 'failed', 'reason': str(e)}
+
     def index_file(self, file_path: str) -> Dict[str, Any]:
         """
         Index a single file: parse, chunk, embed, store.
@@ -334,6 +481,10 @@ class IndexerPipeline:
         Returns:
             Status dict with 'status' and optional 'reason' or metrics
         """
+        # Route document files to document indexer
+        if self._is_document_file(file_path):
+            return self._index_document_file(file_path)
+
         rel_path = os.path.relpath(file_path, self.project_path)
         language = detect_language(file_path)
 
