@@ -80,7 +80,7 @@ class IgnoreFilter:
 
         # Compile security patterns (always enforced)
         self._security_spec = pathspec.PathSpec.from_lines(
-            "gitwildmatch", self.SECURITY_PATTERNS
+            "gitignore", self.SECURITY_PATTERNS
         )
 
         # Load and compile user patterns
@@ -123,7 +123,7 @@ class IgnoreFilter:
             except Exception as e:
                 logger.warning(f"Failed to read {ignore_file}: {e}")
 
-        return pathspec.PathSpec.from_lines("gitwildmatch", patterns)
+        return pathspec.PathSpec.from_lines("gitignore", patterns)
 
     def should_ignore(self, rel_path: str) -> bool:
         """Check if a path should be ignored.
