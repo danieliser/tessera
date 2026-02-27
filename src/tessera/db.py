@@ -8,6 +8,7 @@ Architecture:
   - ProjectDB: Files, symbols, references, edges, chunks, embeddings, FTS5
 """
 
+import logging
 import sqlite3
 import os
 import json
@@ -16,6 +17,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional, List, Dict, Any, Tuple
 import numpy as np
+
+logger = logging.getLogger(__name__)
 
 
 class PathTraversalError(Exception):
@@ -519,6 +522,62 @@ class ProjectDB:
         self.conn.execute("PRAGMA foreign_keys=ON")
 
         self._create_schema()
+        self._run_migrations()
+
+    CURRENT_SCHEMA_VERSION = 2
+
+    def _run_migrations(self):
+        """Run schema migrations if needed."""
+        cursor = self.conn.cursor()
+
+        # Ensure _meta table exists
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS _meta (
+                key TEXT PRIMARY KEY,
+                value TEXT
+            )
+        """)
+        self.conn.commit()
+
+        try:
+            cursor.execute("SELECT value FROM _meta WHERE key = 'schema_version'")
+            row = cursor.fetchone()
+            current_version = int(row[0]) if row else 1
+        except Exception:
+            current_version = 1
+
+        if current_version < 2:
+            self._migrate_to_v2()
+
+        cursor.execute(
+            "INSERT OR REPLACE INTO _meta (key, value) VALUES (?, ?)",
+            ('schema_version', str(self.CURRENT_SCHEMA_VERSION))
+        )
+        self.conn.commit()
+
+    def _migrate_to_v2(self):
+        """Migrate from schema v1 to v2: add document columns to chunk_meta."""
+        cursor = self.conn.cursor()
+        migrations = [
+            "ALTER TABLE chunk_meta ADD COLUMN source_type TEXT DEFAULT 'code'",
+            "ALTER TABLE chunk_meta ADD COLUMN section_heading TEXT",
+            "ALTER TABLE chunk_meta ADD COLUMN key_path TEXT",
+            "ALTER TABLE chunk_meta ADD COLUMN page_number INTEGER",
+            "ALTER TABLE chunk_meta ADD COLUMN parent_section TEXT",
+        ]
+
+        for sql in migrations:
+            try:
+                cursor.execute(sql)
+                logger.info("Schema migration: %s", sql)
+            except sqlite3.OperationalError as e:
+                if "duplicate column" in str(e).lower() or "already exists" in str(e).lower():
+                    logger.debug("Column already exists, skipping: %s", sql)
+                else:
+                    logger.error("Migration failed: %s", e)
+                    raise
+
+        self.conn.commit()
 
     def _create_schema(self):
         """Create project database schema if it doesn't exist."""
@@ -1377,9 +1436,10 @@ class ProjectDB:
                     """
                     INSERT INTO chunk_meta (
                         project_id, file_id, start_line, end_line, symbol_ids,
-                        ast_type, chunk_type, content, length
+                        ast_type, chunk_type, content, length,
+                        source_type, section_heading, key_path, page_number, parent_section
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         chunk.get("project_id"),
@@ -1390,7 +1450,12 @@ class ProjectDB:
                         chunk.get("ast_type"),
                         chunk.get("chunk_type"),
                         chunk.get("content"),
-                        chunk.get("length")
+                        chunk.get("length"),
+                        chunk.get("source_type", "code"),
+                        chunk.get("section_heading"),
+                        chunk.get("key_path"),
+                        chunk.get("page_number"),
+                        chunk.get("parent_section"),
                     )
                 )
                 chunk_id = cursor.lastrowid

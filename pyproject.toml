@@ -23,6 +23,7 @@ dependencies = [
     "pathspec>=0.12",
     "pyyaml",
     "pymupdf4llm",
+    "scipy>=1.10",
 ]
 
 [project.optional-dependencies]
