@@ -266,7 +266,12 @@ def doc_search(
         List of document search results
     """
     if formats is None:
-        formats = ['markdown', 'pdf', 'yaml', 'json']
+        formats = [
+            'markdown', 'pdf', 'yaml', 'json',
+            'html', 'xml', 'text',
+            'txt', 'rst', 'csv', 'tsv', 'log',
+            'ini', 'cfg', 'toml', 'conf',
+        ]
     return hybrid_search(query, query_embedding, db, limit=limit, source_type=formats)
 
 

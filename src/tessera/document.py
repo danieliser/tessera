@@ -2,17 +2,22 @@
 
 Supports extraction and chunking of various document formats:
 - PDF: Extract text using pymupdf4llm
-- Markdown: Split on headers with hierarchy tracking
+- Markdown/RST: Split on headers with hierarchy tracking
 - YAML: Split by top-level keys with safe loading
 - JSON: Split by top-level keys with safe loading
+- HTML/XML: Strip tags, then chunk as plaintext
+- Plaintext (.txt, .csv, .log, .ini, .cfg, .toml, .env.example, etc.):
+  Line-based chunking with configurable size
 
 All exceptions are wrapped in DocumentExtractionError for uniform error handling.
 """
 
 import asyncio
 import json
+import re
 import yaml
 from dataclasses import dataclass
+from html.parser import HTMLParser
 
 
 class DocumentExtractionError(Exception):
@@ -545,3 +550,129 @@ def _chunk_json_nested(
             )
 
     return chunks
+
+
+class _HTMLTextExtractor(HTMLParser):
+    """Extract visible text from HTML, stripping all tags."""
+
+    def __init__(self):
+        super().__init__()
+        self._parts: list[str] = []
+        self._skip = False
+
+    def handle_starttag(self, tag, attrs):
+        if tag in ('script', 'style', 'svg', 'noscript'):
+            self._skip = True
+
+    def handle_endtag(self, tag):
+        if tag in ('script', 'style', 'svg', 'noscript'):
+            self._skip = False
+        if tag in ('p', 'div', 'br', 'li', 'tr', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'):
+            self._parts.append('\n')
+
+    def handle_data(self, data):
+        if not self._skip:
+            self._parts.append(data)
+
+    def get_text(self) -> str:
+        return ''.join(self._parts)
+
+
+def strip_html(html_content: str) -> str:
+    """Strip HTML tags and return visible text."""
+    extractor = _HTMLTextExtractor()
+    extractor.feed(html_content)
+    text = extractor.get_text()
+    text = re.sub(r'\n{3,}', '\n\n', text)
+    return text.strip()
+
+
+def chunk_plaintext(
+    text: str,
+    source_type: str = "text",
+    max_chunk_size: int = 1024,
+    overlap_lines: int = 3,
+) -> list[DocumentChunk]:
+    """Chunk plaintext content by line groups.
+
+    Splits text into chunks of approximately max_chunk_size characters,
+    breaking on line boundaries. Adjacent chunks share overlap_lines
+    for context continuity.
+    """
+    if not text or not text.strip():
+        return []
+
+    lines = text.split('\n')
+    chunks = []
+    start_idx = 0
+
+    while start_idx < len(lines):
+        chunk_lines = []
+        char_count = 0
+        end_idx = start_idx
+
+        while end_idx < len(lines):
+            line = lines[end_idx]
+            new_count = char_count + len(line) + 1
+            if new_count > max_chunk_size and chunk_lines:
+                break
+            chunk_lines.append(line)
+            char_count = new_count
+            end_idx += 1
+
+        if chunk_lines:
+            chunks.append(DocumentChunk(
+                content='\n'.join(chunk_lines),
+                source_type=source_type,
+                start_line=start_idx,
+                end_line=end_idx - 1,
+            ))
+
+        if end_idx >= len(lines):
+            break
+        start_idx = max(end_idx - overlap_lines, start_idx + 1)
+
+    return chunks
+
+
+def chunk_html(html_path: str, max_chunk_size: int = 1024) -> list[DocumentChunk]:
+    """Chunk HTML file by stripping tags and chunking the visible text."""
+    try:
+        with open(html_path, 'r', encoding='utf-8', errors='replace') as f:
+            content = f.read()
+    except FileNotFoundError as e:
+        raise DocumentExtractionError(f"HTML file not found: {html_path}") from e
+    except Exception as e:
+        raise DocumentExtractionError(f"Failed to read HTML file {html_path}: {e}") from e
+
+    text = strip_html(content)
+    return chunk_plaintext(text, source_type='html', max_chunk_size=max_chunk_size)
+
+
+def chunk_xml(xml_path: str, max_chunk_size: int = 1024) -> list[DocumentChunk]:
+    """Chunk XML file by stripping tags and chunking visible text content."""
+    try:
+        with open(xml_path, 'r', encoding='utf-8', errors='replace') as f:
+            content = f.read()
+    except FileNotFoundError as e:
+        raise DocumentExtractionError(f"XML file not found: {xml_path}") from e
+    except Exception as e:
+        raise DocumentExtractionError(f"Failed to read XML file {xml_path}: {e}") from e
+
+    text = strip_html(content)
+    return chunk_plaintext(text, source_type='xml', max_chunk_size=max_chunk_size)
+
+
+def chunk_text_file(
+    file_path: str, source_type: str = "text", max_chunk_size: int = 1024
+) -> list[DocumentChunk]:
+    """Chunk a plaintext file (txt, rst, csv, log, ini, cfg, toml, etc.)."""
+    try:
+        with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
+            content = f.read()
+    except FileNotFoundError as e:
+        raise DocumentExtractionError(f"Text file not found: {file_path}") from e
+    except Exception as e:
+        raise DocumentExtractionError(f"Failed to read text file {file_path}: {e}") from e
+
+    return chunk_plaintext(content, source_type=source_type, max_chunk_size=max_chunk_size)

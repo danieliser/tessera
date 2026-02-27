@@ -10,6 +10,11 @@ from tessera.document import (
     chunk_markdown,
     chunk_yaml,
     chunk_json,
+    chunk_plaintext,
+    chunk_html,
+    chunk_xml,
+    chunk_text_file,
+    strip_html,
 )
 
 
@@ -81,3 +86,109 @@ class TestChunkJson:
     def test_error_on_missing_file(self):
         with pytest.raises(DocumentExtractionError):
             chunk_json("/nonexistent/file.json")
+
+
+class TestStripHtml:
+    def test_strips_tags(self):
+        html = "<h1>Title</h1><p>Hello <b>world</b></p>"
+        text = strip_html(html)
+        assert "Title" in text
+        assert "Hello" in text
+        assert "world" in text
+        assert "<h1>" not in text
+
+    def test_skips_script_and_style(self):
+        html = "<p>Visible</p><script>var x=1;</script><style>.a{}</style><p>Also visible</p>"
+        text = strip_html(html)
+        assert "Visible" in text
+        assert "Also visible" in text
+        assert "var x" not in text
+        assert ".a{}" not in text
+
+    def test_empty_html(self):
+        assert strip_html("") == ""
+
+
+class TestChunkPlaintext:
+    def test_basic_chunking(self):
+        text = "\n".join(f"Line {i}" for i in range(100))
+        chunks = chunk_plaintext(text, max_chunk_size=200)
+        assert len(chunks) > 1
+        assert all(c.source_type == "text" for c in chunks)
+
+    def test_custom_source_type(self):
+        chunks = chunk_plaintext("hello\nworld", source_type="csv")
+        assert len(chunks) == 1
+        assert chunks[0].source_type == "csv"
+
+    def test_empty_input(self):
+        assert chunk_plaintext("") == []
+        assert chunk_plaintext("   \n  \n  ") == []
+
+    def test_line_numbers(self):
+        text = "\n".join(f"Line {i}" for i in range(50))
+        chunks = chunk_plaintext(text, max_chunk_size=100)
+        assert chunks[0].start_line == 0
+        # Later chunks should have advancing line numbers
+        if len(chunks) > 1:
+            assert chunks[-1].start_line > 0
+
+
+class TestChunkHtml:
+    def setup_method(self):
+        self.tmpdir = tempfile.mkdtemp()
+
+    def test_chunks_html_file(self):
+        path = os.path.join(self.tmpdir, "page.html")
+        with open(path, "w") as f:
+            f.write("<html><body><h1>Title</h1><p>Content here</p></body></html>")
+        chunks = chunk_html(path)
+        assert len(chunks) >= 1
+        assert all(c.source_type == "html" for c in chunks)
+        assert any("Title" in c.content for c in chunks)
+
+    def test_error_on_missing_file(self):
+        with pytest.raises(DocumentExtractionError):
+            chunk_html("/nonexistent/file.html")
+
+
+class TestChunkXml:
+    def setup_method(self):
+        self.tmpdir = tempfile.mkdtemp()
+
+    def test_chunks_xml_file(self):
+        path = os.path.join(self.tmpdir, "data.xml")
+        with open(path, "w") as f:
+            f.write("<root><item>Hello</item><item>World</item></root>")
+        chunks = chunk_xml(path)
+        assert len(chunks) >= 1
+        assert all(c.source_type == "xml" for c in chunks)
+
+    def test_error_on_missing_file(self):
+        with pytest.raises(DocumentExtractionError):
+            chunk_xml("/nonexistent/file.xml")
+
+
+class TestChunkTextFile:
+    def setup_method(self):
+        self.tmpdir = tempfile.mkdtemp()
+
+    def test_chunks_txt_file(self):
+        path = os.path.join(self.tmpdir, "readme.txt")
+        with open(path, "w") as f:
+            f.write("Line 1\nLine 2\nLine 3\n")
+        chunks = chunk_text_file(path, source_type="txt")
+        assert len(chunks) >= 1
+        assert all(c.source_type == "txt" for c in chunks)
+
+    def test_chunks_csv_file(self):
+        path = os.path.join(self.tmpdir, "data.csv")
+        with open(path, "w") as f:
+            f.write("name,age\nAlice,30\nBob,25\n")
+        chunks = chunk_text_file(path, source_type="csv")
+        assert len(chunks) >= 1
+        assert any("Alice" in c.content for c in chunks)
+
+    def test_error_on_missing_file(self):
+        with pytest.raises(DocumentExtractionError):
+            chunk_text_file("/nonexistent/file.txt")

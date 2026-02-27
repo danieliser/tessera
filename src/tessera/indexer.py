@@ -26,13 +26,30 @@ from .embeddings import EmbeddingClient, EmbeddingUnavailableError
 from .search import hybrid_search
 from .document import (
     DocumentExtractionError, DocumentChunk,
-    extract_pdf, chunk_markdown, chunk_yaml, chunk_json
+    extract_pdf, chunk_markdown, chunk_yaml, chunk_json,
+    chunk_html, chunk_xml, chunk_text_file,
 )
 from .ignore import IgnoreFilter
 
 logger = logging.getLogger(__name__)
 
+# Structured document formats (format-specific chunking)
 DOCUMENT_EXTENSIONS = ['.pdf', '.md', '.yaml', '.yml', '.json']
+
+# Text formats (plaintext line-based chunking)
+TEXT_EXTENSIONS = [
+    '.txt', '.rst', '.csv', '.tsv', '.log',
+    '.ini', '.cfg', '.toml', '.conf',
+    '.htaccess', '.env.example', '.env.sample',
+    '.editorconfig', '.prettierrc', '.eslintignore',
+    '.gitattributes', '.npmrc', '.nvmrc',
+    '.dockerignore', '.browserslistrc',
+]
+
+# Markup formats (tag stripping + plaintext chunking)
+MARKUP_EXTENSIONS = ['.html', '.htm', '.xml', '.xsl', '.xslt', '.svg']
+
+ALL_DOCUMENT_EXTENSIONS = DOCUMENT_EXTENSIONS + TEXT_EXTENSIONS + MARKUP_EXTENSIONS
 
 
 def _detect_package_name(file_dir: str, project_root: str, cache: dict) -> str:
@@ -175,7 +192,7 @@ class IndexerPipeline:
         allowed_exts = set()
         for lang in self.languages:
             allowed_exts.update(extensions.get(lang, []))
-        allowed_exts.update(ext for ext in DOCUMENT_EXTENSIONS)
+        allowed_exts.update(ext for ext in ALL_DOCUMENT_EXTENSIONS)
 
         files = []
         for root, dirs, filenames in os.walk(self.project_path):
@@ -238,7 +255,7 @@ class IndexerPipeline:
         allowed_exts = set()
         for lang in self.languages:
             allowed_exts.update(extensions.get(lang, []))
-        allowed_exts.update(ext for ext in DOCUMENT_EXTENSIONS)
+        allowed_exts.update(ext for ext in ALL_DOCUMENT_EXTENSIONS)
 
         changed = []
         for line in result.stdout.strip().split('\n'):
@@ -339,7 +356,7 @@ class IndexerPipeline:
 
     def _is_document_file(self, file_path: str) -> bool:
         """Check if file is a document (not code)."""
-        return any(file_path.endswith(ext) for ext in DOCUMENT_EXTENSIONS)
+        return any(file_path.endswith(ext) for ext in ALL_DOCUMENT_EXTENSIONS)
 
     def _index_document_file(self, file_path: str) -> Dict[str, Any]:
         """Index a single document file with error isolation."""
@@ -364,6 +381,15 @@ class IndexerPipeline:
                 chunks = chunk_yaml(file_path)
             elif file_path.endswith('.json'):
                 chunks = chunk_json(file_path)
+            elif file_path.endswith(('.html', '.htm')):
+                chunks = chunk_html(file_path)
+            elif file_path.endswith(('.xml', '.xsl', '.xslt', '.svg')):
+                chunks = chunk_xml(file_path)
+            elif any(file_path.endswith(ext) for ext in TEXT_EXTENSIONS):
+                # Determine source_type from extension
+                ext = os.path.splitext(file_path)[1].lstrip('.')
+                source_type = ext if ext else 'text'
+                chunks = chunk_text_file(file_path, source_type=source_type)
             else:
                 return {'status': 'skipped', 'reason': 'unsupported document type'}
 

@@ -178,7 +178,7 @@ class TestDiscoverFiles:
         # Create files
         (temp_project_dir / "module1.py").write_text("print('hello')")
         (temp_project_dir / "module2.py").write_text("print('world')")
-        (temp_project_dir / "script.txt").write_text("not code")
+        (temp_project_dir / "image.png").write_bytes(b"\x89PNG\r\n")
 
         pipeline = IndexerPipeline(str(temp_project_dir), languages=['python'])
         files = pipeline._discover_files()
@@ -186,7 +186,7 @@ class TestDiscoverFiles:
         assert len(files) == 2
         assert any('module1.py' in f for f in files)
         assert any('module2.py' in f for f in files)
-        assert not any('script.txt' in f for f in files)
+        assert not any('image.png' in f for f in files)
 
     def test_discover_files_multiple_languages(self, temp_project_dir):
         """Test discovering files in multiple languages."""
@@ -478,7 +478,7 @@ class TestIndexProject:
         # Create multiple files
         (temp_project_dir / "file1.py").write_text("def func(): pass")
         (temp_project_dir / "file2.py").write_text("def func(): pass")
-        (temp_project_dir / "file3.txt").write_text("not python")
+        (temp_project_dir / "image.png").write_bytes(b"\x89PNG\r\n")
 
         pipeline = IndexerPipeline(
             str(temp_project_dir),
