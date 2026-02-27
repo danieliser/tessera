@@ -976,7 +976,7 @@ wheels = [
 
 [[package]]
 name = "tessera"
-version = "0.10.0"
+version = "0.2.0"
 source = { editable = "." }
 dependencies = [
     { name = "faiss-cpu" },
