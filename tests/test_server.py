@@ -26,7 +26,7 @@ class TestServerCreation:
     """Test server initialization and tool registration."""
 
     async def test_server_creates_tools(self, server):
-        """Verify the server registers all 10 tools."""
+        """Verify the server registers all tools."""
         tools = await server.list_tools()
         tool_names = [t.name for t in tools]
 
@@ -43,7 +43,9 @@ class TestServerCreation:
         assert "add_to_collection_tool" in tool_names
         assert "list_collections_tool" in tool_names
         assert "delete_collection_tool" in tool_names
-        assert len(tool_names) == 16
+        assert "doc_search_tool" in tool_names
+        assert "drift_train" in tool_names
+        assert len(tool_names) == 18
 
 
 class TestSearchTool:
@@ -311,7 +313,7 @@ class TestMultiProjectServerCreation:
             global_db_path = os.path.join(tmpdir, "global.db")
             srv = create_server(project_path=None, global_db_path=global_db_path)
             tools = await srv.list_tools()
-            assert len([t.name for t in tools]) == 16
+            assert len([t.name for t in tools]) == 18
 
     async def test_no_projects_returns_error(self):
         """Multi-project mode with no registered projects returns error."""
