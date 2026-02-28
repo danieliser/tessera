@@ -324,8 +324,8 @@ def create_server(
             return f"Error during search: {str(e)}"
 
     @mcp.tool()
-    async def doc_search_tool(query: str, limit: int = 10, formats: str = "", session_id: str = "") -> str:
-        """Search non-code documents only (markdown, PDF, YAML, JSON)."""
+    async def doc_search_tool(query: str, limit: int = 10, formats: str = "", source_type: str = "", session_id: str = "") -> str:
+        """Search non-code documents only (markdown, PDF, YAML, JSON, assets)."""
         scope, err = _check_session({"session_id": session_id}, "project")
         if err:
             return err
@@ -338,6 +338,7 @@ def create_server(
 
         try:
             format_list = [f.strip() for f in formats.split(",") if f.strip()] if formats else None
+            source_type_filter = [source_type] if source_type else None
 
             # Embed query if embedding client is available
             query_embedding = None
@@ -350,9 +351,11 @@ def create_server(
                     logger.debug("Embedding endpoint unavailable, falling back to keyword-only doc_search")
 
             # Parallel query across projects
+            # source_type overrides format_list when provided (e.g., source_type="asset")
+            effective_formats = source_type_filter if source_type_filter else format_list
             tasks = [
                 asyncio.to_thread(
-                    doc_search, query, query_embedding, db, limit, format_list
+                    doc_search, query, query_embedding, db, limit, effective_formats
                 )
                 for pid, pname, db in dbs
             ]
