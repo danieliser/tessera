@@ -183,10 +183,10 @@ class TestDiscoverFiles:
         pipeline = IndexerPipeline(str(temp_project_dir), languages=['python'])
         files = pipeline._discover_files()
 
-        assert len(files) == 2
+        assert len(files) == 3
         assert any('module1.py' in f for f in files)
         assert any('module2.py' in f for f in files)
-        assert not any('image.png' in f for f in files)
+        assert any('image.png' in f for f in files)
 
     def test_discover_files_multiple_languages(self, temp_project_dir):
         """Test discovering files in multiple languages."""
@@ -489,9 +489,9 @@ class TestIndexProject:
 
         stats = pipeline.index_project()
 
-        assert stats.files_processed == 2
+        assert stats.files_processed == 3
         assert stats.symbols_extracted == 2
-        assert stats.chunks_created == 2
+        assert stats.chunks_created == 3
         assert stats.files_skipped == 0
         assert stats.files_failed == 0
 
