@@ -11,6 +11,7 @@ import time
 from typing import Dict, List, Optional
 import numpy as np
 import scipy.sparse
+import scipy.sparse.csgraph
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +75,27 @@ class ProjectGraph:
         self.id_to_idx = id_to_idx or {sid: idx for idx, sid in enumerate(sorted(symbol_id_to_name.keys()))}
         self.idx_to_id = {idx: sid for sid, idx in self.id_to_idx.items()}
 
+        # Compute largest connected component size for sparse threshold
+        self.largest_cc_size = self._compute_largest_cc_size()
+
+    def _compute_largest_cc_size(self) -> int:
+        """Compute the size of the largest connected component.
+
+        Uses scipy's connected_components on the undirected version of the graph.
+        Cost is O(n + m), negligible for code-scale graphs.
+        """
+        if self.n_symbols == 0:
+            return 0
+        # Treat as undirected for connectivity analysis
+        n_components, labels = scipy.sparse.csgraph.connected_components(
+            self.graph, directed=False, return_labels=True
+        )
+        if n_components == 0:
+            return 0
+        # Count nodes in each component, return the largest
+        component_sizes = np.bincount(labels)
+        return int(component_sizes.max())
+
     @property
     def estimated_memory_bytes(self) -> int:
         """Estimate memory usage of this graph.
@@ -86,13 +108,24 @@ class ProjectGraph:
     def is_sparse_fallback(self) -> bool:
         """Check if graph is too sparse for meaningful PPR.
 
+        Uses adaptive threshold based on research (percolation theory,
+        PageRank convergence analysis, real-world code graphs):
+          - Density (edges/symbols) >= 0.75
+          - Largest connected component >= 80% of symbols
+          - Minimum 100 symbols for meaningful signal
+
         Returns:
-            True if edge_count < n_symbols (sparse fallback recommended),
-            or if graph has 0 symbols.
+            True if graph doesn't meet PPR engagement thresholds.
         """
-        if self.n_symbols == 0:
+        if self.n_symbols < 100:
             return True
-        return self.edge_count < self.n_symbols
+        density = self.edge_count / self.n_symbols
+        if density < 0.75:
+            return True
+        cc_ratio = self.largest_cc_size / self.n_symbols
+        if cc_ratio < 0.80:
+            return True
+        return False
 
     def personalized_pagerank(
         self,

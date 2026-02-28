@@ -178,48 +178,95 @@ class TestProjectGraph:
         assert elapsed_ms < 10, f"PPR took {elapsed_ms:.2f}ms, must be <10ms"
 
     def test_is_sparse_fallback(self):
-        """is_sparse_fallback returns True when edge_count < symbol_count."""
-        # Sparse case: 5 symbols, 2 edges
-        n = 5
-        adjacency_sparse = scipy.sparse.csr_matrix(
-            ([1.0, 1.0], ([0, 1], [1, 2])),
-            shape=(n, n),
-            dtype=np.float32,
+        """is_sparse_fallback uses adaptive threshold: density >= 0.75, LCC >= 80%, symbols >= 100."""
+        # Case 1: Too few symbols (50 < 100) — always sparse
+        n = 50
+        rows = list(range(n - 1))
+        cols = list(range(1, n))
+        adjacency = scipy.sparse.csr_matrix(
+            (np.ones(len(rows)), (rows, cols)), shape=(n, n), dtype=np.float32,
         )
-
-        symbol_ids = list(range(500, 505))
+        symbol_ids = list(range(1, n + 1))
         id_to_idx = {sid: i for i, sid in enumerate(symbol_ids)}
-        symbol_id_to_name = {sid: f"func_{i}" for i, sid in enumerate(symbol_ids)}
+        names = {sid: f"func_{i}" for i, sid in enumerate(symbol_ids)}
 
         graph = ProjectGraph(
-            project_id=1,
-            adjacency_matrix=adjacency_sparse,
-            symbol_id_to_name=symbol_id_to_name,
-            loaded_at=time.perf_counter(),
+            project_id=1, adjacency_matrix=adjacency,
+            symbol_id_to_name=names, loaded_at=time.perf_counter(),
             id_to_idx=id_to_idx,
         )
-
         assert graph.is_sparse_fallback() is True
 
-        # Dense case: 5 symbols, 10 edges
-        adjacency_dense = scipy.sparse.csr_matrix(
-            (np.ones(10), (
-                [0, 0, 1, 1, 2, 2, 3, 3, 4, 4],
-                [1, 2, 2, 3, 3, 4, 4, 0, 0, 1]
-            )),
-            shape=(n, n),
-            dtype=np.float32,
+        # Case 2: 200 symbols, density 0.5 (100 edges) — too sparse
+        n = 200
+        np.random.seed(42)
+        n_edges = 100
+        r = np.random.randint(0, n, n_edges)
+        c = np.random.randint(0, n, n_edges)
+        adjacency_low = scipy.sparse.csr_matrix(
+            (np.ones(n_edges), (r, c)), shape=(n, n), dtype=np.float32,
         )
+        symbol_ids = list(range(1, n + 1))
+        id_to_idx = {sid: i for i, sid in enumerate(symbol_ids)}
+        names = {sid: f"func_{i}" for i, sid in enumerate(symbol_ids)}
 
-        graph_dense = ProjectGraph(
-            project_id=1,
-            adjacency_matrix=adjacency_dense,
-            symbol_id_to_name=symbol_id_to_name,
-            loaded_at=time.perf_counter(),
+        graph_low = ProjectGraph(
+            project_id=1, adjacency_matrix=adjacency_low,
+            symbol_id_to_name=names, loaded_at=time.perf_counter(),
             id_to_idx=id_to_idx,
         )
+        assert graph_low.is_sparse_fallback() is True
 
+        # Case 3: 200 symbols, density ~1.0, well-connected — should NOT be sparse
+        n = 200
+        # Chain all nodes to ensure single connected component
+        chain_rows = list(range(n - 1))
+        chain_cols = list(range(1, n))
+        # Add extra edges to reach density ~1.0
+        extra = 200 - (n - 1)
+        np.random.seed(99)
+        extra_r = np.random.randint(0, n, extra)
+        extra_c = np.random.randint(0, n, extra)
+        all_rows = chain_rows + list(extra_r)
+        all_cols = chain_cols + list(extra_c)
+        adjacency_dense = scipy.sparse.csr_matrix(
+            (np.ones(len(all_rows)), (all_rows, all_cols)),
+            shape=(n, n), dtype=np.float32,
+        )
+        graph_dense = ProjectGraph(
+            project_id=1, adjacency_matrix=adjacency_dense,
+            symbol_id_to_name=names, loaded_at=time.perf_counter(),
+            id_to_idx=id_to_idx,
+        )
         assert graph_dense.is_sparse_fallback() is False
+
+    def test_sparse_fallback_fragmented_graph(self):
+        """Graph with high density but fragmented into small components is sparse."""
+        # 200 symbols in 20 disconnected clusters of 10
+        n = 200
+        rows, cols = [], []
+        for cluster in range(20):
+            base = cluster * 10
+            for i in range(10):
+                for j in range(10):
+                    if i != j:
+                        rows.append(base + i)
+                        cols.append(base + j)
+        adjacency = scipy.sparse.csr_matrix(
+            (np.ones(len(rows)), (rows, cols)), shape=(n, n), dtype=np.float32,
+        )
+        symbol_ids = list(range(1, n + 1))
+        id_to_idx = {sid: i for i, sid in enumerate(symbol_ids)}
+        names = {sid: f"func_{i}" for i, sid in enumerate(symbol_ids)}
+
+        graph = ProjectGraph(
+            project_id=1, adjacency_matrix=adjacency,
+            symbol_id_to_name=names, loaded_at=time.perf_counter(),
+            id_to_idx=id_to_idx,
+        )
+        # High density (90 edges per 10 nodes * 20 clusters) but LCC is only 10/200 = 5%
+        assert graph.largest_cc_size == 10
+        assert graph.is_sparse_fallback() is True
 
     def test_empty_graph_is_sparse(self):
         """Empty graph with 0 symbols is sparse."""
