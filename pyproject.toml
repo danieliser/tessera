@@ -47,6 +47,9 @@ tessera = "tessera.__main__:main"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+markers = [
+    "integration: tests that index real projects (may be slow or require specific setup)",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/tessera"]

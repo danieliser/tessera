@@ -40,8 +40,13 @@ SPIKE_RESULTS = {
 
 
 class TestPPRGraphMetrics:
-    """Test graph metrics on real projects."""
+    """Test graph metrics on real projects.
 
+    These tests index the actual Tessera codebase and are integration-level.
+    Run with: pytest -m integration tests/test_spike_ppr.py
+    """
+
+    @pytest.mark.integration
     def test_tessera_project_indexing_and_graph_extraction(self):
         """
         Index the Tessera codebase itself.
@@ -114,6 +119,7 @@ class TestPPRGraphMetrics:
             assert symbol_count > 0, "Should extract at least some symbols"
             assert edge_count >= 0, "Edge count should be non-negative"
 
+    @pytest.mark.integration
     def test_build_and_query_sparse_adjacency_matrix(self):
         """
         Build a scipy CSR sparse matrix from indexed edges.
