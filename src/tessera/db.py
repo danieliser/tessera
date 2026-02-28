@@ -1481,6 +1481,8 @@ class ProjectDB:
                     embedding = chunk["embedding"]
                     if isinstance(embedding, np.ndarray):
                         embedding_bytes = embedding.astype(np.float32).tobytes()
+                    elif isinstance(embedding, (list, tuple)):
+                        embedding_bytes = np.array(embedding, dtype=np.float32).tobytes()
                     else:
                         embedding_bytes = embedding
 
