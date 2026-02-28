@@ -15,9 +15,15 @@ CTO Condition C5: Phase 1 latency gate criteria:
   - Total <100ms p95 (validated via pytest benchmarks)
 """
 
+import json
+import logging
 from typing import Optional
 import numpy as np
 import faiss
+
+from .graph import ProjectGraph, ppr_to_ranked_list
+
+logger = logging.getLogger(__name__)
 
 # Over-fetch multiplier for source_type post-filtering.
 # When source_type filter is active, fetch this many times the limit from FAISS,
@@ -133,6 +139,7 @@ def hybrid_search(
     query: str,
     query_embedding: Optional[np.ndarray],
     db,
+    graph: Optional["ProjectGraph"] = None,
     limit: int = 10,
     source_type: Optional[list[str]] = None,
 ) -> list[dict]:
@@ -142,22 +149,25 @@ def hybrid_search(
     Algorithm:
     1. Run FTS5 keyword search via db.keyword_search()
     2. If query_embedding provided: run cosine_search on db.get_all_embeddings()
-    3. Merge with RRF
-    4. Enrich results with file_path, start_line, end_line from chunk_meta
+    3. NEW: Personalized PageRank search (if graph provided and not sparse)
+    4. Merge with RRF
+    5. Enrich results with file_path, start_line, end_line from chunk_meta
 
     Args:
         query: Search query string
         query_embedding: Optional query embedding (1D array)
         db: ProjectDB instance with methods: keyword_search(), get_all_embeddings(), get_chunk()
+        graph: Optional ProjectGraph for PPR-based ranking
         limit: Max results to return
         source_type: Optional list of source types to filter by (e.g., ['code', 'markdown'])
 
     Returns:
         list of SearchResult dicts with:
             id, file_path, start_line, end_line, content, score, rank_sources,
-            source_type, trusted, section_heading, key_path, page_number, parent_section
+            source_type, trusted, section_heading, key_path, page_number, parent_section, graph_version
     """
     ranked_lists = []
+    ppr_results = []
 
     # 1. Keyword search (SQL-level filtering when source_type is active)
     try:
@@ -168,6 +178,7 @@ def hybrid_search(
         keyword_results = []
 
     # 2. Semantic search
+    semantic_results = []
     if query_embedding is not None:
         try:
             all_embeddings = db.get_all_embeddings()
@@ -193,14 +204,68 @@ def hybrid_search(
         except Exception:
             semantic_results = []
 
-    # 3. Merge with RRF
+    # 3. NEW: PPR search (graph-aware ranking)
+    if graph and not graph.is_sparse_fallback():
+        try:
+            # Identify seed symbols from keyword/semantic results
+            seed_symbol_ids = set()
+
+            # Extract symbol IDs from keyword results
+            for result in keyword_results:
+                chunk = db.get_chunk(result["id"])
+                if chunk and chunk.get("symbol_ids"):
+                    try:
+                        sids = json.loads(chunk["symbol_ids"])
+                        seed_symbol_ids.update(sids)
+                    except (json.JSONDecodeError, TypeError):
+                        pass
+
+            # Extract symbol IDs from semantic results
+            if semantic_results:
+                for result in semantic_results:
+                    chunk = db.get_chunk(result["id"])
+                    if chunk and chunk.get("symbol_ids"):
+                        try:
+                            sids = json.loads(chunk["symbol_ids"])
+                            seed_symbol_ids.update(sids)
+                        except (json.JSONDecodeError, TypeError):
+                            pass
+
+            if seed_symbol_ids:
+                # Compute PPR from seeds
+                ppr_scores = graph.personalized_pagerank(list(seed_symbol_ids))
+
+                # Map PPR scores back to chunk IDs via symbol→chunk mapping
+                symbol_to_chunks = db.get_symbol_to_chunks_mapping()
+                ppr_chunk_scores = {}
+                for symbol_id, ppr_score in ppr_scores.items():
+                    for chunk_id in symbol_to_chunks.get(symbol_id, []):
+                        # Use max() to prevent dilution from low-scoring symbols
+                        ppr_chunk_scores[chunk_id] = max(
+                            ppr_chunk_scores.get(chunk_id, 0), ppr_score
+                        )
+
+                # Convert to ranked list format
+                ppr_results = ppr_to_ranked_list(ppr_chunk_scores)
+                ppr_results = ppr_results[:limit]
+
+                if ppr_results:
+                    ranked_lists.append(ppr_results)
+        except Exception as e:
+            logger.warning(f"PPR computation failed, falling back to 2-way RRF: {e}")
+
+    # 4. Merge with RRF
     if not ranked_lists:
         return []
 
     merged = rrf_merge(ranked_lists)
 
-    # 4. Enrich with chunk metadata
+    # 5. Enrich with chunk metadata
     results = []
+    rank_sources = ["keyword", "semantic"]
+    if ppr_results:
+        rank_sources.append("graph")
+
     for item in merged[:limit]:
         chunk_id = item["id"]
         try:
@@ -213,13 +278,14 @@ def hybrid_search(
                 "end_line": meta.get("end_line", 0),
                 "content": meta.get("content", ""),
                 "score": item.get("rrf_score", item.get("score", 0.0)),
-                "rank_sources": ["keyword", "semantic"],  # simplified
+                "rank_sources": rank_sources,
                 "source_type": chunk_source_type,
                 "trusted": chunk_source_type == "code",
                 "section_heading": meta.get("section_heading", ""),
                 "key_path": meta.get("key_path", ""),
                 "page_number": meta.get("page_number"),
                 "parent_section": meta.get("parent_section", ""),
+                "graph_version": graph.loaded_at if graph else None,
             }
         except Exception:
             enriched = {
@@ -229,13 +295,14 @@ def hybrid_search(
                 "end_line": 0,
                 "content": "",
                 "score": item.get("rrf_score", item.get("score", 0.0)),
-                "rank_sources": [],
+                "rank_sources": rank_sources,
                 "source_type": "code",
                 "trusted": True,
                 "section_heading": "",
                 "key_path": "",
                 "page_number": None,
                 "parent_section": "",
+                "graph_version": graph.loaded_at if graph else None,
             }
 
         results.append(enriched)
@@ -247,18 +314,21 @@ def doc_search(
     query: str,
     query_embedding: Optional[np.ndarray],
     db,
+    graph: Optional["ProjectGraph"] = None,
     limit: int = 10,
     formats: Optional[list[str]] = None,
 ) -> list[dict]:
     """Search non-code documents only.
 
     Convenience wrapper for hybrid_search with source_type filter
-    set to document types only.
+    set to document types only. Note: graph parameter is accepted for
+    API compatibility but not used (PPR doesn't apply to documents).
 
     Args:
         query: Search query string
         query_embedding: Optional query embedding
         db: ProjectDB instance
+        graph: Optional ProjectGraph (ignored for doc_search)
         limit: Max results
         formats: Document formats to search. Defaults to all document types.
 
@@ -272,7 +342,7 @@ def doc_search(
             'txt', 'rst', 'csv', 'tsv', 'log',
             'ini', 'cfg', 'toml', 'conf',
         ]
-    return hybrid_search(query, query_embedding, db, limit=limit, source_type=formats)
+    return hybrid_search(query, query_embedding, db, graph=None, limit=limit, source_type=formats)
 
 
 if __name__ == "__main__":
