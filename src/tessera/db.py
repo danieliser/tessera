@@ -1627,6 +1627,68 @@ class ProjectDB:
                 (file_id,)
             )
 
+    def get_all_edges(self, project_id: int) -> list[dict]:
+        """Fetch all edges for a project (used by graph loader).
+
+        Args:
+            project_id: Project ID
+
+        Returns:
+            List of dicts with 'from_id', 'to_id', 'weight' keys
+        """
+        cursor = self.conn.execute(
+            "SELECT from_id, to_id, weight FROM edges WHERE project_id = ? ORDER BY from_id, to_id",
+            (project_id,)
+        )
+        return [dict(row) for row in cursor.fetchall()]
+
+    def get_all_symbols(self, project_id: int) -> list[dict]:
+        """Fetch all symbols for a project (used by graph loader).
+
+        Args:
+            project_id: Project ID
+
+        Returns:
+            List of dicts with 'id', 'name', 'kind' keys (at minimum)
+        """
+        cursor = self.conn.execute(
+            "SELECT id, name, kind, file_id, line, col, scope FROM symbols WHERE project_id = ? ORDER BY id",
+            (project_id,)
+        )
+        return [dict(row) for row in cursor.fetchall()]
+
+    def get_symbol_to_chunks_mapping(self) -> dict[int, list[int]]:
+        """Map symbol IDs to chunk IDs they appear in.
+
+        Used by search to convert PPR (symbol-level) to chunk-level results.
+
+        Returns:
+            {symbol_id: [chunk_id, ...]}
+        """
+        cursor = self.conn.execute(
+            "SELECT id, symbol_ids FROM chunk_meta WHERE symbol_ids IS NOT NULL"
+        )
+
+        symbol_to_chunks: dict[int, list[int]] = {}
+        for row in cursor.fetchall():
+            chunk_id = row[0]
+            symbol_ids_json = row[1]
+
+            try:
+                symbol_ids = json.loads(symbol_ids_json) if symbol_ids_json else []
+            except json.JSONDecodeError:
+                continue
+
+            if symbol_ids is None:
+                continue
+
+            for sym_id in symbol_ids:
+                if sym_id not in symbol_to_chunks:
+                    symbol_to_chunks[sym_id] = []
+                symbol_to_chunks[sym_id].append(chunk_id)
+
+        return symbol_to_chunks
+
     def close(self):
         """Close the project database connection."""
         self.conn.close()
