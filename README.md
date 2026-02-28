@@ -10,7 +10,7 @@ Today's agents burn context window and wall-clock time on repeated `grep` / `fin
 
 ## What Tessera Does
 
-Tessera indexes everything — code, documents, config files, text assets — into a structured, chunked, searchable database. It exposes that through 18 MCP tools that any agent can call. Responses come back in milliseconds, not seconds.
+Tessera indexes everything — code, documents, config files, media assets, binary files — into a structured, chunked, searchable database. It exposes that through 18 MCP tools that any agent can call. Responses come back in milliseconds, not seconds.
 
 **For orchestrator agents:** Full system visibility. Register projects, group them into collections, search across all of them. Understand cross-project dependencies. Delegate scoped access to sub-agents via session tokens.
 
@@ -27,10 +27,17 @@ Tessera indexes everything — code, documents, config files, text assets — in
 
 ### Document & Text Search
 - **Chunked indexing** — Files are split into focused, searchable chunks with metadata (by header, key path, or line group) — not stored as monolithic blobs
-- **Code + docs unified** — Query across everything, or filter by source type
+- **Code + docs unified** — Query across everything, or filter by source type (`code`, `asset`, `document`)
 - **Structural formats** — PDF, Markdown (header hierarchy), YAML/JSON (key-path chunking)
 - **Markup** — HTML/XML with tag stripping
 - **Plaintext** — `.txt`, `.rst`, `.csv`, `.log`, `.ini`, `.cfg`, `.toml`, config files, dotfiles
+
+### Media & Binary File Indexing
+- **Asset discovery** — Images, videos, audio, fonts, and archives are automatically discovered and indexed
+- **Metadata extraction** — Filename, path, MIME type, file size, and image dimensions (PNG, JPEG, GIF, BMP) — zero external dependencies
+- **FTS5 searchable** — Search for assets by name, category, format, or path components
+- **Source type filtering** — Filter search results to `asset`, `code`, or `document` via the `source_type` parameter
+- **SVG dual-indexing** — SVGs indexed as both searchable XML documents and image assets
 
 ### Multi-Project Federation
 - **Project collections** — Group related projects (e.g., a plugin ecosystem) and query across them
@@ -58,8 +65,8 @@ PHP, TypeScript, JavaScript, Python, Swift — via tree-sitter grammars.
 ### Search & Navigation
 | Tool | Purpose |
 |------|---------|
-| `search` | Hybrid keyword + semantic search across code and documents |
-| `doc_search_tool` | Document-only search (filterable by format) |
+| `search` | Hybrid keyword + semantic search across code, documents, and assets (filterable by `source_type`) |
+| `doc_search_tool` | Document-only search (filterable by format or `source_type`) |
 | `symbols` | Look up functions, classes, methods by name/pattern/kind |
 | `references` | Find all references to a symbol (calls, imports, extends) |
 | `file_context` | Complete context for a file (symbols, refs, structure) |
@@ -150,6 +157,7 @@ MCP Server (stdio)
     ├── Tree-sitter parser (PHP, TS, JS, Python, Swift)
     ├── AST-aware code chunking
     ├── Document extraction (PDF, MD, YAML, JSON, HTML, XML, plaintext)
+    ├── Asset metadata extraction (images, video, audio, fonts, archives)
     └── Ignore filter (.tesseraignore, two-tier security)
 ```
 
@@ -163,7 +171,7 @@ MCP Server (stdio)
 
 ## Project Status
 
-**v0.2.0** — Core system operational. Code intelligence, document indexing, federation, and access control all working.
+**v0.3.0** — Core system operational. Code intelligence, document indexing, media asset cataloging, federation, and access control all working.
 
 | Phase | Status | What |
 |-------|--------|------|
@@ -171,7 +179,7 @@ MCP Server (stdio)
 | 2 | Done | Incremental indexing + persistence |
 | 3 | Done | Collection federation + cross-project refs |
 | 4 | Done | Document indexing + drift adapter + ignore config + text formats |
-| 4.5 | Planned | Media/binary file metadata catalog |
+| 4.5 | Done | Media/binary file metadata catalog |
 | 5 | Planned | PPR graph intelligence |
 | 6 | Planned | Always-on file watcher |
 
