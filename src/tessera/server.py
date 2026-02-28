@@ -59,7 +59,7 @@ _graph_stats: dict[int, dict] = {}  # project_id → metadata
 _graph_lock = threading.Lock()  # Explicit lock for graph swap (don't rely on GIL)
 
 
-def _log_audit(tool_name: str, result_count: int, agent_id: str = "dev", scope_level: str = "project"):
+def _log_audit(tool_name: str, result_count: int, agent_id: str = "dev", scope_level: str = "project", ppr_used: bool = False):
     """Log audit event to both Python logger and GlobalDB."""
     audit_logger.info(
         "tool_call",
@@ -68,6 +68,7 @@ def _log_audit(tool_name: str, result_count: int, agent_id: str = "dev", scope_l
             "scope_level": scope_level,
             "tool_called": tool_name,
             "result_count": result_count,
+            "ppr_used": ppr_used,
             "timestamp": datetime.utcnow().isoformat(),
         }
     )
@@ -342,10 +343,12 @@ def create_server(
                     logger.debug("Embedding endpoint unavailable, falling back to keyword-only search")
 
             # Parallel query pattern — hybrid when embeddings available, keyword-only otherwise
+            ppr_used = False
             if query_embedding is not None:
                 for pid, pname, db in dbs:
                     g = _project_graphs.get(pid)
                     if g:
+                        ppr_used = True
                         logger.debug("Search on project %d using graph version %.1f", pid, g.loaded_at)
                 tasks = [
                     asyncio.to_thread(hybrid_search, query, query_embedding, db, _project_graphs.get(pid), limit, source_type_filter)
@@ -372,7 +375,7 @@ def create_server(
             all_results.sort(key=lambda r: r.get("score", 0), reverse=True)
             all_results = all_results[:limit]
 
-            _log_audit("search", len(all_results), agent_id=agent_id)
+            _log_audit("search", len(all_results), agent_id=agent_id, ppr_used=ppr_used)
             return json.dumps(all_results, indent=2)
         except Exception as e:
             logger.exception("Search tool error")

@@ -33,6 +33,7 @@ dev = [
     "tree-sitter-javascript",
     "tree-sitter-typescript",
     "tree-sitter-php",
+    "networkx",
 ]
 core-languages = [
     "tree-sitter-javascript",
