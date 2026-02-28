@@ -30,6 +30,9 @@ from .document import (
     chunk_html, chunk_xml, chunk_text_file,
 )
 from .ignore import IgnoreFilter
+from .assets import (
+    ASSET_EXTENSIONS, is_asset_file, get_asset_metadata, build_asset_synthetic_content,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -193,6 +196,7 @@ class IndexerPipeline:
         for lang in self.languages:
             allowed_exts.update(extensions.get(lang, []))
         allowed_exts.update(ext for ext in ALL_DOCUMENT_EXTENSIONS)
+        allowed_exts.update(ASSET_EXTENSIONS)
 
         files = []
         for root, dirs, filenames in os.walk(self.project_path):
@@ -256,6 +260,7 @@ class IndexerPipeline:
         for lang in self.languages:
             allowed_exts.update(extensions.get(lang, []))
         allowed_exts.update(ext for ext in ALL_DOCUMENT_EXTENSIONS)
+        allowed_exts.update(ASSET_EXTENSIONS)
 
         changed = []
         for line in result.stdout.strip().split('\n'):
@@ -497,6 +502,101 @@ class IndexerPipeline:
                 pass
             return {'status': 'failed', 'reason': str(e)}
 
+    def _index_asset(self, file_path: str) -> Dict[str, Any]:
+        """Index a binary asset file: extract metadata, create one FTS5-indexed chunk.
+
+        Args:
+            file_path: Absolute path to asset file
+
+        Returns:
+            Status dict with 'status' and optional metrics
+        """
+        rel_path = os.path.relpath(file_path, self.project_path)
+
+        try:
+            metadata = get_asset_metadata(file_path)
+
+            path_components = rel_path.replace('\\', '/').split('/')
+            synthetic_content = build_asset_synthetic_content(
+                filename=os.path.basename(rel_path),
+                path_components=path_components,
+                mime_type=metadata['mime_type'],
+                dimensions=metadata['dimensions'],
+                file_size=metadata['file_size'],
+            )
+
+            file_hash = self._file_hash(file_path)
+
+            file_id = self.project_db.upsert_file(
+                project_id=self.project_id,
+                path=rel_path,
+                language='asset',
+                file_hash=file_hash,
+            )
+
+            old_hash = self.project_db.get_old_hash() if hasattr(self.project_db, 'get_old_hash') else None
+            existing = self.project_db.get_file(file_id=file_id)
+
+            if (
+                existing
+                and existing.get('index_status') == 'indexed'
+                and old_hash is not None
+                and old_hash == file_hash
+            ):
+                return {'status': 'skipped', 'reason': 'unchanged'}
+
+            dimensions = metadata['dimensions']
+            key_path = f"{dimensions['width']}x{dimensions['height']}" if dimensions else None
+
+            with self.project_db.conn:
+                self.project_db.clear_file_data(file_id)
+                self.project_db.update_file_status(file_id, 'pending')
+
+                chunk_dict = {
+                    'project_id': self.project_id,
+                    'file_id': file_id,
+                    'start_line': 0,
+                    'end_line': 0,
+                    'symbol_ids': [],
+                    'ast_type': metadata['category'],
+                    'chunk_type': 'asset',
+                    'content': synthetic_content,
+                    'source_type': 'asset',
+                    'length': metadata['file_size'],
+                    'key_path': key_path,
+                    'section_heading': None,
+                    'page_number': None,
+                    'parent_section': None,
+                    'file_path': rel_path,
+                }
+
+                self.project_db.insert_chunks([chunk_dict])
+
+            self.project_db.update_file_status(file_id, 'indexed')
+
+            return {
+                'status': 'indexed',
+                'chunks': 1,
+                'embedded': 0,
+                'mime_type': metadata['mime_type'],
+                'dimensions': dimensions,
+                'file_size': metadata['file_size'],
+            }
+
+        except Exception as e:
+            logger.error("Failed to index asset %s: %s", file_path, e)
+            try:
+                file_id = self.project_db.upsert_file(
+                    project_id=self.project_id,
+                    path=rel_path,
+                    language='asset',
+                    file_hash=self._file_hash(file_path),
+                )
+                self.project_db.update_file_status(file_id, 'failed')
+            except Exception:
+                pass
+            return {'status': 'failed', 'reason': str(e)}
+
     def index_file(self, file_path: str) -> Dict[str, Any]:
         """
         Index a single file: parse, chunk, embed, store.
@@ -507,6 +607,14 @@ class IndexerPipeline:
         Returns:
             Status dict with 'status' and optional 'reason' or metrics
         """
+        # Route asset files BEFORE document check (some assets like .svg are also documents)
+        is_svg = file_path.lower().endswith('.svg')
+        if is_asset_file(file_path):
+            asset_result = self._index_asset(file_path)
+            if not is_svg:
+                return asset_result
+            # SVG: dual-indexed — fall through to document indexer below after asset indexing
+
         # Route document files to document indexer
         if self._is_document_file(file_path):
             return self._index_document_file(file_path)
@@ -515,6 +623,7 @@ class IndexerPipeline:
         language = detect_language(file_path)
 
         if not language:
+            logger.debug("Skipping unrecognized binary file: %s", file_path)
             return {'status': 'skipped', 'reason': 'unsupported language'}
 
         # Read file

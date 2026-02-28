@@ -264,7 +264,7 @@ def create_server(
     # --- Core tools (project scope) ---
 
     @mcp.tool()
-    async def search(query: str, limit: int = 10, filter_language: str = "", session_id: str = "") -> str:
+    async def search(query: str, limit: int = 10, filter_language: str = "", source_type: str = "", session_id: str = "") -> str:
         """Hybrid semantic + keyword search across indexed codebase."""
         scope, err = _check_session({"session_id": session_id}, "project")
         if err:
@@ -275,6 +275,8 @@ def create_server(
         if not dbs:
             _log_audit("search", 0, agent_id=agent_id)
             return "Error: No accessible projects"
+
+        source_type_filter = [source_type] if source_type else None
 
         try:
             # Embed query if embedding client is available
@@ -290,12 +292,12 @@ def create_server(
             # Parallel query pattern — hybrid when embeddings available, keyword-only otherwise
             if query_embedding is not None:
                 tasks = [
-                    asyncio.to_thread(hybrid_search, query, query_embedding, db, limit)
+                    asyncio.to_thread(hybrid_search, query, query_embedding, db, limit, source_type_filter)
                     for pid, pname, db in dbs
                 ]
             else:
                 tasks = [
-                    asyncio.to_thread(db.keyword_search, query, limit)
+                    asyncio.to_thread(db.keyword_search, query, limit, source_type_filter)
                     for pid, pname, db in dbs
                 ]
             results_list = await asyncio.gather(*tasks, return_exceptions=True)
