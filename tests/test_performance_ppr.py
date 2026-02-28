@@ -93,6 +93,45 @@ class TestPPRPerformanceBenchmarks:
         assert elapsed_ms < 50, f"PPR took {elapsed_ms:.2f}ms, must be <50ms"
 
     @pytest.mark.performance
+    def test_20k_symbols_100k_edges_under_80ms(self):
+        """20K symbols, 100K edges — PPR must complete in <80ms (yellow gate)."""
+        n = 20000
+        n_edges = 100000
+
+        np.random.seed(42)
+        rows = np.random.randint(0, n, n_edges)
+        cols = np.random.randint(0, n, n_edges)
+        data = np.ones(n_edges, dtype=np.float32)
+
+        adjacency = scipy.sparse.csr_matrix(
+            (data, (rows, cols)),
+            shape=(n, n),
+            dtype=np.float32,
+        )
+
+        symbol_ids = list(range(20000, 20000 + n))
+        id_to_idx = {sid: i for i, sid in enumerate(symbol_ids)}
+        symbol_id_to_name = {sid: f"func_{i}" for i, sid in enumerate(symbol_ids)}
+
+        graph = ProjectGraph(
+            project_id=1,
+            adjacency_matrix=adjacency,
+            symbol_id_to_name=symbol_id_to_name,
+            loaded_at=time.perf_counter(),
+            id_to_idx=id_to_idx,
+        )
+
+        seed_ids = symbol_ids[:10]
+
+        start = time.perf_counter()
+        result = graph.personalized_pagerank(seed_ids)
+        elapsed_ms = (time.perf_counter() - start) * 1000
+
+        print(f"\n20K symbols, 100K edges: {elapsed_ms:.2f}ms")
+        assert len(result) > 0
+        assert elapsed_ms < 80, f"PPR took {elapsed_ms:.2f}ms, must be <80ms"
+
+    @pytest.mark.performance
     def test_50k_symbols_250k_edges_under_100ms(self):
         """50K symbols, 250K edges — PPR must complete in <100ms (red gate)."""
         n = 50000

@@ -343,6 +343,10 @@ def create_server(
 
             # Parallel query pattern — hybrid when embeddings available, keyword-only otherwise
             if query_embedding is not None:
+                for pid, pname, db in dbs:
+                    g = _project_graphs.get(pid)
+                    if g:
+                        logger.debug("Search on project %d using graph version %.1f", pid, g.loaded_at)
                 tasks = [
                     asyncio.to_thread(hybrid_search, query, query_embedding, db, _project_graphs.get(pid), limit, source_type_filter)
                     for pid, pname, db in dbs
@@ -407,7 +411,7 @@ def create_server(
             effective_formats = source_type_filter if source_type_filter else format_list
             tasks = [
                 asyncio.to_thread(
-                    doc_search, query, query_embedding, db, limit, effective_formats
+                    doc_search, query, query_embedding, db, graph=None, limit=limit, formats=effective_formats
                 )
                 for pid, pname, db in dbs
             ]
