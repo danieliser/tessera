@@ -8,11 +8,34 @@ Provides:
 
 import logging
 import time
-from typing import Dict, List
+from typing import Dict, List, Optional
 import numpy as np
 import scipy.sparse
 
 logger = logging.getLogger(__name__)
+
+# Simple LRU cap; configurable LRU in Phase 6
+MAX_CACHED_GRAPHS = 20
+
+
+def evict_lru_graph(graphs: dict[int, "ProjectGraph"], max_size: int = MAX_CACHED_GRAPHS) -> Optional[int]:
+    """Evict least-recently-loaded graph if cache exceeds max_size.
+
+    Returns evicted project_id, or None if no eviction needed.
+    """
+    if len(graphs) <= max_size:
+        return None
+
+    # Find LRU by loaded_at timestamp (oldest = least recently used)
+    oldest_pid = min(graphs, key=lambda pid: graphs[pid].loaded_at)
+    evicted = graphs.pop(oldest_pid)
+    logger.info(
+        "Evicted graph for project %d (loaded_at=%.1f, %d symbols, %d edges). "
+        "Cache size: %d/%d",
+        oldest_pid, evicted.loaded_at, evicted.n_symbols, evicted.edge_count,
+        len(graphs), max_size
+    )
+    return oldest_pid
 
 
 class ProjectGraph:
@@ -50,6 +73,15 @@ class ProjectGraph:
         self.edge_count = adjacency_matrix.nnz
         self.id_to_idx = id_to_idx or {sid: idx for idx, sid in enumerate(sorted(symbol_id_to_name.keys()))}
         self.idx_to_id = {idx: sid for sid, idx in self.id_to_idx.items()}
+
+    @property
+    def estimated_memory_bytes(self) -> int:
+        """Estimate memory usage of this graph.
+
+        CSR format: ~12 bytes per non-zero (4 bytes col index + 4 bytes row ptr amortized + 4 bytes data)
+        Plus overhead for arrays and Python objects.
+        """
+        return self.edge_count * 12 + self.n_symbols * 8 + 1024  # base overhead
 
     def is_sparse_fallback(self) -> bool:
         """Check if graph is too sparse for meaningful PPR.

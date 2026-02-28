@@ -40,7 +40,7 @@ from .indexer import IndexerPipeline
 from .search import hybrid_search, doc_search
 from .drift_adapter import DriftAdapter
 from .embeddings import EmbeddingClient, EmbeddingUnavailableError
-from .graph import ProjectGraph, load_project_graph
+from .graph import ProjectGraph, load_project_graph, evict_lru_graph, MAX_CACHED_GRAPHS
 
 # Scope level hierarchy for comparison
 _SCOPE_LEVELS = {"project": 0, "collection": 1, "global": 2}
@@ -288,6 +288,17 @@ def create_server(
         logger.info("Total graph startup: %.1fms (%d graphs loaded)", total_ms, len(_project_graphs))
         if total_ms > 5000:
             logger.warning("Graph startup exceeded 5s threshold (%.1fms)", total_ms)
+
+        # Check LRU cap
+        while len(_project_graphs) > MAX_CACHED_GRAPHS:
+            evict_lru_graph(_project_graphs)
+
+        # Log total memory estimate
+        total_memory = sum(g.estimated_memory_bytes for g in _project_graphs.values())
+        if total_memory > 500 * 1024 * 1024:  # 500MB
+            logger.warning("Graph cache using ~%.1fMB (>500MB threshold)", total_memory / (1024*1024))
+        else:
+            logger.info("Graph cache memory estimate: %.1fMB", total_memory / (1024*1024))
 
     mcp = FastMCP("tessera")
 
@@ -721,6 +732,9 @@ def create_server(
                     'sparse': graph.is_sparse_fallback(),
                 }
                 logger.info("Rebuilt graph for project %d after reindex", project_id)
+
+                # Check LRU cap after adding new graph
+                evict_lru_graph(_project_graphs)
             except Exception as e:
                 logger.warning("Failed to rebuild graph for project %d: %s", project_id, e)
 
