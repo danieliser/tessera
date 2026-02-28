@@ -597,6 +597,54 @@ class IndexerPipeline:
                 pass
             return {'status': 'failed', 'reason': str(e)}
 
+    def _append_asset_chunk(self, file_path: str) -> None:
+        """Append an asset metadata chunk to an already-indexed file (for SVG dual-indexing).
+
+        Unlike _index_asset(), this does not upsert the file record or clear existing data.
+        It only inserts an additional chunk with source_type='asset'.
+        """
+        rel_path = os.path.relpath(file_path, self.project_path)
+        try:
+            metadata = get_asset_metadata(file_path)
+            path_components = rel_path.replace('\\', '/').split('/')
+            synthetic_content = build_asset_synthetic_content(
+                filename=os.path.basename(rel_path),
+                path_components=path_components,
+                mime_type=metadata['mime_type'],
+                dimensions=metadata['dimensions'],
+                file_size=metadata['file_size'],
+            )
+
+            # Look up existing file_id (already created by document indexer)
+            existing = self.project_db.get_file(path=rel_path)
+            if not existing:
+                return
+            file_id = existing['id']
+
+            dimensions = metadata['dimensions']
+            key_path = f"{dimensions['width']}x{dimensions['height']}" if dimensions else None
+
+            chunk_dict = {
+                'project_id': self.project_id,
+                'file_id': file_id,
+                'start_line': 0,
+                'end_line': 0,
+                'symbol_ids': [],
+                'ast_type': metadata['category'],
+                'chunk_type': 'asset',
+                'content': synthetic_content,
+                'source_type': 'asset',
+                'length': metadata['file_size'],
+                'key_path': key_path,
+                'section_heading': None,
+                'page_number': None,
+                'parent_section': None,
+                'file_path': rel_path,
+            }
+            self.project_db.insert_chunks([chunk_dict])
+        except Exception as e:
+            logger.warning("Failed to append asset chunk for SVG %s: %s", file_path, e)
+
     def index_file(self, file_path: str) -> Dict[str, Any]:
         """
         Index a single file: parse, chunk, embed, store.
@@ -609,15 +657,16 @@ class IndexerPipeline:
         """
         # Route asset files BEFORE document check (some assets like .svg are also documents)
         is_svg = file_path.lower().endswith('.svg')
-        if is_asset_file(file_path):
-            asset_result = self._index_asset(file_path)
-            if not is_svg:
-                return asset_result
-            # SVG: dual-indexed — fall through to document indexer below after asset indexing
+        if is_asset_file(file_path) and not is_svg:
+            return self._index_asset(file_path)
 
         # Route document files to document indexer
         if self._is_document_file(file_path):
-            return self._index_document_file(file_path)
+            doc_result = self._index_document_file(file_path)
+            # SVG dual-indexing: append asset chunk after document indexing
+            if is_svg and doc_result.get('status') == 'indexed':
+                self._append_asset_chunk(file_path)
+            return doc_result
 
         rel_path = os.path.relpath(file_path, self.project_path)
         language = detect_language(file_path)
