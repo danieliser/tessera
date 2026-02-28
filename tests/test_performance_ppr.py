@@ -170,6 +170,124 @@ class TestPPRPerformanceBenchmarks:
         assert len(result) > 0
         assert elapsed_ms < 100, f"PPR took {elapsed_ms:.2f}ms, must be <100ms"
 
+    def test_search_latency_overhead_under_50ms(self):
+        """Benchmark hybrid_search() latency WITH graph vs WITHOUT.
+
+        Ensures PPR enrichment adds <50ms overhead end-to-end.
+        Tests on synthetic 1K symbols, 5K edges graph.
+        """
+        from tessera.search import hybrid_search
+
+        # 1. Create synthetic graph (1K symbols, 5K edges)
+        n = 1000
+        n_edges = 5000
+
+        np.random.seed(42)
+        rows = np.random.randint(0, n, n_edges)
+        cols = np.random.randint(0, n, n_edges)
+        data = np.ones(n_edges, dtype=np.float32)
+
+        adjacency = scipy.sparse.csr_matrix(
+            (data, (rows, cols)),
+            shape=(n, n),
+            dtype=np.float32,
+        )
+
+        symbol_ids = list(range(1000, 1000 + n))
+        id_to_idx = {sid: i for i, sid in enumerate(symbol_ids)}
+        symbol_id_to_name = {sid: f"func_{i}" for i, sid in enumerate(symbol_ids)}
+
+        graph = ProjectGraph(
+            project_id=1,
+            adjacency_matrix=adjacency,
+            symbol_id_to_name=symbol_id_to_name,
+            loaded_at=time.perf_counter(),
+            id_to_idx=id_to_idx,
+        )
+
+        # 2. Create mock db object
+        mock_db = Mock()
+
+        # Prepare mock data
+        num_chunks = 100
+        embedding_dim = 768
+        chunk_ids = list(range(1, num_chunks + 1))
+        embeddings = np.random.randn(num_chunks, embedding_dim).astype(np.float32)
+
+        # keyword_search mock
+        def mock_keyword_search(query, limit=10, source_type=None):
+            return [
+                {"id": chunk_ids[i], "score": 0.9 - i * 0.05}
+                for i in range(min(3, limit))
+            ]
+
+        # get_all_embeddings mock
+        def mock_get_all_embeddings():
+            return (chunk_ids, embeddings)
+
+        # get_chunk mock
+        def mock_get_chunk(chunk_id):
+            # Return chunk with symbol_ids so PPR can extract seeds
+            idx = chunk_ids.index(chunk_id) if chunk_id in chunk_ids else 0
+            symbol_set = [symbol_ids[idx % len(symbol_ids)], symbol_ids[(idx + 1) % len(symbol_ids)]]
+            return {
+                "file_path": f"/test_{chunk_id}.py",
+                "start_line": idx * 10,
+                "end_line": idx * 10 + 5,
+                "content": f"chunk_{chunk_id}",
+                "source_type": "code",
+                "symbol_ids": str(symbol_set),  # JSON string of symbol IDs
+            }
+
+        # get_symbol_to_chunks_mapping mock
+        def mock_get_symbol_to_chunks_mapping():
+            mapping = {}
+            for i, sid in enumerate(symbol_ids):
+                mapping[sid] = [chunk_ids[i % len(chunk_ids)]]
+            return mapping
+
+        mock_db.keyword_search = mock_keyword_search
+        mock_db.get_all_embeddings = mock_get_all_embeddings
+        mock_db.get_chunk = mock_get_chunk
+        mock_db.get_symbol_to_chunks_mapping = mock_get_symbol_to_chunks_mapping
+
+        # 3. Create query embedding
+        query = "test query"
+        query_embedding = np.random.randn(embedding_dim).astype(np.float32)
+
+        # 4. Run hybrid_search WITHOUT graph (10 times, compute median)
+        latencies_without = []
+        for _ in range(10):
+            start = time.perf_counter()
+            hybrid_search(query, query_embedding, mock_db, graph=None, limit=10)
+            elapsed_ms = (time.perf_counter() - start) * 1000
+            latencies_without.append(elapsed_ms)
+
+        latencies_without.sort()
+        median_without = latencies_without[len(latencies_without) // 2]
+
+        # 5. Run hybrid_search WITH graph (10 times, compute median)
+        latencies_with = []
+        for _ in range(10):
+            start = time.perf_counter()
+            hybrid_search(query, query_embedding, mock_db, graph=graph, limit=10)
+            elapsed_ms = (time.perf_counter() - start) * 1000
+            latencies_with.append(elapsed_ms)
+
+        latencies_with.sort()
+        median_with = latencies_with[len(latencies_with) // 2]
+
+        # 6. Print results
+        overhead_ms = median_with - median_without
+        print(f"\nHybrid search latency benchmarks:")
+        print(f"  WITHOUT graph (median): {median_without:.2f}ms")
+        print(f"  WITH graph (median):    {median_with:.2f}ms")
+        print(f"  PPR overhead:           {overhead_ms:.2f}ms")
+
+        # 7. Assert overhead < 50ms
+        assert overhead_ms < 50, \
+            f"PPR overhead was {overhead_ms:.2f}ms, must be <50ms"
+
     def test_graph_loading_benchmark(self, test_project_dir):
         """Benchmark graph loading from ProjectDB."""
         db = ProjectDB(str(test_project_dir / "bench_project"))
