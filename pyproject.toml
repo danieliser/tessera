@@ -49,6 +49,7 @@ testpaths = ["tests"]
 asyncio_mode = "auto"
 markers = [
     "integration: tests that index real projects (may be slow or require specific setup)",
+    "performance: PPR performance benchmarks with CI gates",
 ]
 
 [tool.hatch.build.targets.wheel]
