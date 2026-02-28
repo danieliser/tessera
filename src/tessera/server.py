@@ -51,6 +51,7 @@ _db_cache: dict[int, ProjectDB] = {}       # project_id → ProjectDB (lazy-load
 _locked_project: Optional[int] = None      # If --project given, only this project is queryable
 _global_db: Optional[GlobalDB] = None
 _drift_adapter: Optional[DriftAdapter] = None
+_embedding_client: Optional[EmbeddingClient] = None
 
 
 def _log_audit(tool_name: str, result_count: int, agent_id: str = "dev", scope_level: str = "project"):
@@ -167,20 +168,36 @@ def _get_project_dbs(scope: Optional[ScopeInfo]) -> list[tuple[int, str, Project
     return result
 
 
-def create_server(project_path: Optional[str], global_db_path: str) -> FastMCP:
+def create_server(
+    project_path: Optional[str],
+    global_db_path: str,
+    embedding_endpoint: Optional[str] = None,
+    embedding_model: Optional[str] = None,
+) -> FastMCP:
     """Create and configure the MCP server.
 
     Args:
         project_path: Optional path to lock server to a single project.
                       If None, server operates in multi-project mode.
         global_db_path: Path to the global.db file.
+        embedding_endpoint: Optional OpenAI-compatible embedding endpoint URL.
+        embedding_model: Optional model identifier for the embedding endpoint.
     """
-    global _db_cache, _locked_project, _global_db, _drift_adapter
+    global _db_cache, _locked_project, _global_db, _drift_adapter, _embedding_client
 
     # Reset state
     _db_cache = {}
     _locked_project = None
     _drift_adapter = None
+    _embedding_client = None
+
+    # Initialize embedding client if endpoint configured
+    if embedding_endpoint:
+        _embedding_client = EmbeddingClient(
+            endpoint=embedding_endpoint,
+            model=embedding_model or "default",
+        )
+        logger.info("Embedding client configured: %s (model=%s)", embedding_endpoint, embedding_model or "default")
 
     # Initialize global database
     Path(global_db_path).parent.mkdir(parents=True, exist_ok=True)
@@ -260,11 +277,27 @@ def create_server(project_path: Optional[str], global_db_path: str) -> FastMCP:
             return "Error: No accessible projects"
 
         try:
-            # Parallel query pattern
-            tasks = [
-                asyncio.to_thread(db.keyword_search, query, limit)
-                for pid, pname, db in dbs
-            ]
+            # Embed query if embedding client is available
+            query_embedding = None
+            if _embedding_client:
+                try:
+                    import numpy as np
+                    raw = await asyncio.to_thread(_embedding_client.embed_single, query)
+                    query_embedding = np.array(raw, dtype=np.float32)
+                except EmbeddingUnavailableError:
+                    logger.debug("Embedding endpoint unavailable, falling back to keyword-only search")
+
+            # Parallel query pattern — hybrid when embeddings available, keyword-only otherwise
+            if query_embedding is not None:
+                tasks = [
+                    asyncio.to_thread(hybrid_search, query, query_embedding, db, limit)
+                    for pid, pname, db in dbs
+                ]
+            else:
+                tasks = [
+                    asyncio.to_thread(db.keyword_search, query, limit)
+                    for pid, pname, db in dbs
+                ]
             results_list = await asyncio.gather(*tasks, return_exceptions=True)
 
             all_results = []
@@ -304,10 +337,20 @@ def create_server(project_path: Optional[str], global_db_path: str) -> FastMCP:
         try:
             format_list = [f.strip() for f in formats.split(",") if f.strip()] if formats else None
 
+            # Embed query if embedding client is available
+            query_embedding = None
+            if _embedding_client:
+                try:
+                    import numpy as np
+                    raw = await asyncio.to_thread(_embedding_client.embed_single, query)
+                    query_embedding = np.array(raw, dtype=np.float32)
+                except EmbeddingUnavailableError:
+                    logger.debug("Embedding endpoint unavailable, falling back to keyword-only doc_search")
+
             # Parallel query across projects
             tasks = [
                 asyncio.to_thread(
-                    doc_search, query, None, db, limit, format_list
+                    doc_search, query, query_embedding, db, limit, format_list
                 )
                 for pid, pname, db in dbs
             ]
@@ -592,6 +635,7 @@ def create_server(project_path: Optional[str], global_db_path: str) -> FastMCP:
             pipeline = IndexerPipeline(
                 project["path"],
                 global_db=_global_db,
+                embedding_client=_embedding_client,
                 languages=project.get("language", "").split(",") if project.get("language") else None
             )
             pipeline.project_id = project_id
@@ -1040,13 +1084,18 @@ def create_server(project_path: Optional[str], global_db_path: str) -> FastMCP:
     return mcp
 
 
-async def run_server(project_path: Optional[str] = None, global_db_path: Optional[str] = None) -> int:
+async def run_server(
+    project_path: Optional[str] = None,
+    global_db_path: Optional[str] = None,
+    embedding_endpoint: Optional[str] = None,
+    embedding_model: Optional[str] = None,
+) -> int:
     """Run the MCP server on stdio transport."""
     if not global_db_path:
         home = Path.home()
         global_db_path = str(home / ".tessera" / "global.db")
 
-    mcp = create_server(project_path, global_db_path)
+    mcp = create_server(project_path, global_db_path, embedding_endpoint, embedding_model)
 
     try:
         await mcp.run_stdio_async()

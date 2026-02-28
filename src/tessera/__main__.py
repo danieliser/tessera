@@ -40,6 +40,16 @@ def main() -> int:
         "--global-db",
         help="Path to global.db (optional)"
     )
+    serve_parser.add_argument(
+        "--embedding-endpoint",
+        default=None,
+        help="OpenAI-compatible embedding endpoint URL (e.g. http://localhost:8800/v1/embeddings)"
+    )
+    serve_parser.add_argument(
+        "--embedding-model",
+        default=None,
+        help="Model identifier for the embedding endpoint (e.g. nomic-embed)"
+    )
 
     args = parser.parse_args()
 
@@ -47,7 +57,10 @@ def main() -> int:
         print(f"Index command stub: {args.path} with endpoint {args.embedding_endpoint}")
         return 0
     elif args.command == "serve":
-        return asyncio.run(run_server(args.project, args.global_db))
+        return asyncio.run(run_server(
+            args.project, args.global_db,
+            args.embedding_endpoint, args.embedding_model,
+        ))
     else:
         parser.print_help()
         return 1

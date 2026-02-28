@@ -5,7 +5,9 @@
       "args": [
         "--directory", "/Users/danieliser/Toolkit/codemem",
         "run",
-        "python", "-m", "tessera", "serve"
+        "python", "-m", "tessera", "serve",
+        "--embedding-endpoint", "http://localhost:8800/v1/embeddings",
+        "--embedding-model", "nomic-embed"
       ]
     }
   }
