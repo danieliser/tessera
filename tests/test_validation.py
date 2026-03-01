@@ -556,8 +556,9 @@ class TestCrossFileValidation:
 
     Expected:
       File A: 3 symbols + 1 <module> = 4 symbols, 1 ref, 2 edges
-      File B: 2 symbols + 1 <module> = 3 symbols, 2 refs, 0 edges
-      Total: 7 symbols, 3 refs, 2 edges
+      File B: 2 symbols + 1 <module> = 3 symbols, 2 refs, 0 intra-file edges
+      Cross-file resolution adds 2 edges: process→get_logger, process→info
+      Total: 7 symbols, 3 refs, 4 edges
     """
 
     @pytest.fixture
@@ -641,4 +642,4 @@ class TestCrossFileValidation:
 
     def test_total_edge_count(self, db):
         edges = _get_edges(db)
-        assert len(edges) == 2
+        assert len(edges) == 4  # 2 intra-file (A) + 2 cross-file resolved

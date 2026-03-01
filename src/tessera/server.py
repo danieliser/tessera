@@ -23,6 +23,7 @@ import json
 import logging
 import asyncio
 import os
+import threading
 from pathlib import Path
 from typing import Optional, Any
 from datetime import datetime
@@ -39,6 +40,7 @@ from .indexer import IndexerPipeline
 from .search import hybrid_search, doc_search
 from .drift_adapter import DriftAdapter
 from .embeddings import EmbeddingClient, EmbeddingUnavailableError
+from .graph import ProjectGraph, load_project_graph, evict_lru_graph, MAX_CACHED_GRAPHS
 
 # Scope level hierarchy for comparison
 _SCOPE_LEVELS = {"project": 0, "collection": 1, "global": 2}
@@ -52,9 +54,12 @@ _locked_project: Optional[int] = None      # If --project given, only this proje
 _global_db: Optional[GlobalDB] = None
 _drift_adapter: Optional[DriftAdapter] = None
 _embedding_client: Optional[EmbeddingClient] = None
+_project_graphs: dict[int, ProjectGraph] = {}  # project_id → ProjectGraph
+_graph_stats: dict[int, dict] = {}  # project_id → metadata
+_graph_lock = threading.Lock()  # Explicit lock for graph swap (don't rely on GIL)
 
 
-def _log_audit(tool_name: str, result_count: int, agent_id: str = "dev", scope_level: str = "project"):
+def _log_audit(tool_name: str, result_count: int, agent_id: str = "dev", scope_level: str = "project", ppr_used: bool = False):
     """Log audit event to both Python logger and GlobalDB."""
     audit_logger.info(
         "tool_call",
@@ -63,6 +68,7 @@ def _log_audit(tool_name: str, result_count: int, agent_id: str = "dev", scope_l
             "scope_level": scope_level,
             "tool_called": tool_name,
             "result_count": result_count,
+            "ppr_used": ppr_used,
             "timestamp": datetime.utcnow().isoformat(),
         }
     )
@@ -183,13 +189,15 @@ def create_server(
         embedding_endpoint: Optional OpenAI-compatible embedding endpoint URL.
         embedding_model: Optional model identifier for the embedding endpoint.
     """
-    global _db_cache, _locked_project, _global_db, _drift_adapter, _embedding_client
+    global _db_cache, _locked_project, _global_db, _drift_adapter, _embedding_client, _project_graphs, _graph_stats
 
     # Reset state
     _db_cache = {}
     _locked_project = None
     _drift_adapter = None
     _embedding_client = None
+    _project_graphs = {}
+    _graph_stats = {}
 
     # Initialize embedding client if endpoint configured
     if embedding_endpoint:
@@ -248,6 +256,51 @@ def create_server(
             _global_db.fail_job(job_id, str(e))
             logger.warning("Crash recovery: job %d failed: %s", job_id, e)
 
+    # Load graphs for all known projects
+    import time as _time
+    total_graph_start = _time.perf_counter()
+
+    if _global_db:
+        projects = _global_db.list_projects()
+        logger.info("Loading PPR graphs for %d projects...", len(projects))
+
+        for project in projects:
+            pid = project["id"]
+            try:
+                db = ProjectDB(project["path"])
+                graph = load_project_graph(db, pid)
+                with _graph_lock:
+                    _project_graphs[pid] = graph
+                _graph_stats[pid] = {
+                    'edge_count': graph.edge_count,
+                    'symbol_count': graph.n_symbols,
+                    'loaded_at': graph.loaded_at,
+                    'sparse': graph.is_sparse_fallback(),
+                }
+                logger.info(
+                    "Loaded graph for project %d (%d symbols, %d edges%s)",
+                    pid, graph.n_symbols, graph.edge_count,
+                    ", SPARSE - PPR skipped" if graph.is_sparse_fallback() else ""
+                )
+            except Exception as e:
+                logger.warning("Failed to load graph for project %d: %s", pid, e)
+
+        total_ms = (_time.perf_counter() - total_graph_start) * 1000
+        logger.info("Total graph startup: %.1fms (%d graphs loaded)", total_ms, len(_project_graphs))
+        if total_ms > 5000:
+            logger.warning("Graph startup exceeded 5s threshold (%.1fms)", total_ms)
+
+        # Check LRU cap
+        while len(_project_graphs) > MAX_CACHED_GRAPHS:
+            evict_lru_graph(_project_graphs)
+
+        # Log total memory estimate
+        total_memory = sum(g.estimated_memory_bytes for g in _project_graphs.values())
+        if total_memory > 500 * 1024 * 1024:  # 500MB
+            logger.warning("Graph cache using ~%.1fMB (>500MB threshold)", total_memory / (1024*1024))
+        else:
+            logger.info("Graph cache memory estimate: %.1fMB", total_memory / (1024*1024))
+
     mcp = FastMCP("tessera")
 
     # Load drift adapter if available
@@ -290,9 +343,15 @@ def create_server(
                     logger.debug("Embedding endpoint unavailable, falling back to keyword-only search")
 
             # Parallel query pattern — hybrid when embeddings available, keyword-only otherwise
+            ppr_used = False
             if query_embedding is not None:
+                for pid, pname, db in dbs:
+                    g = _project_graphs.get(pid)
+                    if g:
+                        ppr_used = True
+                        logger.debug("Search on project %d using graph version %.1f", pid, g.loaded_at)
                 tasks = [
-                    asyncio.to_thread(hybrid_search, query, query_embedding, db, limit, source_type_filter)
+                    asyncio.to_thread(hybrid_search, query, query_embedding, db, _project_graphs.get(pid), limit, source_type_filter)
                     for pid, pname, db in dbs
                 ]
             else:
@@ -316,7 +375,7 @@ def create_server(
             all_results.sort(key=lambda r: r.get("score", 0), reverse=True)
             all_results = all_results[:limit]
 
-            _log_audit("search", len(all_results), agent_id=agent_id)
+            _log_audit("search", len(all_results), agent_id=agent_id, ppr_used=ppr_used)
             return json.dumps(all_results, indent=2)
         except Exception as e:
             logger.exception("Search tool error")
@@ -355,7 +414,7 @@ def create_server(
             effective_formats = source_type_filter if source_type_filter else format_list
             tasks = [
                 asyncio.to_thread(
-                    doc_search, query, query_embedding, db, limit, effective_formats
+                    doc_search, query, query_embedding, db, graph=None, limit=limit, formats=effective_formats
                 )
                 for pid, pname, db in dbs
             ]
@@ -575,6 +634,20 @@ def create_server(
                 for r in result:
                     r["project_id"] = pid
                     r["project_name"] = pname
+
+                # Rank by PPR if graph available
+                graph = _project_graphs.get(pid)
+                if graph and not graph.is_sparse_fallback():
+                    try:
+                        affected_ids = [r['id'] for r in result if 'id' in r]
+                        if affected_ids:
+                            ppr_scores = graph.personalized_pagerank(affected_ids)
+                            for r in result:
+                                r['ppr_relevance'] = ppr_scores.get(r.get('id', -1), 0.0)
+                            result = sorted(result, key=lambda x: -x.get('ppr_relevance', 0.0))
+                    except Exception as e:
+                        logger.warning("PPR ranking failed for impact on project %d: %s", pid, e)
+
                 all_results.extend(result)
 
             _log_audit("impact", len(all_results), agent_id=agent_id)
@@ -652,6 +725,25 @@ def create_server(
 
             # Invalidate cache so next query picks up fresh data
             _db_cache.pop(project_id, None)
+
+            # Rebuild graph after reindex
+            try:
+                db = ProjectDB(project["path"])
+                graph = load_project_graph(db, project_id)
+                with _graph_lock:
+                    _project_graphs[project_id] = graph
+                _graph_stats[project_id] = {
+                    'edge_count': graph.edge_count,
+                    'symbol_count': graph.n_symbols,
+                    'loaded_at': graph.loaded_at,
+                    'sparse': graph.is_sparse_fallback(),
+                }
+                logger.info("Rebuilt graph for project %d after reindex", project_id)
+
+                # Check LRU cap after adding new graph
+                evict_lru_graph(_project_graphs)
+            except Exception as e:
+                logger.warning("Failed to rebuild graph for project %d: %s", project_id, e)
 
             result = {
                 "project_id": project_id,

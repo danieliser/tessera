@@ -489,9 +489,12 @@ def _extract_symbols_typescript(tree: tree_sitter.Tree, source_code: str) -> lis
                 return
 
         elif node.type == "variable_declarator":
-            # Arrow function or const function
+            # Arrow function or const function expression
             name_node = _find_child_by_type(node, "identifier")
-            init = _find_child_by_type(node, "arrow_function")
+            init = (
+                _find_child_by_type(node, "arrow_function")
+                or _find_child_by_type(node, "function_expression")
+            )
             if name_node and init:
                 name = name_node.text.decode("utf-8")
                 sym = Symbol(
@@ -505,6 +508,58 @@ def _extract_symbols_typescript(tree: tree_sitter.Tree, source_code: str) -> lis
                 for child in node.children:
                     walk(child, scope=name)
                 return
+
+        elif node.type == "pair":
+            # Object property function: { click_open: function() {} }
+            # or arrow: { handler: (e) => {} }
+            key_node = _find_child_by_type(node, "property_identifier")
+            val = (
+                _find_child_by_type(node, "function_expression")
+                or _find_child_by_type(node, "arrow_function")
+            )
+            if key_node and val:
+                name = key_node.text.decode("utf-8")
+                sym = Symbol(
+                    name=name,
+                    kind="function",
+                    line=node.start_point[0] + 1,
+                    col=node.start_point[1],
+                    scope=scope,
+                )
+                symbols.append(sym)
+                for child in node.children:
+                    walk(child, scope=name)
+                return
+
+        elif node.type == "assignment_expression":
+            # Property assignment: window.PUM.foo = function() {}
+            # or: exports.foo = function() {}
+            right = (
+                _find_child_by_type(node, "function_expression")
+                or _find_child_by_type(node, "arrow_function")
+            )
+            if right:
+                left = node.children[0] if node.children else None
+                name = None
+                if left and left.type == "member_expression":
+                    # Extract rightmost property: window.PUM.foo -> "foo"
+                    prop = _find_child_by_type(left, "property_identifier")
+                    if prop:
+                        name = prop.text.decode("utf-8")
+                elif left and left.type == "identifier":
+                    name = left.text.decode("utf-8")
+                if name:
+                    sym = Symbol(
+                        name=name,
+                        kind="function",
+                        line=node.start_point[0] + 1,
+                        col=node.start_point[1],
+                        scope=scope,
+                    )
+                    symbols.append(sym)
+                    for child in node.children:
+                        walk(child, scope=name)
+                    return
 
         elif node.type in (
             "import_statement",

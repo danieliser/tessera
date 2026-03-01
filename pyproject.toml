@@ -33,6 +33,7 @@ dev = [
     "tree-sitter-javascript",
     "tree-sitter-typescript",
     "tree-sitter-php",
+    "networkx",
 ]
 core-languages = [
     "tree-sitter-javascript",
@@ -47,6 +48,10 @@ tessera = "tessera.__main__:main"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+markers = [
+    "integration: tests that index real projects (may be slow or require specific setup)",
+    "performance: PPR performance benchmarks with CI gates",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/tessera"]

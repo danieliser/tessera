@@ -337,6 +337,10 @@ class IndexerPipeline:
             elif result['status'] == 'failed':
                 stats.files_failed += 1
 
+        # Resolve cross-file edges
+        cross_file_edges = self._resolve_cross_file_edges()
+        logger.info("Cross-file edge resolution: %d edges created", cross_file_edges)
+
         stats.time_elapsed = time.perf_counter() - start
 
         # Update last indexed commit
@@ -901,6 +905,10 @@ class IndexerPipeline:
                     stats.files_failed += 1
                     logger.error(f"Failed to index {file_path}: {result.get('reason')}")
 
+            # Resolve cross-file edges
+            cross_file_edges = self._resolve_cross_file_edges()
+            logger.info("Cross-file edge resolution: %d edges created", cross_file_edges)
+
             stats.time_elapsed = time.perf_counter() - start
 
             if job_id and self.global_db:
@@ -916,6 +924,144 @@ class IndexerPipeline:
             if job_id and self.global_db:
                 self.global_db.fail_job(job_id, str(e))
             raise
+
+    def _resolve_cross_file_edges(self) -> int:
+        """Resolve cross-file references into edges.
+
+        Queries unresolved refs (to_symbol_id IS NULL) and matches
+        to_symbol_name against all symbols in the project. Creates
+        edges for resolved matches and updates refs.to_symbol_id.
+
+        Returns:
+            Number of cross-file edges created.
+        """
+        if not self.project_id:
+            return 0
+
+        # Query all unresolved refs for this project
+        cursor = self.project_db.conn.execute(
+            """
+            SELECT id, from_symbol_id, to_symbol_name, kind
+            FROM refs
+            WHERE project_id = ? AND to_symbol_id IS NULL AND to_symbol_name IS NOT NULL
+            """,
+            (self.project_id,)
+        )
+        unresolved_refs = [dict(row) for row in cursor.fetchall()]
+
+        if not unresolved_refs:
+            return 0
+
+        # Build a name-to-symbol lookup for all symbols in the project
+        cursor = self.project_db.conn.execute(
+            "SELECT id, name, kind FROM symbols WHERE project_id = ?",
+            (self.project_id,)
+        )
+        all_symbols = [dict(row) for row in cursor.fetchall()]
+
+        # Build lookup: name -> symbol_id (with preference logic)
+        # Prefer: functions > classes > methods
+        # Define preference order
+        kind_priority = {'function': 0, 'class': 1, 'method': 2, 'other': 3}
+
+        # Group symbols by name with their priorities
+        name_to_candidates: Dict[str, List[tuple]] = {}  # name -> [(symbol_id, priority), ...]
+        for symbol in all_symbols:
+            name = symbol['name']
+            symbol_id = symbol['id']
+            kind = symbol['kind']
+            priority = kind_priority.get(kind, 3)
+
+            if name not in name_to_candidates:
+                name_to_candidates[name] = []
+            name_to_candidates[name].append((symbol_id, priority))
+
+        # Resolve each name to a single symbol (if unambiguous)
+        name_to_symbol: Dict[str, int] = {}
+        for name, candidates in name_to_candidates.items():
+            # Sort by priority (lowest first)
+            candidates.sort(key=lambda x: x[1])
+            best_priority = candidates[0][1]
+
+            # Check if ambiguous (multiple symbols with same best priority)
+            best_candidates = [c for c in candidates if c[1] == best_priority]
+            if len(best_candidates) == 1:
+                # Unambiguous: use the single best candidate
+                name_to_symbol[name] = best_candidates[0][0]
+            # else: ambiguous (multiple symbols with same best priority), skip
+
+        # Also handle short names for namespaced symbols (PHP)
+        # Try to resolve short names, but don't override existing mappings
+        for symbol in all_symbols:
+            full_name = symbol['name']
+            if '\\' in full_name:
+                short_name = full_name.rsplit('\\', 1)[-1]
+                # Only set if not already mapped (avoid overwriting unambiguous full names)
+                if short_name not in name_to_symbol:
+                    # Check if short_name is unambiguous among namespaced symbols
+                    short_candidates = [s for s in all_symbols if s['name'].endswith('\\' + short_name) or s['name'] == short_name]
+                    if len(short_candidates) == 1:
+                        name_to_symbol[short_name] = symbol['id']
+
+        # Check for existing edges to avoid duplicates
+        cursor = self.project_db.conn.execute(
+            """
+            SELECT from_id, to_id FROM edges
+            WHERE project_id = ?
+            """,
+            (self.project_id,)
+        )
+        existing_edges = set(
+            (row[0], row[1]) for row in cursor.fetchall()
+        )
+
+        # Resolve refs and prepare edges to insert
+        edges_to_insert = []
+        refs_to_update = []
+
+        for ref in unresolved_refs:
+            to_symbol_name = ref['to_symbol_name']
+            from_symbol_id = ref['from_symbol_id']
+            ref_id = ref['id']
+            kind = ref['kind']
+
+            # Try to resolve the symbol
+            if to_symbol_name in name_to_symbol:
+                to_symbol_id = name_to_symbol[to_symbol_name]
+
+                # Check if edge already exists
+                if (from_symbol_id, to_symbol_id) not in existing_edges:
+                    edges_to_insert.append({
+                        'project_id': self.project_id,
+                        'from_id': from_symbol_id,
+                        'to_id': to_symbol_id,
+                        'type': kind,
+                        'weight': 1.0,
+                    })
+                    existing_edges.add((from_symbol_id, to_symbol_id))
+
+                # Update the ref with resolved symbol_id
+                refs_to_update.append((to_symbol_id, ref_id))
+
+        # Insert edges in batch
+        if edges_to_insert:
+            self.project_db.insert_edges(edges_to_insert)
+
+        # Update refs to mark them as resolved
+        with self.project_db.conn:
+            for to_symbol_id, ref_id in refs_to_update:
+                self.project_db.conn.execute(
+                    "UPDATE refs SET to_symbol_id = ? WHERE id = ?",
+                    (to_symbol_id, ref_id)
+                )
+
+        logger.info(
+            "Resolved %d cross-file edges from %d unresolved refs",
+            len(edges_to_insert),
+            len(unresolved_refs)
+        )
+
+        return len(edges_to_insert)
 
     def search(self, query: str, limit: int = 10) -> List[Dict[str, Any]]:
         """
