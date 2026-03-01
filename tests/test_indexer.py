@@ -42,6 +42,20 @@ class MockEdge:
         self.weight = weight
 
 
+class MockCursor:
+    """Mock SQLite cursor for query results."""
+    def __init__(self):
+        pass
+
+    def fetchall(self):
+        """Return empty list for queries."""
+        return []
+
+    def fetchone(self):
+        """Return None for single queries."""
+        return None
+
+
 class MockConnection:
     """Mock SQLite connection for transaction context manager."""
     def __enter__(self):
@@ -49,6 +63,10 @@ class MockConnection:
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         pass
+
+    def execute(self, sql, params=()):
+        """Mock execute for queries."""
+        return MockCursor()
 
 
 class MockProjectDB:

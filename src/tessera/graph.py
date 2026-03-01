@@ -111,8 +111,11 @@ class ProjectGraph:
         Uses adaptive threshold based on research (percolation theory,
         PageRank convergence analysis, real-world code graphs):
           - Density (edges/symbols) >= 0.75
-          - Largest connected component >= 80% of symbols
+          - Largest connected component >= 50% of symbols
           - Minimum 100 symbols for meaningful signal
+
+        The 50% LCC threshold reflects real PHP/JS codebases where
+        cross-file resolution typically connects 60-70% of symbols.
 
         Returns:
             True if graph doesn't meet PPR engagement thresholds.
@@ -123,7 +126,7 @@ class ProjectGraph:
         if density < 0.75:
             return True
         cc_ratio = self.largest_cc_size / self.n_symbols
-        if cc_ratio < 0.80:
+        if cc_ratio < 0.50:
             return True
         return False
 
