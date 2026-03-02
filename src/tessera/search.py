@@ -128,35 +128,11 @@ def bm25_strong_signal_check(
     return (top_score - second_score) >= gap
 
 
-def extract_snippet(
-    chunk_content: str,
-    query: str,
-    context_lines: int = 3,
-) -> dict:
-    """Extract best-matching snippet from chunk content.
-
-    Scores each line by keyword overlap with the query, then extracts
-    a window of context_lines around the best-matching line.
-
-    Args:
-        chunk_content: Full chunk text
-        query: Search query (for keyword overlap scoring)
-        context_lines: Number of lines before/after best match
-
-    Returns:
-        Dict with snippet, line positions, and best_match_line
-    """
-    if not chunk_content:
-        return {"snippet": "", "snippet_start_line": 0, "snippet_end_line": 0, "best_match_line": 0}
-
-    lines = chunk_content.split("\n")
-    # Tokenize like FTS5: split on non-alphanumeric boundaries so
-    # "normalize_bm25_score" → {"normalize", "bm25", "score"} matches
-    # code identifiers, parens, punctuation, etc.
+def _find_best_match_line(lines: list[str], query: str) -> int:
+    """Find the line with the highest keyword overlap with the query."""
     _tokenize = re.compile(r"[a-z0-9]+", re.IGNORECASE).findall
     query_terms = set(t.lower() for t in _tokenize(query))
 
-    # Score each line by keyword overlap
     best_line_idx = 0
     best_overlap = 0
     for i, line in enumerate(lines):
@@ -164,16 +140,175 @@ def extract_snippet(
         if overlap > best_overlap:
             best_overlap = overlap
             best_line_idx = i
+    return best_line_idx
 
-    # Extract context window
-    start_idx = max(0, best_line_idx - context_lines)
-    end_idx = min(len(lines), best_line_idx + context_lines + 1)
+
+def _render_line(abs_line: int, text: str, line_width: int) -> str:
+    """Render a single line with its line number."""
+    return f"{abs_line:>{line_width}} | {text}"
+
+
+def _render_collapse(hidden_lines: int, indent: str, line_width: int) -> str:
+    """Render a collapse marker showing how many lines are hidden."""
+    padding = " " * (line_width + 3)  # width + " | "
+    return f"{padding}{indent}...  ({hidden_lines} lines)"
+
+
+def extract_snippet(
+    chunk_content: str,
+    query: str,
+    context_lines: int = 3,
+    ancestors: list[dict] | None = None,
+    chunk_start_line: int = 0,
+    mode: str = "lines",
+    max_depth: int | None = None,
+) -> dict:
+    """Extract best-matching snippet from chunk content with optional ancestry.
+
+    In 'lines' mode (default), shows the match window surrounded by a collapsed
+    nesting skeleton — each ancestor's definition line with collapsed markers
+    between. In 'full' mode, expands all ancestor content without collapsing.
+
+    Args:
+        chunk_content: Full chunk text
+        query: Search query (for keyword overlap scoring)
+        context_lines: Number of lines before/after best match
+        ancestors: List of symbol dicts with line, end_line, signature, name, kind
+                   ordered outermost first. If None, returns flat snippet.
+        chunk_start_line: Absolute file line where the chunk starts (1-based)
+        mode: 'lines' (collapsed ancestry) or 'full' (expand everything)
+        max_depth: Max ancestor levels to show (None = all)
+
+    Returns:
+        Dict with snippet, line positions, best_match_line, and ancestors metadata
+    """
+    empty = {
+        "snippet": "", "snippet_start_line": 0,
+        "snippet_end_line": 0, "best_match_line": 0, "ancestors": [],
+    }
+    if not chunk_content:
+        return empty
+
+    lines = chunk_content.split("\n")
+    best_line_idx = _find_best_match_line(lines, query)
+
+    # Match window (chunk-relative indices)
+    win_start = max(0, best_line_idx - context_lines)
+    win_end = min(len(lines), best_line_idx + context_lines + 1)
+
+    # Absolute line numbers
+    abs_match = chunk_start_line + best_line_idx
+    abs_win_start = chunk_start_line + win_start
+    abs_win_end = chunk_start_line + win_end - 1
+
+    # No ancestors — return flat snippet with line numbers
+    if not ancestors:
+        line_width = len(str(abs_win_end))
+        rendered = []
+        for i in range(win_start, win_end):
+            abs_ln = chunk_start_line + i
+            rendered.append(_render_line(abs_ln, lines[i], line_width))
+        return {
+            "snippet": "\n".join(rendered),
+            "snippet_start_line": abs_win_start,
+            "snippet_end_line": abs_win_end,
+            "best_match_line": abs_match,
+            "ancestors": [],
+        }
+
+    # Trim ancestors to max_depth
+    if max_depth is not None and len(ancestors) > max_depth:
+        ancestors = ancestors[-max_depth:]
+
+    # Build ancestor metadata for return value
+    ancestor_meta = [
+        {"name": a.get("name", ""), "kind": a.get("kind", ""),
+         "line": a.get("line", 0), "end_line": a.get("end_line", 0)}
+        for a in ancestors
+    ]
+
+    if mode == "full":
+        # Full mode: show everything from outermost ancestor start to end
+        outermost = ancestors[0]
+        full_start = outermost.get("line", abs_win_start)
+        full_end = outermost.get("end_line", abs_win_end)
+        # We can only render lines within the chunk
+        render_start = max(0, full_start - chunk_start_line)
+        render_end = min(len(lines), full_end - chunk_start_line + 1)
+        line_width = len(str(full_end))
+        rendered = []
+        for i in range(render_start, render_end):
+            abs_ln = chunk_start_line + i
+            rendered.append(_render_line(abs_ln, lines[i], line_width))
+        return {
+            "snippet": "\n".join(rendered),
+            "snippet_start_line": full_start,
+            "snippet_end_line": full_end,
+            "best_match_line": abs_match,
+            "ancestors": ancestor_meta,
+        }
+
+    # Lines mode: collapsed ancestry skeleton
+    # Determine line width from the largest line number we'll show
+    all_line_nums = [a.get("line", 0) for a in ancestors]
+    all_line_nums.extend(range(abs_win_start, abs_win_end + 1))
+    innermost_end = ancestors[-1].get("end_line", 0) if ancestors else 0
+    if innermost_end:
+        all_line_nums.append(innermost_end)
+    line_width = len(str(max(all_line_nums))) if all_line_nums else 4
+
+    rendered = []
+    cursor = 0  # tracks the next absolute line we expect to show
+
+    # Only render ancestors whose definition line is BEFORE the match window
+    for anc in ancestors:
+        anc_line = anc.get("line", 0)
+        if anc_line >= abs_win_start:
+            break  # this ancestor is inside the match window — skip rendering
+
+        # Use stored signature as-is (captured from source at index time)
+        sig = anc.get("signature", "") or anc.get("name", "")
+        if "\n" in sig:
+            sig = sig.split("\n")[0].rstrip()
+
+        def_text = sig
+        # Derive indent from the signature's leading whitespace
+        indent = " " * (len(sig) - len(sig.lstrip())) if sig else ""
+
+        if cursor > 0 and anc_line > cursor:
+            hidden = anc_line - cursor
+            if hidden > 0:
+                rendered.append(_render_collapse(hidden, indent, line_width))
+
+        rendered.append(_render_line(anc_line, def_text, line_width))
+        cursor = anc_line + 1
+
+    # Collapse between last rendered ancestor and match window
+    if cursor > 0 and abs_win_start > cursor:
+        hidden = abs_win_start - cursor
+        if hidden > 0:
+            depth_indent = "    " * len(ancestors)
+            rendered.append(_render_collapse(hidden, depth_indent, line_width))
+
+    # Render the match window
+    for i in range(win_start, win_end):
+        abs_ln = chunk_start_line + i
+        rendered.append(_render_line(abs_ln, lines[i], line_width))
+    cursor = abs_win_end + 1
+
+    # Collapse after match window to innermost ancestor's end
+    if innermost_end and cursor <= innermost_end:
+        hidden = innermost_end - cursor + 1
+        if hidden > 0:
+            depth_indent = "    " * len(ancestors)
+            rendered.append(_render_collapse(hidden, depth_indent, line_width))
 
     return {
-        "snippet": "\n".join(lines[start_idx:end_idx]),
-        "snippet_start_line": start_idx,
-        "snippet_end_line": end_idx - 1,
-        "best_match_line": best_line_idx,
+        "snippet": "\n".join(rendered),
+        "snippet_start_line": abs_win_start,
+        "snippet_end_line": abs_win_end,
+        "best_match_line": abs_match,
+        "ancestors": ancestor_meta,
     }
 
 
@@ -512,6 +647,7 @@ def hybrid_search(
                 chunk_source_type = meta.get("source_type", "code")
                 enriched = {
                     "id": chunk_id,
+                    "file_id": meta.get("file_id"),
                     "file_path": file_path,
                     "start_line": meta.get("start_line", 0),
                     "end_line": meta.get("end_line", 0),
@@ -651,6 +787,7 @@ def hybrid_search(
             chunk_source_type = meta.get("source_type", "code")
             enriched = {
                 "id": chunk_id,
+                "file_id": meta.get("file_id"),
                 "file_path": file_path,
                 "start_line": meta.get("start_line", 0),
                 "end_line": meta.get("end_line", 0),

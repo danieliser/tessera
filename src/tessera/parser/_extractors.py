@@ -5,6 +5,13 @@ import tree_sitter
 from tessera.parser._patterns import Symbol, find_child_by_type
 
 
+def _node_signature(node: tree_sitter.Node) -> str:
+    """Extract the first line of a node's source as its signature."""
+    text = node.text.decode("utf-8") if node.text else ""
+    first_line = text.split("\n")[0].rstrip()
+    return first_line
+
+
 def _extract_symbols_python(tree: tree_sitter.Tree, source_code: str) -> list[Symbol]:
     """Extract Python symbols."""
     symbols = []
@@ -18,22 +25,15 @@ def _extract_symbols_python(tree: tree_sitter.Tree, source_code: str) -> list[Sy
             name_node = find_child_by_type(node, "identifier")
             if name_node:
                 name = name_node.text.decode("utf-8")
-                # Build signature
-                params_node = find_child_by_type(node, "parameters")
-                sig = f"{name}(" + (
-                    params_node.text.decode("utf-8")[1:-1]
-                    if params_node
-                    else ""
-                ) + ")"
-
                 kind = "method" if current_class else "function"
                 sym = Symbol(
                     name=name,
                     kind=kind,
                     line=node.start_point[0] + 1,
                     col=node.start_point[1],
+                    end_line=node.end_point[0] + 1,
                     scope=scope,
-                    signature=sig,
+                    signature=_node_signature(node),
                 )
                 symbols.append(sym)
                 # Walk function body with function as scope for nested defs
@@ -51,6 +51,8 @@ def _extract_symbols_python(tree: tree_sitter.Tree, source_code: str) -> list[Sy
                     kind="class",
                     line=node.start_point[0] + 1,
                     col=node.start_point[1],
+                    end_line=node.end_point[0] + 1,
+                    signature=_node_signature(node),
                 )
                 symbols.append(sym)
                 # Walk class body with updated scope
@@ -68,6 +70,7 @@ def _extract_symbols_python(tree: tree_sitter.Tree, source_code: str) -> list[Sy
                 kind="import",
                 line=node.start_point[0] + 1,
                 col=node.start_point[1],
+                end_line=node.end_point[0] + 1,
             )
             symbols.append(sym)
 
@@ -101,7 +104,9 @@ def _extract_symbols_typescript(tree: tree_sitter.Tree, source_code: str) -> lis
                     kind="function",
                     line=node.start_point[0] + 1,
                     col=node.start_point[1],
+                    end_line=node.end_point[0] + 1,
                     scope=scope,
+                    signature=_node_signature(node),
                 )
                 symbols.append(sym)
                 for child in node.children:
@@ -121,7 +126,9 @@ def _extract_symbols_typescript(tree: tree_sitter.Tree, source_code: str) -> lis
                     kind="class",
                     line=node.start_point[0] + 1,
                     col=node.start_point[1],
+                    end_line=node.end_point[0] + 1,
                     scope=scope,
+                    signature=_node_signature(node),
                 )
                 symbols.append(sym)
                 # Walk class body
@@ -139,7 +146,9 @@ def _extract_symbols_typescript(tree: tree_sitter.Tree, source_code: str) -> lis
                     kind="interface",
                     line=node.start_point[0] + 1,
                     col=node.start_point[1],
+                    end_line=node.end_point[0] + 1,
                     scope=scope,
+                    signature=_node_signature(node),
                 )
                 symbols.append(sym)
                 for child in node.children:
@@ -156,7 +165,9 @@ def _extract_symbols_typescript(tree: tree_sitter.Tree, source_code: str) -> lis
                     kind="enum",
                     line=node.start_point[0] + 1,
                     col=node.start_point[1],
+                    end_line=node.end_point[0] + 1,
                     scope=scope,
+                    signature=_node_signature(node),
                 )
                 symbols.append(sym)
                 return
@@ -171,7 +182,9 @@ def _extract_symbols_typescript(tree: tree_sitter.Tree, source_code: str) -> lis
                     kind="type",
                     line=node.start_point[0] + 1,
                     col=node.start_point[1],
+                    end_line=node.end_point[0] + 1,
                     scope=scope,
+                    signature=_node_signature(node),
                 )
                 symbols.append(sym)
                 return
@@ -186,7 +199,9 @@ def _extract_symbols_typescript(tree: tree_sitter.Tree, source_code: str) -> lis
                     kind="method",
                     line=node.start_point[0] + 1,
                     col=node.start_point[1],
+                    end_line=node.end_point[0] + 1,
                     scope=scope,
+                    signature=_node_signature(node),
                 )
                 symbols.append(sym)
                 for child in node.children:
@@ -203,7 +218,9 @@ def _extract_symbols_typescript(tree: tree_sitter.Tree, source_code: str) -> lis
                     kind="method",
                     line=node.start_point[0] + 1,
                     col=node.start_point[1],
+                    end_line=node.end_point[0] + 1,
                     scope=scope,
+                    signature=_node_signature(node),
                 )
                 symbols.append(sym)
                 return
@@ -222,7 +239,9 @@ def _extract_symbols_typescript(tree: tree_sitter.Tree, source_code: str) -> lis
                     kind="function",
                     line=node.start_point[0] + 1,
                     col=node.start_point[1],
+                    end_line=node.end_point[0] + 1,
                     scope=scope,
+                    signature=_node_signature(node),
                 )
                 symbols.append(sym)
                 for child in node.children:
@@ -244,7 +263,9 @@ def _extract_symbols_typescript(tree: tree_sitter.Tree, source_code: str) -> lis
                     kind="function",
                     line=node.start_point[0] + 1,
                     col=node.start_point[1],
+                    end_line=node.end_point[0] + 1,
                     scope=scope,
+                    signature=_node_signature(node),
                 )
                 symbols.append(sym)
                 for child in node.children:
@@ -274,7 +295,9 @@ def _extract_symbols_typescript(tree: tree_sitter.Tree, source_code: str) -> lis
                         kind="function",
                         line=node.start_point[0] + 1,
                         col=node.start_point[1],
+                        end_line=node.end_point[0] + 1,
                         scope=scope,
+                        signature=_node_signature(node),
                     )
                     symbols.append(sym)
                     for child in node.children:
@@ -293,6 +316,7 @@ def _extract_symbols_typescript(tree: tree_sitter.Tree, source_code: str) -> lis
                     kind="import",
                     line=node.start_point[0] + 1,
                     col=node.start_point[1],
+                    end_line=node.end_point[0] + 1,
                 )
                 symbols.append(sym)
 
@@ -335,7 +359,9 @@ def _extract_symbols_php(tree: tree_sitter.Tree, source_code: str) -> list[Symbo
                     kind="function",
                     line=node.start_point[0] + 1,
                     col=node.start_point[1],
+                    end_line=node.end_point[0] + 1,
                     scope=scope,
+                    signature=_node_signature(node),
                 )
                 symbols.append(sym)
                 for child in node.children:
@@ -353,7 +379,9 @@ def _extract_symbols_php(tree: tree_sitter.Tree, source_code: str) -> list[Symbo
                     kind="class",
                     line=node.start_point[0] + 1,
                     col=node.start_point[1],
+                    end_line=node.end_point[0] + 1,
                     scope=scope,
+                    signature=_node_signature(node),
                 )
                 symbols.append(sym)
                 # Walk class body
@@ -371,7 +399,9 @@ def _extract_symbols_php(tree: tree_sitter.Tree, source_code: str) -> list[Symbo
                     kind="method",
                     line=node.start_point[0] + 1,
                     col=node.start_point[1],
+                    end_line=node.end_point[0] + 1,
                     scope=scope,
+                    signature=_node_signature(node),
                 )
                 symbols.append(sym)
                 for child in node.children:
@@ -385,6 +415,7 @@ def _extract_symbols_php(tree: tree_sitter.Tree, source_code: str) -> list[Symbo
                 kind="import",
                 line=node.start_point[0] + 1,
                 col=node.start_point[1],
+                end_line=node.end_point[0] + 1,
             )
             symbols.append(sym)
 
@@ -398,7 +429,9 @@ def _extract_symbols_php(tree: tree_sitter.Tree, source_code: str) -> list[Symbo
                     kind="trait",
                     line=node.start_point[0] + 1,
                     col=node.start_point[1],
+                    end_line=node.end_point[0] + 1,
                     scope=scope,
+                    signature=_node_signature(node),
                 )
                 symbols.append(sym)
                 for child in node.children:
@@ -415,7 +448,9 @@ def _extract_symbols_php(tree: tree_sitter.Tree, source_code: str) -> list[Symbo
                     kind="interface",
                     line=node.start_point[0] + 1,
                     col=node.start_point[1],
+                    end_line=node.end_point[0] + 1,
                     scope=scope,
+                    signature=_node_signature(node),
                 )
                 symbols.append(sym)
                 for child in node.children:
@@ -471,7 +506,9 @@ def _extract_symbols_generic(tree: tree_sitter.Tree, source_code: str) -> list[S
                     kind=kind,
                     line=node.start_point[0] + 1,
                     col=node.start_point[1],
+                    end_line=node.end_point[0] + 1,
                     scope=scope,
+                    signature=_node_signature(node),
                 )
                 symbols.append(sym)
                 for child in node.children:
@@ -492,7 +529,9 @@ def _extract_symbols_generic(tree: tree_sitter.Tree, source_code: str) -> list[S
                     kind="class",
                     line=node.start_point[0] + 1,
                     col=node.start_point[1],
+                    end_line=node.end_point[0] + 1,
                     scope=scope,
+                    signature=_node_signature(node),
                 )
                 symbols.append(sym)
                 old_class = current_class
@@ -516,7 +555,9 @@ def _extract_symbols_generic(tree: tree_sitter.Tree, source_code: str) -> list[S
                     kind="class",
                     line=node.start_point[0] + 1,
                     col=node.start_point[1],
+                    end_line=node.end_point[0] + 1,
                     scope=scope,
+                    signature=_node_signature(node),
                 )
                 symbols.append(sym)
                 for child in node.children:
@@ -538,7 +579,9 @@ def _extract_symbols_generic(tree: tree_sitter.Tree, source_code: str) -> list[S
                     kind="method",
                     line=node.start_point[0] + 1,
                     col=node.start_point[1],
+                    end_line=node.end_point[0] + 1,
                     scope=scope,
+                    signature=_node_signature(node),
                 )
                 symbols.append(sym)
                 for child in node.children:
@@ -559,7 +602,9 @@ def _extract_symbols_generic(tree: tree_sitter.Tree, source_code: str) -> list[S
                     kind="interface",
                     line=node.start_point[0] + 1,
                     col=node.start_point[1],
+                    end_line=node.end_point[0] + 1,
                     scope=scope,
+                    signature=_node_signature(node),
                 )
                 symbols.append(sym)
                 for child in node.children:
@@ -580,7 +625,9 @@ def _extract_symbols_generic(tree: tree_sitter.Tree, source_code: str) -> list[S
                     kind="enum",
                     line=node.start_point[0] + 1,
                     col=node.start_point[1],
+                    end_line=node.end_point[0] + 1,
                     scope=scope,
+                    signature=_node_signature(node),
                 )
                 symbols.append(sym)
                 for child in node.children:
@@ -601,7 +648,9 @@ def _extract_symbols_generic(tree: tree_sitter.Tree, source_code: str) -> list[S
                     kind="trait",
                     line=node.start_point[0] + 1,
                     col=node.start_point[1],
+                    end_line=node.end_point[0] + 1,
                     scope=scope,
+                    signature=_node_signature(node),
                 )
                 symbols.append(sym)
                 for child in node.children:
@@ -619,6 +668,7 @@ def _extract_symbols_generic(tree: tree_sitter.Tree, source_code: str) -> list[S
                 kind="import",
                 line=node.start_point[0] + 1,
                 col=node.start_point[1],
+                end_line=node.end_point[0] + 1,
             )
             symbols.append(sym)
 

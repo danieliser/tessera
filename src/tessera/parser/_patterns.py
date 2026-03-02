@@ -13,6 +13,7 @@ class Symbol:
     kind: str  # 'function', 'class', 'method', 'variable', 'constant', 'import'
     line: int
     col: int
+    end_line: int = 0
     scope: str = ""  # parent class/namespace name
     signature: str = ""
     file_path: str = ""

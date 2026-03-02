@@ -60,7 +60,7 @@ class ProjectDB:
         self._create_schema()
         self._run_migrations()
 
-    CURRENT_SCHEMA_VERSION = 2
+    CURRENT_SCHEMA_VERSION = 3
 
     def _run_migrations(self):
         """Run schema migrations if needed."""
@@ -84,6 +84,9 @@ class ProjectDB:
 
         if current_version < 2:
             self._migrate_to_v2()
+
+        if current_version < 3:
+            self._migrate_to_v3()
 
         cursor.execute(
             "INSERT OR REPLACE INTO _meta (key, value) VALUES (?, ?)",
@@ -115,6 +118,18 @@ class ProjectDB:
 
         self.conn.commit()
 
+    def _migrate_to_v3(self):
+        """Migrate from schema v2 to v3: add end_line to symbols."""
+        try:
+            self.conn.execute("ALTER TABLE symbols ADD COLUMN end_line INTEGER")
+            logger.info("Schema migration: added end_line to symbols")
+        except sqlite3.OperationalError as e:
+            if "duplicate column" in str(e).lower() or "already exists" in str(e).lower():
+                logger.debug("end_line column already exists, skipping")
+            else:
+                raise
+        self.conn.commit()
+
     def _create_schema(self):
         """Create project database schema if it doesn't exist."""
         with self.conn:
@@ -144,6 +159,7 @@ class ProjectDB:
                     col INTEGER,
                     scope TEXT,
                     signature TEXT,
+                    end_line INTEGER,
                     FOREIGN KEY(file_id) REFERENCES files(id)
                 )
             """)
@@ -467,9 +483,9 @@ class ProjectDB:
                 cursor = self.conn.execute(
                     """
                     INSERT INTO symbols (
-                        project_id, file_id, name, kind, line, col, scope, signature
+                        project_id, file_id, name, kind, line, col, scope, signature, end_line
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         sym.get("project_id"),
@@ -479,7 +495,8 @@ class ProjectDB:
                         sym.get("line"),
                         sym.get("col"),
                         sym.get("scope"),
-                        sym.get("signature")
+                        sym.get("signature"),
+                        sym.get("end_line"),
                     )
                 )
                 ids.append(cursor.lastrowid)
@@ -553,6 +570,24 @@ class ProjectDB:
             )
 
         return results
+
+    def get_ancestor_symbols(self, file_id: int, line: int) -> list[dict[str, Any]]:
+        """Get all symbols whose range contains the given line, outermost first.
+
+        Args:
+            file_id: File ID to search within
+            line: Absolute line number to find containing symbols for
+
+        Returns:
+            List of symbol dicts ordered outermost first (ascending start, descending end)
+        """
+        cursor = self.conn.execute(
+            "SELECT * FROM symbols "
+            "WHERE file_id = ? AND line <= ? AND end_line >= ? "
+            "ORDER BY line ASC, end_line DESC",
+            (file_id, line, line),
+        )
+        return [dict(row) for row in cursor.fetchall()]
 
     def get_symbol(self, symbol_id: int) -> dict[str, Any] | None:
         """Get a symbol by ID.

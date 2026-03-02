@@ -8,7 +8,7 @@ class TestSchemaMigration:
     def test_fresh_db_has_v2_schema(self):
         db = ProjectDB(tempfile.mkdtemp())
         cur = db.conn.execute("SELECT value FROM _meta WHERE key='schema_version'")
-        assert cur.fetchone()[0] == "2"
+        assert cur.fetchone()[0] == "3"
 
     def test_new_columns_exist(self):
         db = ProjectDB(tempfile.mkdtemp())
@@ -20,7 +20,7 @@ class TestSchemaMigration:
         db = ProjectDB(tempfile.mkdtemp())
         db._run_migrations()  # Should not raise
         cur = db.conn.execute("SELECT value FROM _meta WHERE key='schema_version'")
-        assert cur.fetchone()[0] == "2"
+        assert cur.fetchone()[0] == "3"
 
     def test_source_type_defaults_to_code(self):
         db = ProjectDB(tempfile.mkdtemp())
