@@ -52,6 +52,42 @@ def normalize_bm25_score(raw_score: float) -> float:
 # if >5% of queries return insufficient results (CTO Condition C4).
 SEMANTIC_SEARCH_OVER_FETCH_MULTIPLIER = 3
 
+# BM25 short-circuit thresholds: skip semantic/PPR when keyword match is very confident
+BM25_STRONG_SIGNAL_THRESHOLD = 0.85
+BM25_STRONG_SIGNAL_GAP = 0.15
+
+# Per-list weights for weighted RRF fusion
+DEFAULT_RRF_WEIGHTS = {
+    "keyword": 1.5,
+    "semantic": 1.0,
+    "graph": 0.8,
+}
+
+
+def bm25_strong_signal_check(
+    keyword_results: list[dict],
+    threshold: float = BM25_STRONG_SIGNAL_THRESHOLD,
+    gap: float = BM25_STRONG_SIGNAL_GAP,
+) -> bool:
+    """Check if BM25 results are confident enough to skip semantic/PPR search.
+
+    Returns True when the top result's normalized score >= threshold AND
+    the gap between #1 and #2 >= gap, indicating a high-confidence keyword
+    match where expensive operations can be skipped.
+    """
+    if len(keyword_results) < 1:
+        return False
+
+    top_score = normalize_bm25_score(keyword_results[0].get("score", 0))
+    if top_score < threshold:
+        return False
+
+    if len(keyword_results) < 2:
+        return True
+
+    second_score = normalize_bm25_score(keyword_results[1].get("score", 0))
+    return (top_score - second_score) >= gap
+
 
 def extract_snippet(
     chunk_content: str,
@@ -242,6 +278,69 @@ def rrf_merge(ranked_lists: list[list[dict]], k: int = 60) -> list[dict]:
     return output
 
 
+def weighted_rrf_merge(
+    ranked_lists: list[list[dict]],
+    weights: Optional[list[float]] = None,
+    k: int = 60,
+) -> list[dict]:
+    """Weighted Reciprocal Rank Fusion.
+
+    Extends standard RRF with per-list weights:
+    score(d) = sum over sources of weight_i / (k + rank(d, source_i))
+
+    Args:
+        ranked_lists: List of ranked result lists, each with 'id' field
+        weights: Per-list weights (e.g., [1.5, 1.0, 0.8] for FTS/FAISS/PPR).
+                 If None, all lists weighted equally at 1.0.
+        k: RRF constant (default 60)
+
+    Returns:
+        Merged list sorted by weighted RRF score, with 'rrf_score' and 'rrf_rank'
+    """
+    if not ranked_lists:
+        return []
+
+    if weights is None:
+        weights = [1.0] * len(ranked_lists)
+
+    if len(weights) != len(ranked_lists):
+        raise ValueError(
+            f"weights length ({len(weights)}) must match ranked_lists length ({len(ranked_lists)})"
+        )
+
+    score_map: dict = {}
+    item_map: dict = {}
+
+    for list_idx, ranked_list in enumerate(ranked_lists):
+        w = weights[list_idx]
+        for rank, item in enumerate(ranked_list, start=1):
+            item_id = item["id"]
+            reciprocal_rank = w / (k + rank)
+
+            if item_id not in score_map:
+                score_map[item_id] = 0.0
+                item_map[item_id] = item
+            else:
+                item_map[item_id].update(item)
+
+            score_map[item_id] += reciprocal_rank
+
+    sorted_results = sorted(
+        score_map.items(),
+        key=lambda x: x[1],
+        reverse=True,
+    )
+
+    output = []
+    for rrf_rank, (item_id, score) in enumerate(sorted_results, start=1):
+        result = item_map[item_id].copy()
+        result["rrf_score"] = score
+        result["rrf_rank"] = rrf_rank
+        output.append(result)
+
+    return output
+
+
 def cosine_search(
     query_embedding: np.ndarray,
     chunk_ids: list[int],
@@ -325,6 +424,7 @@ def hybrid_search(
             source_type, trusted, section_heading, key_path, page_number, parent_section, graph_version
     """
     ranked_lists = []
+    list_labels = []
     ppr_results = []
 
     # 1. Keyword search (SQL-level filtering when source_type is active)
@@ -332,8 +432,64 @@ def hybrid_search(
         keyword_results = db.keyword_search(query, limit=limit, source_type=source_type)
         if keyword_results:
             ranked_lists.append(keyword_results)
+            list_labels.append("keyword")
     except Exception:
         keyword_results = []
+
+    # 1b. BM25 strong-signal short-circuit: skip expensive operations when
+    # keyword match is very high confidence (top score >= 0.85 with >= 0.15 gap)
+    if keyword_results and bm25_strong_signal_check(keyword_results):
+        logger.debug("BM25 short-circuit: strong signal, skipping semantic/PPR")
+        weights = [DEFAULT_RRF_WEIGHTS["keyword"]]
+        merged = weighted_rrf_merge(ranked_lists, weights=weights)
+        results = []
+        for item in merged[:limit]:
+            chunk_id = item["id"]
+            try:
+                meta = db.get_chunk(chunk_id)
+                file_path = meta.get("file_path", "")
+                if not file_path and meta.get("file_id"):
+                    file_rec = db.get_file(file_id=meta["file_id"])
+                    if file_rec:
+                        file_path = file_rec.get("path", "")
+                chunk_source_type = meta.get("source_type", "code")
+                enriched = {
+                    "id": chunk_id,
+                    "file_path": file_path,
+                    "start_line": meta.get("start_line", 0),
+                    "end_line": meta.get("end_line", 0),
+                    "content": meta.get("content", ""),
+                    "score": item.get("rrf_score", item.get("score", 0.0)),
+                    "rank_sources": ["keyword"],
+                    "source_type": chunk_source_type,
+                    "trusted": chunk_source_type == "code",
+                    "section_heading": meta.get("section_heading", ""),
+                    "key_path": meta.get("key_path", ""),
+                    "page_number": meta.get("page_number"),
+                    "parent_section": meta.get("parent_section", ""),
+                    "graph_version": graph.loaded_at if graph else None,
+                    "short_circuited": True,
+                }
+            except Exception:
+                enriched = {
+                    "id": chunk_id,
+                    "file_path": "",
+                    "start_line": 0,
+                    "end_line": 0,
+                    "content": "",
+                    "score": item.get("rrf_score", item.get("score", 0.0)),
+                    "rank_sources": ["keyword"],
+                    "source_type": "code",
+                    "trusted": True,
+                    "section_heading": "",
+                    "key_path": "",
+                    "page_number": None,
+                    "parent_section": "",
+                    "graph_version": graph.loaded_at if graph else None,
+                    "short_circuited": True,
+                }
+            results.append(enriched)
+        return results
 
     # 2. Semantic search
     semantic_results = []
@@ -359,6 +515,7 @@ def hybrid_search(
                     semantic_results = filtered[:limit]
                 if semantic_results:
                     ranked_lists.append(semantic_results)
+                    list_labels.append("semantic")
         except Exception:
             semantic_results = []
 
@@ -409,20 +566,20 @@ def hybrid_search(
 
                 if ppr_results:
                     ranked_lists.append(ppr_results)
+                    list_labels.append("graph")
         except Exception as e:
             logger.warning(f"PPR computation failed, falling back to 2-way RRF: {e}")
 
-    # 4. Merge with RRF
+    # 4. Merge with weighted RRF
     if not ranked_lists:
         return []
 
-    merged = rrf_merge(ranked_lists)
+    weights = [DEFAULT_RRF_WEIGHTS.get(label, 1.0) for label in list_labels]
+    merged = weighted_rrf_merge(ranked_lists, weights=weights)
 
     # 5. Enrich with chunk metadata
     results = []
-    rank_sources = ["keyword", "semantic"]
-    if ppr_results:
-        rank_sources.append("graph")
+    rank_sources = list_labels
 
     for item in merged[:limit]:
         chunk_id = item["id"]

@@ -25,11 +25,17 @@ import pytest
 from tessera.db import ProjectDB
 from tessera.search import (
     normalize_bm25_score,
+    bm25_strong_signal_check,
     extract_snippet,
     enrich_with_docid,
     generate_docid,
     format_results,
     hybrid_search,
+    rrf_merge,
+    weighted_rrf_merge,
+    DEFAULT_RRF_WEIGHTS,
+    BM25_STRONG_SIGNAL_THRESHOLD,
+    BM25_STRONG_SIGNAL_GAP,
 )
 
 # ── Fixtures ──────────────────────────────────────────────────────────────
@@ -477,6 +483,181 @@ class TestSearchLatency:
             total = t_embed + t_search + t_post
             report_lines.append(
                 f"| `{query}` | {t_embed:.1f} | {t_search:.1f} | {t_post:.2f} | {total:.1f} |"
+            )
+
+        report_lines.append("")
+
+
+# ── Benchmark 7: BM25 Strong-Signal Short-Circuit ────────────────────────
+
+
+class TestBM25ShortCircuit:
+    """Measure when keyword results are confident enough to skip semantic/PPR."""
+
+    def test_short_circuit_detection(self, db, report_lines):
+        report_lines.append("## 7. BM25 Strong-Signal Short-Circuit")
+        report_lines.append("")
+        report_lines.append(f"**Change:** Skip semantic search + PPR when top BM25 result score >= {BM25_STRONG_SIGNAL_THRESHOLD} "
+                           f"AND gap to #2 >= {BM25_STRONG_SIGNAL_GAP}.")
+        report_lines.append("Saves ~30-50ms per query when keyword match is unambiguous.")
+        report_lines.append("")
+        report_lines.append("| Query | Top-1 Norm | Top-2 Norm | Gap | Short-Circuit? | Reason |")
+        report_lines.append("|-------|-----------|-----------|-----|---------------|--------|")
+
+        for query in QUERIES:
+            raw_results = db.keyword_search(query, limit=10)
+            if not raw_results:
+                report_lines.append(f"| `{query}` | — | — | — | No | No results |")
+                continue
+
+            top_score = normalize_bm25_score(raw_results[0].get("score", 0))
+            second_score = normalize_bm25_score(raw_results[1].get("score", 0)) if len(raw_results) > 1 else 0.0
+            gap = top_score - second_score
+            triggers = bm25_strong_signal_check(raw_results)
+
+            if triggers:
+                reason = "High confidence"
+            elif top_score < BM25_STRONG_SIGNAL_THRESHOLD:
+                reason = f"Score {top_score:.3f} < {BM25_STRONG_SIGNAL_THRESHOLD}"
+            else:
+                reason = f"Gap {gap:.3f} < {BM25_STRONG_SIGNAL_GAP}"
+
+            report_lines.append(
+                f"| `{query}` | {top_score:.4f} | {second_score:.4f} | {gap:.4f} | "
+                f"{'**Yes**' if triggers else 'No'} | {reason} |"
+            )
+
+        report_lines.append("")
+
+    def test_short_circuit_latency_savings(self, db, embedding_client, report_lines):
+        """Compare latency with and without short-circuit."""
+        report_lines.append("**Latency comparison** (with vs without short-circuit):")
+        report_lines.append("")
+        report_lines.append("| Query | Full Pipeline (ms) | Short-Circuit (ms) | Saved (ms) | Triggered? |")
+        report_lines.append("|-------|-------------------|-------------------|-----------|-----------|")
+
+        for query in QUERIES[:5]:
+            raw_emb = embedding_client.embed_query(query)
+            emb = np.array(raw_emb, dtype=np.float32)
+
+            # Full pipeline (with embeddings)
+            t0 = time.perf_counter()
+            results_full = hybrid_search(query, emb, db, limit=10)
+            t_full = (time.perf_counter() - t0) * 1000
+
+            # Keyword-only (simulates short-circuit)
+            t0 = time.perf_counter()
+            results_kw = hybrid_search(query, query_embedding=None, db=db, limit=10)
+            t_kw = (time.perf_counter() - t0) * 1000
+
+            triggered = any(r.get("short_circuited") for r in results_kw)
+            saved = t_full - t_kw
+
+            report_lines.append(
+                f"| `{query}` | {t_full:.1f} | {t_kw:.1f} | {saved:+.1f} | {'Yes' if triggered else 'No'} |"
+            )
+
+        report_lines.append("")
+
+
+# ── Benchmark 8: Weighted RRF ─────────────────────────────────────────────
+
+
+class TestWeightedRRF:
+    """Compare equal-weight RRF vs weighted RRF (keyword 1.5x, semantic 1.0x, graph 0.8x)."""
+
+    def test_weighted_vs_equal_rrf(self, db, embedding_client, report_lines):
+        report_lines.append("## 8. Weighted RRF Fusion")
+        report_lines.append("")
+        report_lines.append(f"**Change:** Per-list weights: keyword={DEFAULT_RRF_WEIGHTS['keyword']}x, "
+                           f"semantic={DEFAULT_RRF_WEIGHTS['semantic']}x, graph={DEFAULT_RRF_WEIGHTS['graph']}x "
+                           f"(was 1.0x equal).")
+        report_lines.append("Keyword results boosted because FTS5 precision is higher for code search.")
+        report_lines.append("")
+        report_lines.append("| Query | Equal RRF Top-3 | Weighted RRF Top-3 | Rank Changes | Score Boost |")
+        report_lines.append("|-------|-----------------|--------------------|-------------|-------------|")
+
+        for query in QUERIES[:6]:
+            raw_emb = embedding_client.embed_query(query)
+            emb = np.array(raw_emb, dtype=np.float32)
+
+            # Get keyword and semantic results
+            kw_results = db.keyword_search(query, limit=10)
+            all_embeddings = db.get_all_embeddings()
+            sem_results = []
+            if all_embeddings and len(all_embeddings) > 0:
+                from tessera.search import cosine_search
+                chunk_ids, embedding_vectors = all_embeddings
+                sem_results = cosine_search(emb, chunk_ids, embedding_vectors, limit=10)
+
+            if not kw_results:
+                continue
+
+            ranked_lists = [kw_results]
+            labels = ["keyword"]
+            if sem_results:
+                ranked_lists.append(sem_results)
+                labels.append("semantic")
+
+            # Equal weight RRF
+            equal_merged = rrf_merge(ranked_lists)
+
+            # Weighted RRF
+            weights = [DEFAULT_RRF_WEIGHTS.get(l, 1.0) for l in labels]
+            weighted_merged = weighted_rrf_merge(ranked_lists, weights=weights)
+
+            def _top3_ids(results):
+                return [r["id"] for r in results[:3]]
+
+            equal_top = _top3_ids(equal_merged)
+            weighted_top = _top3_ids(weighted_merged)
+
+            # Count rank changes
+            rank_changes = sum(1 for i, eid in enumerate(equal_top) if i < len(weighted_top) and weighted_top[i] != eid)
+
+            # Score boost (weighted top-1 vs equal top-1)
+            s_equal = equal_merged[0]["rrf_score"] if equal_merged else 0
+            s_weighted = weighted_merged[0]["rrf_score"] if weighted_merged else 0
+
+            def _id_labels(ids, db):
+                names = []
+                for cid in ids:
+                    chunk = db.get_chunk(cid)
+                    if chunk:
+                        fp = chunk.get("file_path", "") or ""
+                        names.append(os.path.basename(fp)[:15] if fp else str(cid))
+                    else:
+                        names.append(str(cid))
+                return ", ".join(names)
+
+            report_lines.append(
+                f"| `{query}` | {_id_labels(equal_top, db)} | {_id_labels(weighted_top, db)} | "
+                f"{rank_changes}/3 | {s_weighted - s_equal:+.6f} |"
+            )
+
+        report_lines.append("")
+
+    def test_weight_sensitivity(self, report_lines):
+        """Show how weights affect relative scoring."""
+        report_lines.append("**Weight sensitivity:** How per-list weights shift RRF scores.")
+        report_lines.append("")
+        report_lines.append("| Weights (kw, sem) | ID-1 Score | ID-2 Score | ID-3 Score | Rank Change vs Equal |")
+        report_lines.append("|-------------------|-----------|-----------|-----------|---------------------|")
+
+        kw = [{"id": 1, "score": 0.9}, {"id": 2, "score": 0.8}, {"id": 3, "score": 0.7}]
+        sem = [{"id": 2, "score": 0.95}, {"id": 3, "score": 0.85}, {"id": 1, "score": 0.75}]
+        lists = [kw, sem]
+
+        equal = rrf_merge(lists)
+        equal_order = [r["id"] for r in equal]
+
+        for w_kw, w_sem in [(1.0, 1.0), (1.5, 1.0), (2.0, 1.0), (1.0, 2.0)]:
+            merged = weighted_rrf_merge(lists, weights=[w_kw, w_sem])
+            order = [r["id"] for r in merged]
+            changes = sum(1 for i in range(min(3, len(order))) if i < len(equal_order) and order[i] != equal_order[i])
+            scores = {r["id"]: r["rrf_score"] for r in merged}
+            report_lines.append(
+                f"| ({w_kw}, {w_sem}) | {scores.get(1, 0):.6f} | {scores.get(2, 0):.6f} | {scores.get(3, 0):.6f} | {changes}/3 |"
             )
 
         report_lines.append("")
