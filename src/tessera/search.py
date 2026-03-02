@@ -20,6 +20,7 @@ import hashlib
 import io
 import json
 import logging
+import re
 from typing import Optional
 import numpy as np
 import faiss
@@ -74,13 +75,17 @@ def extract_snippet(
         return {"snippet": "", "snippet_start_line": 0, "snippet_end_line": 0, "best_match_line": 0}
 
     lines = chunk_content.split("\n")
-    query_terms = set(query.lower().split())
+    # Tokenize like FTS5: split on non-alphanumeric boundaries so
+    # "normalize_bm25_score" → {"normalize", "bm25", "score"} matches
+    # code identifiers, parens, punctuation, etc.
+    _tokenize = re.compile(r"[a-z0-9]+", re.IGNORECASE).findall
+    query_terms = set(t.lower() for t in _tokenize(query))
 
     # Score each line by keyword overlap
     best_line_idx = 0
     best_overlap = 0
     for i, line in enumerate(lines):
-        overlap = len(query_terms & set(line.lower().split()))
+        overlap = len(query_terms & set(t.lower() for t in _tokenize(line)))
         if overlap > best_overlap:
             best_overlap = overlap
             best_line_idx = i
