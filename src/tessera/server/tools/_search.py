@@ -27,7 +27,7 @@ def register_search_tools(mcp: FastMCP) -> None:
     """Register search-related tools."""
 
     @mcp.tool()
-    async def search(query: str, limit: int = 10, filter_language: str = "", source_type: str = "", output_format: str = "json", search_mode: str = "", advanced_fts: bool = False, weights: str = "", session_id: str = "") -> str:
+    async def search(query: str, limit: int = 10, filter_language: str = "", source_type: str = "", output_format: str = "json", search_mode: str = "", advanced_fts: bool = False, weights: str = "", expand_context: str = "lines", max_depth: int | None = None, session_id: str = "") -> str:
         """Hybrid semantic + keyword search across indexed codebase.
 
         Combines FTS5 keyword matching, FAISS vector similarity, and PageRank
@@ -68,6 +68,11 @@ def register_search_tools(mcp: FastMCP) -> None:
             weights: Custom RRF fusion weights. Format: "keyword=1.5,semantic=1.0,graph=0.8".
                 Omit to use defaults. Increase a weight to boost that signal; decrease to dampen it.
                 Example: "keyword=3.0" for identifier-heavy searches, "semantic=2.0" for conceptual.
+            expand_context: Snippet context mode — "lines" (default) shows match window with
+                collapsed ancestor nesting skeleton (class/function hierarchy with line numbers).
+                "full" expands the entire containing symbol. Both include line numbers.
+            max_depth: Max ancestor nesting levels to show (default: all).
+                E.g., max_depth=1 shows only the immediate containing function/class.
         """
         # Import state at call time to get current values (globals are mutable)
         from .._state import _embedding_client, _project_graphs
@@ -161,10 +166,29 @@ def register_search_tools(mcp: FastMCP) -> None:
             # Add stable document IDs
             all_results = enrich_with_docid(all_results)
 
-            # Extract best-matching snippets
+            # Extract best-matching snippets with ancestor context
+            db_by_pid = {pid: db for pid, _pn, db in dbs}
             for r in all_results:
                 if r.get("content"):
-                    snippet_info = extract_snippet(r["content"], query)
+                    chunk_start = r.get("start_line", 0)
+                    # Quick pass to find best match line for ancestor lookup
+                    flat = extract_snippet(r["content"], query)
+                    abs_match = chunk_start + flat["best_match_line"]
+
+                    # Look up ancestor symbols for nesting context
+                    file_id = r.get("file_id")
+                    result_db = db_by_pid.get(r.get("project_id"))
+                    ancestors = []
+                    if file_id and result_db and abs_match > 0:
+                        ancestors = result_db.get_ancestor_symbols(file_id, abs_match)
+
+                    snippet_info = extract_snippet(
+                        r["content"], query,
+                        ancestors=ancestors,
+                        chunk_start_line=chunk_start,
+                        mode=expand_context,
+                        max_depth=max_depth,
+                    )
                     r.update(snippet_info)
 
             _log_audit("search", len(all_results), agent_id=agent_id, ppr_used=ppr_used)

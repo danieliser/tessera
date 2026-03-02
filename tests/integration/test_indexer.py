@@ -11,13 +11,14 @@ from tessera.indexer import IndexerPipeline, IndexStats
 # Mock classes for db, parser, and embeddings
 class MockSymbol:
     """Mock Symbol dataclass."""
-    def __init__(self, name, kind, line, col, scope="", signature=""):
+    def __init__(self, name, kind, line, col, scope="", signature="", end_line=0):
         self.name = name
         self.kind = kind
         self.line = line
         self.col = col
         self.scope = scope
         self.signature = signature
+        self.end_line = end_line
 
 
 class MockReference:

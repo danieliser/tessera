@@ -184,3 +184,205 @@ class TestCosineSearch:
         assert len(result) <= 5
         result_ids = [r["id"] for r in result]
         assert set(result_ids).issubset(set(chunk_ids))
+
+
+class TestExtractSnippet:
+    """Test extract_snippet with collapsed ancestry."""
+
+    def test_flat_snippet_no_ancestors(self):
+        """Without ancestors, returns flat snippet with line numbers."""
+        from tessera.search import extract_snippet
+
+        content = "line0\nline1\nfoo_bar\nline3\nline4"
+        result = extract_snippet(content, "foo_bar", context_lines=1, chunk_start_line=10)
+        assert result["best_match_line"] == 12  # absolute: 10 + 2
+        assert "12 |" in result["snippet"]
+        assert result["ancestors"] == []
+
+    def test_flat_snippet_backward_compat(self):
+        """Calling with no extra params works like the old version."""
+        from tessera.search import extract_snippet
+
+        content = "alpha\nbeta\ngamma\ndelta\nepsilon"
+        result = extract_snippet(content, "gamma")
+        # chunk_start_line defaults to 0, so lines are 0-based
+        assert result["best_match_line"] == 2
+        assert "snippet" in result
+
+    def test_collapsed_ancestry_single_parent(self):
+        """Lines mode with one ancestor shows definition + collapse + match."""
+        from tessera.search import extract_snippet
+
+        content = (
+            "    def helper(self):\n"  # line 0 (abs 20)
+            "        x = 1\n"          # line 1 (abs 21)
+            "        y = 2\n"          # line 2 (abs 22)
+            "        foo_match = 3\n"  # line 3 (abs 23)
+            "        z = 4\n"          # line 4 (abs 24)
+            "        return z"         # line 5 (abs 25)
+        )
+        ancestors = [{
+            "name": "MyClass", "kind": "class",
+            "line": 10, "end_line": 30,
+            "signature": "class MyClass:",
+        }]
+        result = extract_snippet(
+            content, "foo_match", context_lines=1,
+            ancestors=ancestors, chunk_start_line=20,
+        )
+        snippet = result["snippet"]
+        # Should contain the class definition line
+        assert "10 |" in snippet or "10 | " in snippet
+        assert "class MyClass:" in snippet
+        # Should contain collapse marker
+        assert "..." in snippet
+        assert "lines)" in snippet
+        # Should contain the match with line numbers
+        assert "23 |" in snippet or "23 | " in snippet
+        assert "foo_match" in snippet
+        # Ancestors metadata
+        assert len(result["ancestors"]) == 1
+        assert result["ancestors"][0]["name"] == "MyClass"
+
+    def test_collapsed_ancestry_nested(self):
+        """Lines mode with class → method nesting."""
+        from tessera.search import extract_snippet
+
+        content = "        target = True\n        other = False"
+        ancestors = [
+            {"name": "Processor", "kind": "class", "line": 5, "end_line": 50,
+             "signature": "class Processor:"},
+            {"name": "run", "kind": "method", "line": 15, "end_line": 40,
+             "signature": "    def run(self):"},
+        ]
+        result = extract_snippet(
+            content, "target", context_lines=1,
+            ancestors=ancestors, chunk_start_line=30,
+        )
+        snippet = result["snippet"]
+        # Both ancestors should appear
+        assert "class Processor:" in snippet
+        assert "def run(self):" in snippet
+        # Match window
+        assert "target" in snippet
+        assert len(result["ancestors"]) == 2
+
+    def test_full_mode(self):
+        """Full mode expands entire outermost ancestor range."""
+        from tessera.search import extract_snippet
+
+        content = "line0\nline1\ntarget\nline3\nline4\nline5"
+        ancestors = [{
+            "name": "foo", "kind": "function",
+            "line": 100, "end_line": 105,
+            "signature": "def foo():",
+        }]
+        result = extract_snippet(
+            content, "target", context_lines=1,
+            ancestors=ancestors, chunk_start_line=100,
+            mode="full",
+        )
+        # Full mode should include all lines from ancestor start to end
+        assert result["snippet_start_line"] == 100
+        assert result["snippet_end_line"] == 105
+        assert len(result["ancestors"]) == 1
+
+    def test_max_depth_limits_ancestors(self):
+        """max_depth should trim ancestor list from outermost."""
+        from tessera.search import extract_snippet
+
+        content = "            deep_match = 1"
+        ancestors = [
+            {"name": "Module", "kind": "class", "line": 1, "end_line": 100,
+             "signature": "class Module:"},
+            {"name": "Inner", "kind": "class", "line": 10, "end_line": 80,
+             "signature": "    class Inner:"},
+            {"name": "method", "kind": "method", "line": 20, "end_line": 60,
+             "signature": "        def method(self):"},
+        ]
+        result = extract_snippet(
+            content, "deep_match", context_lines=0,
+            ancestors=ancestors, chunk_start_line=40,
+            max_depth=1,
+        )
+        # Only innermost ancestor should remain
+        assert len(result["ancestors"]) == 1
+        assert result["ancestors"][0]["name"] == "method"
+
+    def test_empty_content(self):
+        """Empty content returns empty result."""
+        from tessera.search import extract_snippet
+
+        result = extract_snippet("", "query")
+        assert result["snippet"] == ""
+        assert result["ancestors"] == []
+
+    def test_no_ancestors_match_outside_symbols(self):
+        """Top-level code with no containing symbols returns flat snippet."""
+        from tessera.search import extract_snippet
+
+        content = "import os\nimport sys\nfoo = 1"
+        result = extract_snippet(
+            content, "foo", context_lines=1,
+            ancestors=[], chunk_start_line=1,
+        )
+        assert result["ancestors"] == []
+        assert "foo" in result["snippet"]
+
+
+class TestGetAncestorSymbols:
+    """Test ProjectDB.get_ancestor_symbols()."""
+
+    def test_finds_containing_symbols(self, tmp_path):
+        from tessera.db import ProjectDB
+
+        db = ProjectDB(str(tmp_path))
+        fid = db.upsert_file(1, "test.py", "python", "hash1")
+        db.insert_symbols([
+            {"project_id": 1, "file_id": fid, "name": "MyClass", "kind": "class",
+             "line": 5, "col": 0, "scope": "", "signature": "class MyClass:", "end_line": 50},
+            {"project_id": 1, "file_id": fid, "name": "do_work", "kind": "method",
+             "line": 10, "col": 4, "scope": "MyClass", "signature": "def do_work(self):", "end_line": 30},
+            {"project_id": 1, "file_id": fid, "name": "other", "kind": "function",
+             "line": 55, "col": 0, "scope": "", "signature": "def other():", "end_line": 60},
+        ])
+
+        # Line 20 is inside MyClass.do_work
+        ancestors = db.get_ancestor_symbols(fid, 20)
+        names = [a["name"] for a in ancestors]
+        assert "MyClass" in names
+        assert "do_work" in names
+        assert "other" not in names
+        # Outermost first
+        assert names.index("MyClass") < names.index("do_work")
+
+    def test_no_containing_symbols(self, tmp_path):
+        from tessera.db import ProjectDB
+
+        db = ProjectDB(str(tmp_path))
+        fid = db.upsert_file(1, "test.py", "python", "hash1")
+        db.insert_symbols([
+            {"project_id": 1, "file_id": fid, "name": "func", "kind": "function",
+             "line": 10, "col": 0, "scope": "", "signature": "def func():", "end_line": 20},
+        ])
+
+        # Line 5 is before the function
+        ancestors = db.get_ancestor_symbols(fid, 5)
+        assert ancestors == []
+
+    def test_exact_boundary_lines(self, tmp_path):
+        from tessera.db import ProjectDB
+
+        db = ProjectDB(str(tmp_path))
+        fid = db.upsert_file(1, "test.py", "python", "hash1")
+        db.insert_symbols([
+            {"project_id": 1, "file_id": fid, "name": "func", "kind": "function",
+             "line": 10, "col": 0, "scope": "", "signature": "def func():", "end_line": 20},
+        ])
+
+        # Exact start line
+        assert len(db.get_ancestor_symbols(fid, 10)) == 1
+        # Exact end line
+        assert len(db.get_ancestor_symbols(fid, 20)) == 1
+        # One past end
+        assert len(db.get_ancestor_symbols(fid, 21)) == 0

@@ -645,6 +645,7 @@ class IndexerPipeline:
                     'col': s.col,
                     'scope': s.scope,
                     'signature': s.signature,
+                    'end_line': s.end_line,
                 }
                 for s in symbols
             ]
