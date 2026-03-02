@@ -1,129 +1,42 @@
-"""Orchestration layer for incremental re-indexing.
+"""IndexerPipeline: orchestrates parsing, chunking, embedding, and storage."""
 
-Phase 1: Orchestrates parsing, chunking, embedding, and storage into a complete indexing pipeline.
-Implements:
-  - Project discovery and file enumeration
-  - Incremental updates (new/modified/deleted files)
-  - Symbol extraction and storage to SQLite
-  - Chunk generation and embedding batch calls
-  - Progress tracking and error recovery
-"""
-
-import json
-import os
 import hashlib
 import logging
+import os
 import subprocess
 import time
-from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional, Dict, Any, List
+from typing import Any
 
-from .db import ProjectDB, GlobalDB
-from .parser import detect_language, parse_and_extract, Symbol, Reference, Edge
-from .chunker import chunk_with_cast
-from .embeddings import EmbeddingClient, EmbeddingUnavailableError
-from .search import hybrid_search
-from .document import (
-    DocumentExtractionError, DocumentChunk,
-    extract_pdf, chunk_markdown, chunk_yaml, chunk_json,
-    chunk_html, chunk_xml, chunk_text_file,
+from ..assets import (
+    ASSET_EXTENSIONS,
+    build_asset_synthetic_content,
+    get_asset_metadata,
+    is_asset_file,
 )
-from .ignore import IgnoreFilter
-from .assets import (
-    ASSET_EXTENSIONS, is_asset_file, get_asset_metadata, build_asset_synthetic_content,
+from ..chunker import chunk_with_cast
+from ..db import GlobalDB, ProjectDB
+from ..document import (
+    DocumentExtractionError,
+    chunk_html,
+    chunk_json,
+    chunk_markdown,
+    chunk_text_file,
+    chunk_xml,
+    chunk_yaml,
+)
+from ..embeddings import EmbeddingClient, EmbeddingUnavailableError
+from ..ignore import IgnoreFilter
+from ..parser import detect_language, parse_and_extract
+from ..search import hybrid_search
+from ._helpers import (
+    ALL_DOCUMENT_EXTENSIONS,
+    TEXT_EXTENSIONS,
+    IndexStats,
+    _detect_package_name,
 )
 
 logger = logging.getLogger(__name__)
-
-# Structured document formats (format-specific chunking)
-DOCUMENT_EXTENSIONS = ['.pdf', '.md', '.yaml', '.yml', '.json']
-
-# Text formats (plaintext line-based chunking)
-TEXT_EXTENSIONS = [
-    '.txt', '.rst', '.csv', '.tsv', '.log',
-    '.ini', '.cfg', '.toml', '.conf',
-    '.htaccess', '.env.example', '.env.sample',
-    '.editorconfig', '.prettierrc', '.eslintignore',
-    '.gitattributes', '.npmrc', '.nvmrc',
-    '.dockerignore', '.browserslistrc',
-]
-
-# Markup formats (tag stripping + plaintext chunking)
-MARKUP_EXTENSIONS = ['.html', '.htm', '.xml', '.xsl', '.xslt', '.svg']
-
-ALL_DOCUMENT_EXTENSIONS = DOCUMENT_EXTENSIONS + TEXT_EXTENSIONS + MARKUP_EXTENSIONS
-
-
-def _detect_package_name(file_dir: str, project_root: str, cache: dict) -> str:
-    """Detect package name by walking upward from file_dir to project_root.
-
-    Checks for package.json, pyproject.toml, or composer.json and extracts
-    the package name. Results are cached per directory.
-
-    Returns:
-        Package name string, or empty string if not found.
-    """
-    current = os.path.abspath(file_dir)
-    root = os.path.abspath(project_root)
-
-    while current.startswith(root):
-        if current in cache:
-            return cache[current]
-
-        for manifest, extractor in [
-            ("package.json", lambda c: json.loads(c).get("name", "")),
-            ("composer.json", lambda c: json.loads(c).get("name", "")),
-            ("pyproject.toml", _extract_pyproject_name),
-        ]:
-            path = os.path.join(current, manifest)
-            if os.path.isfile(path):
-                try:
-                    with open(path, "r") as f:
-                        name = extractor(f.read())
-                    if name:
-                        cache[current] = name
-                        return name
-                except (json.JSONDecodeError, OSError, KeyError):
-                    pass
-
-        parent = os.path.dirname(current)
-        if parent == current:
-            break
-        current = parent
-
-    cache[file_dir] = ""
-    return ""
-
-
-def _extract_pyproject_name(content: str) -> str:
-    """Extract project name from pyproject.toml without tomllib dependency."""
-    in_project = False
-    for line in content.splitlines():
-        stripped = line.strip()
-        if stripped == "[project]":
-            in_project = True
-            continue
-        if in_project:
-            if stripped.startswith("[") and stripped != "[project]":
-                break
-            if stripped.startswith("name"):
-                # name = "foo"
-                _, _, value = stripped.partition("=")
-                return value.strip().strip('"').strip("'")
-    return ""
-
-
-@dataclass
-class IndexStats:
-    """Statistics for an indexing run."""
-    files_processed: int = 0
-    files_skipped: int = 0
-    files_failed: int = 0
-    symbols_extracted: int = 0
-    chunks_created: int = 0
-    chunks_embedded: int = 0
-    time_elapsed: float = 0.0
 
 
 class IndexerPipeline:
@@ -132,10 +45,10 @@ class IndexerPipeline:
     def __init__(
         self,
         project_path: str,
-        project_db: Optional[ProjectDB] = None,
-        global_db: Optional[GlobalDB] = None,
-        embedding_client: Optional[EmbeddingClient] = None,
-        languages: Optional[List[str]] = None,
+        project_db: ProjectDB | None = None,
+        global_db: GlobalDB | None = None,
+        embedding_client: EmbeddingClient | None = None,
+        languages: list[str] | None = None,
     ):
         """
         Initialize the indexer pipeline.
@@ -153,10 +66,10 @@ class IndexerPipeline:
         self.embedding_client = embedding_client
         self.languages = languages or ['php', 'typescript', 'python', 'javascript']
         self.project_id = None  # set during register
-        self._package_cache: Dict[str, str] = {}  # dir → package name
+        self._package_cache: dict[str, str] = {}  # dir → package name
         self.ignore_filter = IgnoreFilter(self.project_path)
 
-    def register(self, name: Optional[str] = None) -> int:
+    def register(self, name: str | None = None) -> int:
         """
         Register this project in the global DB.
 
@@ -178,7 +91,7 @@ class IndexerPipeline:
 
         return self.project_id
 
-    def _discover_files(self) -> List[str]:
+    def _discover_files(self) -> list[str]:
         """
         Walk project directory, return paths matching supported languages.
 
@@ -217,7 +130,7 @@ class IndexerPipeline:
 
         return sorted(files)
 
-    def _get_git_head(self) -> Optional[str]:
+    def _get_git_head(self) -> str | None:
         """Get current HEAD commit hash, or None if not a git repo."""
         try:
             result = subprocess.run(
@@ -231,7 +144,7 @@ class IndexerPipeline:
             pass
         return None
 
-    def _get_changed_files(self, since_commit: str) -> List[str]:
+    def _get_changed_files(self, since_commit: str) -> list[str]:
         """Get files changed since a commit using git diff.
 
         Args:
@@ -272,7 +185,7 @@ class IndexerPipeline:
                     changed.append(abs_path)
         return changed
 
-    def _get_deleted_files(self, since_commit: str) -> List[str]:
+    def _get_deleted_files(self, since_commit: str) -> list[str]:
         """Get files deleted since a commit.
 
         Returns:
@@ -290,7 +203,7 @@ class IndexerPipeline:
             pass
         return []
 
-    def index_changed(self, since_commit: Optional[str] = None) -> IndexStats:
+    def index_changed(self, since_commit: str | None = None) -> IndexStats:
         """Incremental reindex using git diff.
 
         If since_commit is provided, uses git diff to find changed files.
@@ -338,7 +251,7 @@ class IndexerPipeline:
                 stats.files_failed += 1
 
         # Resolve cross-file edges
-        edge_stats = self._resolve_cross_file_edges()
+        self._resolve_cross_file_edges()
 
         stats.time_elapsed = time.perf_counter() - start
 
@@ -366,7 +279,7 @@ class IndexerPipeline:
         """Check if file is a document (not code)."""
         return any(file_path.endswith(ext) for ext in ALL_DOCUMENT_EXTENSIONS)
 
-    def _index_document_file(self, file_path: str) -> Dict[str, Any]:
+    def _index_document_file(self, file_path: str) -> dict[str, Any]:
         """Index a single document file with error isolation."""
         rel_path = os.path.relpath(file_path, self.project_path)
 
@@ -379,7 +292,7 @@ class IndexerPipeline:
                 except ImportError:
                     raise DocumentExtractionError(
                         "pymupdf4llm not installed. Install with: pip install pymupdf4llm"
-                    )
+                    ) from None
                 markdown_text = pymupdf4llm.to_markdown(file_path)
                 chunks = chunk_markdown(markdown_text)
             elif file_path.endswith('.md'):
@@ -505,7 +418,7 @@ class IndexerPipeline:
                 pass
             return {'status': 'failed', 'reason': str(e)}
 
-    def _index_asset(self, file_path: str) -> Dict[str, Any]:
+    def _index_asset(self, file_path: str) -> dict[str, Any]:
         """Index a binary asset file: extract metadata, create one FTS5-indexed chunk.
 
         Args:
@@ -648,7 +561,7 @@ class IndexerPipeline:
         except Exception as e:
             logger.warning("Failed to append asset chunk for SVG %s: %s", file_path, e)
 
-    def index_file(self, file_path: str) -> Dict[str, Any]:
+    def index_file(self, file_path: str) -> dict[str, Any]:
         """
         Index a single file: parse, chunk, embed, store.
 
@@ -759,7 +672,7 @@ class IndexerPipeline:
             # PHP symbols may be namespace-qualified (App\Analytics\Tracker) but
             # refs use short names (Tracker). Also map scope-qualified method names.
             name_to_id = {}
-            for s, sid in zip(symbols, symbol_ids):
+            for s, sid in zip(symbols, symbol_ids, strict=False):
                 name_to_id[s.name] = sid
                 # For namespaced symbols, also index the short name (last segment)
                 if '\\' in s.name:
@@ -832,7 +745,7 @@ class IndexerPipeline:
             # Find which symbol IDs overlap with this chunk's line range
             overlapping_ids = [
                 sid
-                for s, sid in zip(symbols, symbol_ids)
+                for s, sid in zip(symbols, symbol_ids, strict=False)
                 if s.line >= chunk.start_line and s.line <= chunk.end_line
             ]
 
@@ -905,7 +818,7 @@ class IndexerPipeline:
                     logger.error(f"Failed to index {file_path}: {result.get('reason')}")
 
             # Resolve cross-file edges
-            edge_stats = self._resolve_cross_file_edges()
+            self._resolve_cross_file_edges()
 
             stats.time_elapsed = time.perf_counter() - start
 
@@ -929,14 +842,14 @@ class IndexerPipeline:
         parts_a = Path(path_a).parts
         parts_b = Path(path_b).parts
         shared = 0
-        for a, b in zip(parts_a, parts_b):
+        for a, b in zip(parts_a, parts_b, strict=False):
             if a == b:
                 shared += 1
             else:
                 break
         return shared
 
-    def _resolve_cross_file_edges(self) -> Dict[str, int]:
+    def _resolve_cross_file_edges(self) -> dict[str, int]:
         """Resolve cross-file references into edges.
 
         Queries unresolved refs (to_symbol_id IS NULL) and matches
@@ -951,7 +864,7 @@ class IndexerPipeline:
             resolved_proximity, resolved_suffix, ambiguous_dropped,
             no_candidate, edges_created.
         """
-        empty_stats: Dict[str, int] = {
+        empty_stats: dict[str, int] = {
             "total_unresolved": 0, "resolved_strict": 0,
             "resolved_proximity": 0, "resolved_suffix": 0,
             "ambiguous_dropped": 0, "no_candidate": 0, "edges_created": 0,
@@ -989,14 +902,14 @@ class IndexerPipeline:
             "SELECT id, path FROM files WHERE project_id = ?",
             (self.project_id,)
         )
-        file_id_to_path: Dict[int, str] = {row[0]: row[1] for row in cursor.fetchall()}
+        file_id_to_path: dict[int, str] = {row[0]: row[1] for row in cursor.fetchall()}
 
         # Build symbol_id → file_id lookup
-        symbol_to_file: Dict[int, int] = {s['id']: s['file_id'] for s in all_symbols}
+        {s['id']: s['file_id'] for s in all_symbols}
 
         # Build from_symbol_id → file_id for refs (need to look up from_symbol's file)
         ref_from_ids = {ref['from_symbol_id'] for ref in unresolved_refs}
-        from_symbol_file: Dict[int, int] = {}
+        from_symbol_file: dict[int, int] = {}
         if ref_from_ids:
             placeholders = ",".join("?" * len(ref_from_ids))
             cursor = self.project_db.conn.execute(
@@ -1007,7 +920,7 @@ class IndexerPipeline:
 
         # Build lookup: name -> [(symbol_id, priority, file_id), ...]
         kind_priority = {'function': 0, 'class': 1, 'method': 2, 'other': 3}
-        name_to_candidates: Dict[str, List[tuple]] = {}
+        name_to_candidates: dict[str, list[tuple]] = {}
         for symbol in all_symbols:
             name = symbol['name']
             priority = kind_priority.get(symbol['kind'], 3)
@@ -1018,7 +931,7 @@ class IndexerPipeline:
 
         # Also build suffix index for namespaced symbols
         # Maps short_name -> [(symbol_id, priority, file_id), ...]
-        suffix_candidates: Dict[str, List[tuple]] = {}
+        suffix_candidates: dict[str, list[tuple]] = {}
         for symbol in all_symbols:
             full_name = symbol['name']
             priority = kind_priority.get(symbol['kind'], 3)
@@ -1031,9 +944,9 @@ class IndexerPipeline:
                     suffix_candidates[short].append(entry)
 
         # Resolve each name to a single symbol (strict = unambiguous at best priority)
-        name_to_symbol: Dict[str, int] = {}
+        name_to_symbol: dict[str, int] = {}
         # Names that are ambiguous — need proximity tiebreak per-ref
-        ambiguous_names: Dict[str, List[tuple]] = {}  # name -> candidates
+        ambiguous_names: dict[str, list[tuple]] = {}  # name -> candidates
 
         for name, candidates in name_to_candidates.items():
             candidates.sort(key=lambda x: x[1])
@@ -1157,7 +1070,7 @@ class IndexerPipeline:
 
         return stats
 
-    def search(self, query: str, limit: int = 10) -> List[Dict[str, Any]]:
+    def search(self, query: str, limit: int = 10) -> list[dict[str, Any]]:
         """
         Hybrid search across indexed project.
 

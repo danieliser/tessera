@@ -309,9 +309,9 @@ class TestFileHash:
 class TestIndexFile:
     """Test single file indexing."""
 
-    @patch('tessera.indexer.detect_language')
-    @patch('tessera.indexer.parse_and_extract')
-    @patch('tessera.indexer.chunk_with_cast')
+    @patch('tessera.indexer._pipeline.detect_language')
+    @patch('tessera.indexer._pipeline.parse_and_extract')
+    @patch('tessera.indexer._pipeline.chunk_with_cast')
     def test_index_single_python_file(
         self, mock_chunk, mock_parse, mock_detect, temp_project_dir, mock_project_db
     ):
@@ -345,9 +345,9 @@ class TestIndexFile:
         assert result['symbols'] == 1
         assert result['chunks'] == 1
 
-    @patch('tessera.indexer.detect_language')
-    @patch('tessera.indexer.parse_and_extract')
-    @patch('tessera.indexer.chunk_with_cast')
+    @patch('tessera.indexer._pipeline.detect_language')
+    @patch('tessera.indexer._pipeline.parse_and_extract')
+    @patch('tessera.indexer._pipeline.chunk_with_cast')
     def test_index_single_php_file(
         self, mock_chunk, mock_parse, mock_detect, temp_project_dir, mock_project_db
     ):
@@ -377,9 +377,9 @@ class TestIndexFile:
         assert result['status'] == 'indexed'
         assert result['symbols'] == 1
 
-    @patch('tessera.indexer.detect_language')
-    @patch('tessera.indexer.parse_and_extract')
-    @patch('tessera.indexer.chunk_with_cast')
+    @patch('tessera.indexer._pipeline.detect_language')
+    @patch('tessera.indexer._pipeline.parse_and_extract')
+    @patch('tessera.indexer._pipeline.chunk_with_cast')
     def test_index_skips_unchanged_file(
         self, mock_chunk, mock_parse, mock_detect, temp_project_dir, mock_project_db
     ):
@@ -407,9 +407,9 @@ class TestIndexFile:
         assert result2['status'] == 'skipped'
         assert result2['reason'] == 'unchanged'
 
-    @patch('tessera.indexer.detect_language')
-    @patch('tessera.indexer.parse_and_extract')
-    @patch('tessera.indexer.chunk_with_cast')
+    @patch('tessera.indexer._pipeline.detect_language')
+    @patch('tessera.indexer._pipeline.parse_and_extract')
+    @patch('tessera.indexer._pipeline.chunk_with_cast')
     def test_index_reindexes_changed_file(
         self, mock_chunk, mock_parse, mock_detect, temp_project_dir, mock_project_db
     ):
@@ -443,7 +443,7 @@ class TestIndexFile:
         result2 = pipeline.index_file(str(filepath))
         assert result2['status'] == 'indexed'
 
-    @patch('tessera.indexer.detect_language')
+    @patch('tessera.indexer._pipeline.detect_language')
     def test_index_skips_unsupported_language(self, mock_detect, temp_project_dir, mock_project_db):
         """Test that unsupported languages are skipped."""
         mock_detect.return_value = None
@@ -459,7 +459,7 @@ class TestIndexFile:
         assert result['status'] == 'skipped'
         assert result['reason'] == 'unsupported language'
 
-    @patch('tessera.indexer.detect_language')
+    @patch('tessera.indexer._pipeline.detect_language')
     def test_index_handles_unreadable_file(self, mock_detect, temp_project_dir, mock_project_db):
         """Test graceful handling of unreadable files."""
         mock_detect.return_value = 'python'
@@ -478,9 +478,9 @@ class TestIndexFile:
 class TestIndexProject:
     """Test project-wide indexing."""
 
-    @patch('tessera.indexer.detect_language')
-    @patch('tessera.indexer.parse_and_extract')
-    @patch('tessera.indexer.chunk_with_cast')
+    @patch('tessera.indexer._pipeline.detect_language')
+    @patch('tessera.indexer._pipeline.parse_and_extract')
+    @patch('tessera.indexer._pipeline.chunk_with_cast')
     def test_index_project_multiple_files(
         self, mock_chunk, mock_parse, mock_detect, temp_project_dir, mock_project_db, mock_global_db
     ):
@@ -513,9 +513,9 @@ class TestIndexProject:
         assert stats.files_skipped == 0
         assert stats.files_failed == 0
 
-    @patch('tessera.indexer.detect_language')
-    @patch('tessera.indexer.parse_and_extract')
-    @patch('tessera.indexer.chunk_with_cast')
+    @patch('tessera.indexer._pipeline.detect_language')
+    @patch('tessera.indexer._pipeline.parse_and_extract')
+    @patch('tessera.indexer._pipeline.chunk_with_cast')
     def test_index_project_with_embeddings(
         self, mock_chunk, mock_parse, mock_detect, temp_project_dir, mock_project_db, mock_global_db
     ):
@@ -586,7 +586,7 @@ class TestRegister:
 class TestSearch:
     """Test search functionality."""
 
-    @patch('tessera.indexer.hybrid_search')
+    @patch('tessera.indexer._pipeline.hybrid_search')
     def test_search_without_embeddings(self, mock_hybrid, temp_project_dir, mock_project_db):
         """Test search without embeddings."""
         mock_hybrid.return_value = [
@@ -603,7 +603,7 @@ class TestSearch:
         assert len(results) == 1
         assert results[0]['id'] == 1
 
-    @patch('tessera.indexer.hybrid_search')
+    @patch('tessera.indexer._pipeline.hybrid_search')
     def test_search_with_embeddings(self, mock_hybrid, temp_project_dir, mock_project_db):
         """Test search with embeddings enabled."""
         mock_hybrid.return_value = []
@@ -648,7 +648,7 @@ class TestParseFailurePreservesData:
         test_file.write_text("def existing_func():\n    pass\n# changed\n")
 
         # Mock parse_and_extract to raise on the second call
-        with patch('tessera.indexer.parse_and_extract', side_effect=RuntimeError("parse crash")):
+        with patch('tessera.indexer._pipeline.parse_and_extract', side_effect=RuntimeError("parse crash")):
             result = pipeline.index_file(str(test_file))
             assert result["status"] == "failed"
 

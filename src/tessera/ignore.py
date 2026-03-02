@@ -100,7 +100,7 @@ class IgnoreFilter:
 
         if ignore_path.exists():
             try:
-                with open(ignore_path, "r", encoding="utf-8") as f:
+                with open(ignore_path, encoding="utf-8") as f:
                     for line in f:
                         stripped = line.strip()
 
@@ -121,7 +121,7 @@ class IgnoreFilter:
 
                         patterns.append(stripped)
             except Exception as e:
-                logger.warning(f"Failed to read {ignore_file}: {e}")
+                logger.warning(f"Failed to read {self.ignore_file}: {e}")
 
         return pathspec.PathSpec.from_lines("gitignore", patterns)
 

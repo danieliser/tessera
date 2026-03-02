@@ -36,6 +36,8 @@ dev = [
     "tree-sitter-typescript",
     "tree-sitter-php",
     "networkx",
+    "ruff",
+    "pyright",
 ]
 core-languages = [
     "tree-sitter-javascript",
@@ -54,6 +56,34 @@ markers = [
     "integration: tests that index real projects (may be slow or require specific setup)",
     "performance: PPR performance benchmarks with CI gates",
 ]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 120
+src = ["src"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "I",    # isort
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "SIM",  # flake8-simplify
+]
+ignore = [
+    "E501",   # line length (handled by formatter)
+    "B010",   # setattr with constant (used in tests)
+    "SIM108", # ternary operator (readability preference)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["tessera"]
+
+[tool.pyright]
+pythonVersion = "3.13"
+typeCheckingMode = "basic"
+include = ["src/tessera"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/tessera"]

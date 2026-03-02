@@ -15,9 +15,10 @@ All exceptions are wrapped in DocumentExtractionError for uniform error handling
 import asyncio
 import json
 import re
-import yaml
 from dataclasses import dataclass
 from html.parser import HTMLParser
+
+import yaml
 
 
 class DocumentExtractionError(Exception):
@@ -60,7 +61,7 @@ async def extract_pdf(pdf_path: str) -> str:
     except ImportError:
         raise DocumentExtractionError(
             "pymupdf4llm not installed. Install with: pip install pymupdf4llm"
-        )
+        ) from None
 
     try:
         # Use asyncio.to_thread to run blocking I/O without blocking event loop
@@ -284,7 +285,7 @@ def chunk_yaml(
         DocumentExtractionError: If YAML parsing fails
     """
     try:
-        with open(yaml_path, "r") as f:
+        with open(yaml_path) as f:
             data = yaml.safe_load(f)
     except FileNotFoundError as e:
         raise DocumentExtractionError(
@@ -428,7 +429,7 @@ def chunk_json(
         DocumentExtractionError: If JSON parsing fails
     """
     try:
-        with open(json_path, "r") as f:
+        with open(json_path) as f:
             data = json.load(f)
     except FileNotFoundError as e:
         raise DocumentExtractionError(
@@ -638,7 +639,7 @@ def chunk_plaintext(
 def chunk_html(html_path: str, max_chunk_size: int = 1024) -> list[DocumentChunk]:
     """Chunk HTML file by stripping tags and chunking the visible text."""
     try:
-        with open(html_path, 'r', encoding='utf-8', errors='replace') as f:
+        with open(html_path, encoding='utf-8', errors='replace') as f:
             content = f.read()
     except FileNotFoundError as e:
         raise DocumentExtractionError(f"HTML file not found: {html_path}") from e
@@ -652,7 +653,7 @@ def chunk_html(html_path: str, max_chunk_size: int = 1024) -> list[DocumentChunk
 def chunk_xml(xml_path: str, max_chunk_size: int = 1024) -> list[DocumentChunk]:
     """Chunk XML file by stripping tags and chunking visible text content."""
     try:
-        with open(xml_path, 'r', encoding='utf-8', errors='replace') as f:
+        with open(xml_path, encoding='utf-8', errors='replace') as f:
             content = f.read()
     except FileNotFoundError as e:
         raise DocumentExtractionError(f"XML file not found: {xml_path}") from e
@@ -668,7 +669,7 @@ def chunk_text_file(
 ) -> list[DocumentChunk]:
     """Chunk a plaintext file (txt, rst, csv, log, ini, cfg, toml, etc.)."""
     try:
-        with open(file_path, 'r', encoding='utf-8', errors='replace') as f:
+        with open(file_path, encoding='utf-8', errors='replace') as f:
             content = f.read()
     except FileNotFoundError as e:
         raise DocumentExtractionError(f"Text file not found: {file_path}") from e

@@ -351,7 +351,7 @@ class TestReindexMode:
         srv, pid = reindex_server
         fake_stats = IndexStats(files_processed=3, files_skipped=1, files_failed=0, symbols_extracted=10, chunks_created=5, time_elapsed=0.5)
 
-        with patch("tessera.server.IndexerPipeline") as MockPipeline:
+        with patch("tessera.server.tools._admin.IndexerPipeline") as MockPipeline:
             instance = MockPipeline.return_value
             instance.index_project.return_value = fake_stats
             instance.project_id = pid
@@ -368,7 +368,7 @@ class TestReindexMode:
         srv, pid = reindex_server
         fake_stats = IndexStats(files_processed=2, time_elapsed=0.1)
 
-        with patch("tessera.server.IndexerPipeline") as MockPipeline:
+        with patch("tessera.server.tools._admin.IndexerPipeline") as MockPipeline:
             instance = MockPipeline.return_value
             instance.index_project.return_value = fake_stats
             instance.project_id = pid
@@ -385,7 +385,7 @@ class TestReindexMode:
         srv, pid = reindex_server
         fake_stats = IndexStats(files_processed=1, files_skipped=2, time_elapsed=0.2)
 
-        with patch("tessera.server.IndexerPipeline") as MockPipeline:
+        with patch("tessera.server.tools._admin.IndexerPipeline") as MockPipeline:
             instance = MockPipeline.return_value
             instance.index_changed.return_value = fake_stats
             instance.project_id = pid

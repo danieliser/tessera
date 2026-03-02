@@ -9,8 +9,8 @@ and learns an optimal rotation that minimizes the squared Frobenius norm
 of the difference between the rotated new embeddings and old embeddings.
 """
 
+
 import numpy as np
-from typing import Optional
 
 
 class DriftAdapter:
@@ -30,7 +30,7 @@ class DriftAdapter:
         """
         self.old_dim = old_dim
         self.new_dim = new_dim
-        self.rotation_matrix: Optional[np.ndarray] = None
+        self.rotation_matrix: np.ndarray | None = None
 
     def train(
         self, old_embeddings: np.ndarray, new_embeddings: np.ndarray

@@ -21,17 +21,18 @@ import io
 import json
 import logging
 import re
-from enum import Enum
+from enum import StrEnum
 from typing import Optional
-import numpy as np
+
 import faiss
+import numpy as np
 
 from .graph import ProjectGraph, ppr_to_ranked_list
 
 logger = logging.getLogger(__name__)
 
 
-class SearchType(str, Enum):
+class SearchType(StrEnum):
     """Controls which search lists fire in hybrid_search."""
     LEX = "lex"     # FTS5 keyword only
     VEC = "vec"     # FAISS vector (uses embed_query with retrieval prefix)
@@ -202,7 +203,7 @@ def enrich_with_docid(results: list[dict]) -> list[dict]:
 def format_results(
     results: list[dict],
     format: str = "json",
-    fields: Optional[list[str]] = None,
+    fields: list[str] | None = None,
 ) -> str:
     """Format search results in the requested output format.
 
@@ -318,7 +319,7 @@ def rrf_merge(ranked_lists: list[list[dict]], k: int = 60) -> list[dict]:
 
 def weighted_rrf_merge(
     ranked_lists: list[list[dict]],
-    weights: Optional[list[float]] = None,
+    weights: list[float] | None = None,
     k: int = 60,
 ) -> list[dict]:
     """Weighted Reciprocal Rank Fusion.
@@ -432,14 +433,14 @@ def cosine_search(
 
 def hybrid_search(
     query: str,
-    query_embedding: Optional[np.ndarray],
+    query_embedding: np.ndarray | None,
     db,
     graph: Optional["ProjectGraph"] = None,
     limit: int = 10,
-    source_type: Optional[list[str]] = None,
-    search_types: Optional[list[SearchType]] = None,
+    source_type: list[str] | None = None,
+    search_types: list[SearchType] | None = None,
     advanced_fts: bool = False,
-    rrf_weights: Optional[dict[str, float]] = None,
+    rrf_weights: dict[str, float] | None = None,
 ) -> list[dict]:
     """
     Hybrid search combining keyword (FTS5) and semantic (vector) results.
@@ -689,11 +690,11 @@ def hybrid_search(
 
 def doc_search(
     query: str,
-    query_embedding: Optional[np.ndarray],
+    query_embedding: np.ndarray | None,
     db,
     graph: Optional["ProjectGraph"] = None,
     limit: int = 10,
-    formats: Optional[list[str]] = None,
+    formats: list[str] | None = None,
 ) -> list[dict]:
     """Search non-code documents only.
 

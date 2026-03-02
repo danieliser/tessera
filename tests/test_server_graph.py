@@ -1,4 +1,4 @@
-"""Tests for server.py graph integration.
+"""Tests for server graph integration.
 
 Tests verify that:
 1. Graph module globals exist and are properly initialized
@@ -12,6 +12,7 @@ from unittest.mock import Mock, patch, MagicMock
 
 # Import server module to verify globals exist
 from tessera import server
+from tessera.server import _state
 
 
 def test_graph_globals_exist():
@@ -30,13 +31,12 @@ def test_graph_lock_is_threading_lock():
 
 def test_search_passes_graph():
     """Verify that search tool passes graph to hybrid_search."""
-    # This test mocks the server environment and checks that when search is called,
-    # the graph is passed to hybrid_search with the correct signature.
+    # This test verifies the hybrid_search signature accepts a graph parameter
+    # in the expected position (4th param after query, query_embedding, db).
 
-    with patch("tessera.server._get_project_dbs") as mock_get_dbs, \
-         patch("tessera.server._check_session") as mock_check_session, \
-         patch("tessera.server._embedding_client") as mock_embedding_client, \
-         patch("tessera.server.hybrid_search") as mock_hybrid_search, \
+    with patch("tessera.server._state._get_project_dbs") as mock_get_dbs, \
+         patch("tessera.server._state._check_session") as mock_check_session, \
+         patch("tessera.server.tools._search.hybrid_search") as mock_hybrid_search, \
          patch("asyncio.to_thread") as mock_to_thread:
 
         # Setup: Create a mock scope and db
@@ -49,11 +49,11 @@ def test_search_passes_graph():
         mock_get_dbs.return_value = [(pid, pname, mock_db)]
 
         # Setup embedding client
-        server._embedding_client = None
+        _state._embedding_client = None
 
         # Setup project graph
         mock_graph = Mock()
-        server._project_graphs = {pid: mock_graph}
+        _state._project_graphs = {pid: mock_graph}
 
         # Mock asyncio.to_thread to capture the call arguments
         async_call_args = []
@@ -62,17 +62,14 @@ def test_search_passes_graph():
             return []
         mock_to_thread.side_effect = capture_to_thread
 
-        # When embedding client is None, search uses keyword_search
-        # But we need to verify when embedding is available
         # Re-run with embedding client
-        server._embedding_client = Mock()
-        server._embedding_client.embed_single = Mock(return_value=[0.1, 0.2])
+        _state._embedding_client = Mock()
+        _state._embedding_client.embed_single = Mock(return_value=[0.1, 0.2])
 
         import numpy as np
         async_call_args.clear()
 
-        # We can't easily test the async function directly without running event loop,
-        # so instead we verify the signature by checking imports and structure
+        # Verify the signature by checking imports and structure
         from tessera.search import hybrid_search
         import inspect
 

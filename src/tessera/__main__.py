@@ -6,17 +6,18 @@ Supports:
 """
 
 import argparse
+import asyncio
 import logging
 import sys
 import time
+
 from .server import run_server
-import asyncio
 
 
 def _run_index(args) -> int:
     """Run the indexing pipeline."""
-    from .indexer import IndexerPipeline
     from .embeddings import EmbeddingClient
+    from .indexer import IndexerPipeline
 
     if args.verbose:
         logging.basicConfig(level=logging.DEBUG, format="%(levelname)s %(name)s: %(message)s")
