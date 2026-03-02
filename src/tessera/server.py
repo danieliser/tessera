@@ -356,7 +356,7 @@ def _register_tools(mcp: FastMCP) -> None:
             if _embedding_client:
                 try:
                     import numpy as np
-                    raw = await asyncio.to_thread(_embedding_client.embed_single, query)
+                    raw = await asyncio.to_thread(_embedding_client.embed_query, query)
                     query_embedding = np.array(raw, dtype=np.float32)
                 except EmbeddingUnavailableError:
                     logger.debug("Embedding endpoint unavailable, falling back to keyword-only search")
@@ -426,7 +426,7 @@ def _register_tools(mcp: FastMCP) -> None:
             if _embedding_client:
                 try:
                     import numpy as np
-                    raw = await asyncio.to_thread(_embedding_client.embed_single, query)
+                    raw = await asyncio.to_thread(_embedding_client.embed_query, query)
                     query_embedding = np.array(raw, dtype=np.float32)
                 except EmbeddingUnavailableError:
                     logger.debug("Embedding endpoint unavailable, falling back to keyword-only doc_search")

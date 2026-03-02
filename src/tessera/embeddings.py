@@ -141,6 +141,15 @@ class EmbeddingClient:
         """
         return self.embed([text])[0]
 
+    def embed_query(self, text: str) -> list[float]:
+        """Embed text as a search query with retrieval prefix.
+
+        Uses query prefix for instruct-embedding models that distinguish
+        between query and document embeddings.
+        """
+        prompt = f"Represent this search query for retrieval: {text}"
+        return self.embed_single(prompt)
+
     def close(self):
         """Close the HTTP client."""
         self._client.close()
