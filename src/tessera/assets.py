@@ -10,7 +10,6 @@ import mimetypes
 import os
 import struct
 from pathlib import Path
-from typing import Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +67,7 @@ def get_mime_type(filename: str) -> str:
     return mime_type if mime_type is not None else 'application/octet-stream'
 
 
-def _get_image_dimensions(path: str) -> Optional[tuple[int, int]]:
+def _get_image_dimensions(path: str) -> tuple[int, int] | None:
     """Read image dimensions from file headers using struct (internal helper).
 
     Supports PNG, JPEG, GIF, and BMP formats.
@@ -116,7 +115,7 @@ def _get_image_dimensions(path: str) -> Optional[tuple[int, int]]:
     return None
 
 
-def _jpeg_dimensions(path: str) -> Optional[tuple[int, int]]:
+def _jpeg_dimensions(path: str) -> tuple[int, int] | None:
     """Scan JPEG markers to find SOF (Start of Frame) with image dimensions."""
     try:
         with open(path, 'rb') as f:
@@ -150,7 +149,7 @@ def _jpeg_dimensions(path: str) -> Optional[tuple[int, int]]:
         return None
 
 
-def extract_image_dimensions(file_path: str) -> Optional[Dict[str, int]]:
+def extract_image_dimensions(file_path: str) -> dict[str, int] | None:
     """Extract image dimensions from PNG, JPEG, GIF, or BMP file headers.
 
     Uses stdlib struct module — zero external dependencies.
@@ -201,9 +200,9 @@ def _format_size(size_bytes: int) -> str:
 
 def build_asset_synthetic_content(
     filename: str,
-    path_components: List[str],
+    path_components: list[str],
     mime_type: str,
-    dimensions: Optional[Dict[str, int]] = None,
+    dimensions: dict[str, int] | None = None,
     file_size: int = 0,
 ) -> str:
     """Build an FTS5-searchable string for an asset file.

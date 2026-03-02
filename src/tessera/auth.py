@@ -12,12 +12,14 @@ stored in SQLite sessions table. Passed to task agents via MCP
 initialize message. Not transmitted beyond MCP boundary (trusted local).
 """
 
-import uuid
 import json
 import sqlite3
-from datetime import datetime, timedelta
+import uuid
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 from pathlib import Path
+
+from .exceptions import PathTraversalError
 
 
 class SessionNotFoundError(Exception):
@@ -32,11 +34,6 @@ class SessionExpiredError(Exception):
 
 class ForbiddenScopeError(Exception):
     """Raised when request is outside session's scope."""
-    pass
-
-
-class PathTraversalError(Exception):
-    """Raised when file path escapes project root."""
     pass
 
 
@@ -284,10 +281,9 @@ def normalize_and_validate_path(project_root: str, user_path: str) -> str:
     try:
         user.relative_to(root)
     except ValueError:
-        # user is not relative to root, path escape detected
         raise PathTraversalError(
             f"Path {user_path} escapes project root {project_root}"
-        )
+        ) from None
 
     return str(user)
 

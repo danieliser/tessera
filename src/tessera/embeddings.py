@@ -9,8 +9,8 @@ Will implement:
   - Support for configurable embedding dimensions
 """
 
+
 import httpx
-from typing import Optional
 
 
 class EmbeddingUnavailableError(Exception):
@@ -73,7 +73,7 @@ class EmbeddingClient:
             texts_to_embed = []
             uncached_indices = []  # indices into batch_results needing API fill
 
-            for i, text in enumerate(batch):
+            for _i, text in enumerate(batch):
                 if text in self._cache:
                     batch_results.append(self._cache[text])
                 else:
@@ -172,7 +172,7 @@ if __name__ == "__main__":
         model="default"
     )
 
-    print(f"Client initialized successfully")
+    print("Client initialized successfully")
     print(f"  Endpoint: {client.endpoint}")
     print(f"  Model: {client.model}")
     print(f"  Cache size: {len(client._cache)}")

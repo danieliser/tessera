@@ -9,8 +9,8 @@ Will implement:
 """
 
 from dataclasses import dataclass, field
-from typing import Optional
-from tree_sitter import Parser, Language
+
+from tree_sitter import Language, Parser
 
 
 @dataclass
@@ -23,7 +23,7 @@ class Chunk:
     symbol_ids: list[int] = field(default_factory=list)  # populated later during indexing
 
 
-def _get_parser(language: str) -> tuple[Optional[Parser], Optional[Language]]:
+def _get_parser(language: str) -> tuple[Parser | None, Language | None]:
     """Get tree-sitter parser and language for given language."""
     try:
         if language == "python":

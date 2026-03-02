@@ -6,12 +6,18 @@ Provides:
   - ppr_to_ranked_list: Convert PPR scores to ranked list format
 """
 
+from __future__ import annotations
+
 import logging
 import time
-from typing import Dict, List, Optional
+from typing import TYPE_CHECKING
+
 import numpy as np
 import scipy.sparse
 import scipy.sparse.csgraph
+
+if TYPE_CHECKING:
+    from .db import ProjectDB
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +25,7 @@ logger = logging.getLogger(__name__)
 MAX_CACHED_GRAPHS = 20
 
 
-def evict_lru_graph(graphs: dict[int, "ProjectGraph"], max_size: int = MAX_CACHED_GRAPHS) -> Optional[int]:
+def evict_lru_graph(graphs: dict[int, ProjectGraph], max_size: int = MAX_CACHED_GRAPHS) -> int | None:
     """Evict least-recently-loaded graph if cache exceeds max_size.
 
     Returns evicted project_id, or None if no eviction needed.
@@ -50,9 +56,9 @@ class ProjectGraph:
         self,
         project_id: int,
         adjacency_matrix: scipy.sparse.csr_matrix,
-        symbol_id_to_name: Dict[int, str],
+        symbol_id_to_name: dict[int, str],
         loaded_at: float,
-        id_to_idx: Dict[int, int] = None,
+        id_to_idx: dict[int, int] = None,
     ):
         """Initialize ProjectGraph.
 
@@ -126,17 +132,15 @@ class ProjectGraph:
         if density < 0.75:
             return True
         cc_ratio = self.largest_cc_size / self.n_symbols
-        if cc_ratio < 0.50:
-            return True
-        return False
+        return cc_ratio < 0.5
 
     def personalized_pagerank(
         self,
-        seed_symbol_ids: List[int],
+        seed_symbol_ids: list[int],
         alpha: float = 0.15,
         max_iter: int = 50,
         tol: float = 1e-6,
-    ) -> Dict[int, float]:
+    ) -> dict[int, float]:
         """Compute Personalized PageRank using power iteration.
 
         Computes PPR starting from seed symbols using power iteration:
@@ -201,16 +205,14 @@ class ProjectGraph:
         # Map matrix indices back to original symbol IDs
         result = {}
         for idx in range(self.n_symbols):
-            if p[idx] > 1e-10:
-                # Map index back to original symbol ID
-                if idx in self.idx_to_id:
-                    sid = self.idx_to_id[idx]
-                    result[sid] = float(p[idx])
+            if p[idx] > 1e-10 and idx in self.idx_to_id:
+                sid = self.idx_to_id[idx]
+                result[sid] = float(p[idx])
 
         return result
 
 
-def load_project_graph(db: "ProjectDB", project_id: int) -> ProjectGraph:
+def load_project_graph(db: ProjectDB, project_id: int) -> ProjectGraph:
     """Load a project graph from ProjectDB.
 
     Fetches all symbols and edges, builds a CSR sparse matrix with proper
@@ -288,7 +290,7 @@ def load_project_graph(db: "ProjectDB", project_id: int) -> ProjectGraph:
     return graph
 
 
-def ppr_to_ranked_list(ppr_scores: Dict[int, float]) -> List[Dict]:
+def ppr_to_ranked_list(ppr_scores: dict[int, float]) -> list[dict]:
     """Convert PPR scores to ranked list format.
 
     Normalizes scores to [0, 1] and sorts descending by score.
