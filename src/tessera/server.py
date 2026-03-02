@@ -37,7 +37,7 @@ from .auth import (
     SessionNotFoundError, SessionExpiredError
 )
 from .indexer import IndexerPipeline
-from .search import hybrid_search, doc_search, normalize_bm25_score
+from .search import hybrid_search, doc_search, normalize_bm25_score, extract_snippet
 from .drift_adapter import DriftAdapter
 from .embeddings import EmbeddingClient, EmbeddingUnavailableError
 from .graph import ProjectGraph, load_project_graph, evict_lru_graph, MAX_CACHED_GRAPHS
@@ -397,6 +397,12 @@ def _register_tools(mcp: FastMCP) -> None:
             all_results.sort(key=lambda r: r.get("score", 0), reverse=True)
             all_results = all_results[:limit]
 
+            # Extract best-matching snippets
+            for r in all_results:
+                if r.get("content"):
+                    snippet_info = extract_snippet(r["content"], query)
+                    r.update(snippet_info)
+
             _log_audit("search", len(all_results), agent_id=agent_id, ppr_used=ppr_used)
             return json.dumps(all_results, indent=2)
         except Exception as e:
@@ -454,6 +460,12 @@ def _register_tools(mcp: FastMCP) -> None:
 
             all_results.sort(key=lambda r: r.get("score", 0), reverse=True)
             all_results = all_results[:limit]
+
+            # Extract best-matching snippets
+            for r in all_results:
+                if r.get("content"):
+                    snippet_info = extract_snippet(r["content"], query)
+                    r.update(snippet_info)
 
             _log_audit("doc_search", len(all_results), agent_id=agent_id)
             return json.dumps(all_results, indent=2)

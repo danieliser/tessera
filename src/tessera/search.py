@@ -49,6 +49,51 @@ def normalize_bm25_score(raw_score: float) -> float:
 SEMANTIC_SEARCH_OVER_FETCH_MULTIPLIER = 3
 
 
+def extract_snippet(
+    chunk_content: str,
+    query: str,
+    context_lines: int = 3,
+) -> dict:
+    """Extract best-matching snippet from chunk content.
+
+    Scores each line by keyword overlap with the query, then extracts
+    a window of context_lines around the best-matching line.
+
+    Args:
+        chunk_content: Full chunk text
+        query: Search query (for keyword overlap scoring)
+        context_lines: Number of lines before/after best match
+
+    Returns:
+        Dict with snippet, line positions, and best_match_line
+    """
+    if not chunk_content:
+        return {"snippet": "", "snippet_start_line": 0, "snippet_end_line": 0, "best_match_line": 0}
+
+    lines = chunk_content.split("\n")
+    query_terms = set(query.lower().split())
+
+    # Score each line by keyword overlap
+    best_line_idx = 0
+    best_overlap = 0
+    for i, line in enumerate(lines):
+        overlap = len(query_terms & set(line.lower().split()))
+        if overlap > best_overlap:
+            best_overlap = overlap
+            best_line_idx = i
+
+    # Extract context window
+    start_idx = max(0, best_line_idx - context_lines)
+    end_idx = min(len(lines), best_line_idx + context_lines + 1)
+
+    return {
+        "snippet": "\n".join(lines[start_idx:end_idx]),
+        "snippet_start_line": start_idx,
+        "snippet_end_line": end_idx - 1,
+        "best_match_line": best_line_idx,
+    }
+
+
 def rrf_merge(ranked_lists: list[list[dict]], k: int = 60) -> list[dict]:
     """
     Reciprocal Rank Fusion.
