@@ -15,6 +15,7 @@ CTO Condition C5: Phase 1 latency gate criteria:
   - Total <100ms p95 (validated via pytest benchmarks)
 """
 
+import hashlib
 import json
 import logging
 from typing import Optional
@@ -92,6 +93,29 @@ def extract_snippet(
         "snippet_end_line": end_idx - 1,
         "best_match_line": best_line_idx,
     }
+
+
+def generate_docid(content: str) -> str:
+    """Generate a 6-character document ID from content hash.
+
+    Provides a short, stable identifier for chunks. Collision probability
+    is ~1 in 16M per pair (acceptable for local codebase indexes).
+    """
+    if not content:
+        return "000000"
+    return hashlib.sha256(content.encode("utf-8")).hexdigest()[:6]
+
+
+def enrich_with_docid(results: list[dict]) -> list[dict]:
+    """Add docid field to search results that have content."""
+    enriched = []
+    for r in results:
+        r_copy = r.copy()
+        content = r_copy.get("content", "")
+        if content:
+            r_copy["docid"] = generate_docid(content)
+        enriched.append(r_copy)
+    return enriched
 
 
 def rrf_merge(ranked_lists: list[list[dict]], k: int = 60) -> list[dict]:
