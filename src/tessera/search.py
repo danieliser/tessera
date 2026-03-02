@@ -262,21 +262,17 @@ def extract_snippet(
 
     for anc in ancestors:
         anc_line = anc.get("line", 0)
-        sig = anc.get("signature", "") or anc.get("name", "")
+        kind = anc.get("kind", "")
+        sig = anc.get("signature", "")
+        if not sig:
+            # Reconstitute from kind + name when signature wasn't captured
+            name = anc.get("name", "")
+            keyword = {"class": "class", "function": "def", "method": "def",
+                       "interface": "interface", "trait": "trait", "enum": "enum"}.get(kind, "")
+            sig = f"{keyword} {name}:" if keyword else name
 
-        # Determine the indentation from the signature or kind
-        indent = ""
-        if sig:
-            # Use signature for the definition line
-            # Try to figure out indent from the kind
-            kind = anc.get("kind", "")
-            if kind == "method":
-                indent = "    "
-            elif kind in ("class", "function", "interface", "trait", "enum"):
-                indent = ""
-
-        # Render the definition line using signature
-        def_text = f"{indent}{sig}" if sig else f"{indent}{anc.get('name', '')}"
+        indent = "    " if kind == "method" else ""
+        def_text = f"{indent}{sig}"
 
         # If there's a gap between cursor and this definition, show collapse
         if cursor > 0 and anc_line > cursor:
