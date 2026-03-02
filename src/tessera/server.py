@@ -37,7 +37,7 @@ from .auth import (
     SessionNotFoundError, SessionExpiredError
 )
 from .indexer import IndexerPipeline
-from .search import hybrid_search, doc_search
+from .search import hybrid_search, doc_search, normalize_bm25_score
 from .drift_adapter import DriftAdapter
 from .embeddings import EmbeddingClient, EmbeddingUnavailableError
 from .graph import ProjectGraph, load_project_graph, evict_lru_graph, MAX_CACHED_GRAPHS
@@ -362,6 +362,7 @@ def create_server(
             results_list = await asyncio.gather(*tasks, return_exceptions=True)
 
             all_results = []
+            is_keyword_only = query_embedding is None
             for (pid, pname, db), result in zip(dbs, results_list):
                 if isinstance(result, Exception):
                     logger.warning("Query on project %d failed: %s", pid, result)
@@ -369,6 +370,8 @@ def create_server(
                 for r in result:
                     r["project_id"] = pid
                     r["project_name"] = pname
+                    if is_keyword_only and "score" in r:
+                        r["score"] = normalize_bm25_score(r["score"])
                 all_results.extend(result)
 
             # Sort by score descending, cap at limit

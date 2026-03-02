@@ -25,6 +25,23 @@ from .graph import ProjectGraph, ppr_to_ranked_list
 
 logger = logging.getLogger(__name__)
 
+
+def normalize_bm25_score(raw_score: float) -> float:
+    """Normalize FTS5 BM25 score to [0, 1] range.
+
+    FTS5 bm25() returns negative values where more negative = better match.
+    This normalizes via: norm = -raw / (1 + abs(raw))
+
+    Args:
+        raw_score: Raw FTS5 bm25() score (typically negative)
+
+    Returns:
+        Normalized score in [0, 1] where 1 = best match
+    """
+    normalized = -raw_score / (1.0 + abs(raw_score))
+    return max(0.0, min(1.0, normalized))
+
+
 # Over-fetch multiplier for source_type post-filtering.
 # When source_type filter is active, fetch this many times the limit from FAISS,
 # then post-filter. 3x validated as sufficient for most corpora; increase to 5x

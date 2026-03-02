@@ -1520,7 +1520,7 @@ class ProjectDB:
                 JOIN chunk_meta cm ON fts.chunk_id = cm.id
                 WHERE chunks_fts MATCH ?
                   AND COALESCE(cm.source_type, 'code') IN ({placeholders})
-                ORDER BY fts.rank DESC
+                ORDER BY fts.rank
                 LIMIT ?
                 """,
                 (query, *source_type, limit)
@@ -1532,7 +1532,7 @@ class ProjectDB:
                 FROM chunks_fts fts
                 JOIN chunk_meta cm ON fts.chunk_id = cm.id
                 WHERE chunks_fts MATCH ?
-                ORDER BY fts.rank DESC
+                ORDER BY fts.rank
                 LIMIT ?
                 """,
                 (query, limit)
