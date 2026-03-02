@@ -37,7 +37,7 @@ from .auth import (
     SessionNotFoundError, SessionExpiredError
 )
 from .indexer import IndexerPipeline
-from .search import hybrid_search, doc_search, normalize_bm25_score, extract_snippet, enrich_with_docid
+from .search import hybrid_search, doc_search, normalize_bm25_score, extract_snippet, enrich_with_docid, format_results
 from .drift_adapter import DriftAdapter
 from .embeddings import EmbeddingClient, EmbeddingUnavailableError
 from .graph import ProjectGraph, load_project_graph, evict_lru_graph, MAX_CACHED_GRAPHS
@@ -336,8 +336,12 @@ def _register_tools(mcp: FastMCP) -> None:
     # --- Core tools (project scope) ---
 
     @mcp.tool()
-    async def search(query: str, limit: int = 10, filter_language: str = "", source_type: str = "", session_id: str = "") -> str:
-        """Hybrid semantic + keyword search across indexed codebase."""
+    async def search(query: str, limit: int = 10, filter_language: str = "", source_type: str = "", output_format: str = "json", session_id: str = "") -> str:
+        """Hybrid semantic + keyword search across indexed codebase.
+
+        Args:
+            output_format: Result format — "json" (default), "csv", "markdown", or "files"
+        """
         scope, err = _check_session({"session_id": session_id}, "project")
         if err:
             return err
@@ -407,15 +411,19 @@ def _register_tools(mcp: FastMCP) -> None:
                     r.update(snippet_info)
 
             _log_audit("search", len(all_results), agent_id=agent_id, ppr_used=ppr_used)
-            return json.dumps(all_results, indent=2)
+            return format_results(all_results, format=output_format)
         except Exception as e:
             logger.exception("Search tool error")
             _log_audit("search", 0, agent_id=agent_id)
             return f"Error during search: {str(e)}"
 
     @mcp.tool()
-    async def doc_search_tool(query: str, limit: int = 10, formats: str = "", source_type: str = "", session_id: str = "") -> str:
-        """Search non-code documents only (markdown, PDF, YAML, JSON, assets)."""
+    async def doc_search_tool(query: str, limit: int = 10, formats: str = "", source_type: str = "", output_format: str = "json", session_id: str = "") -> str:
+        """Search non-code documents only (markdown, PDF, YAML, JSON, assets).
+
+        Args:
+            output_format: Result format — "json" (default), "csv", "markdown", or "files"
+        """
         scope, err = _check_session({"session_id": session_id}, "project")
         if err:
             return err
@@ -474,7 +482,7 @@ def _register_tools(mcp: FastMCP) -> None:
                     r.update(snippet_info)
 
             _log_audit("doc_search", len(all_results), agent_id=agent_id)
-            return json.dumps(all_results, indent=2)
+            return format_results(all_results, format=output_format)
         except Exception as e:
             logger.exception("doc_search error")
             _log_audit("doc_search", 0, agent_id=agent_id)

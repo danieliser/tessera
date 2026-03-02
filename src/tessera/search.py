@@ -15,7 +15,9 @@ CTO Condition C5: Phase 1 latency gate criteria:
   - Total <100ms p95 (validated via pytest benchmarks)
 """
 
+import csv
 import hashlib
+import io
 import json
 import logging
 from typing import Optional
@@ -116,6 +118,71 @@ def enrich_with_docid(results: list[dict]) -> list[dict]:
             r_copy["docid"] = generate_docid(content)
         enriched.append(r_copy)
     return enriched
+
+
+def format_results(
+    results: list[dict],
+    format: str = "json",
+    fields: Optional[list[str]] = None,
+) -> str:
+    """Format search results in the requested output format.
+
+    Args:
+        results: List of search result dicts
+        format: Output format — "json", "csv", "markdown", "files"
+        fields: Optional field filter (only include these keys)
+
+    Returns:
+        Formatted string
+    """
+    if fields:
+        results = [{k: r.get(k) for k in fields if k in r} for r in results]
+
+    if format == "json":
+        return json.dumps(results, indent=2, default=str)
+
+    if format == "csv":
+        if not results:
+            return ""
+        all_keys: list[str] = []
+        seen_keys: set[str] = set()
+        for r in results:
+            for k in r:
+                if k not in seen_keys:
+                    seen_keys.add(k)
+                    all_keys.append(k)
+        output = io.StringIO()
+        writer = csv.DictWriter(output, fieldnames=all_keys, extrasaction="ignore")
+        writer.writeheader()
+        for r in results:
+            writer.writerow({k: str(v) for k, v in r.items()})
+        return output.getvalue()
+
+    if format == "markdown":
+        if not results:
+            return "*No results found.*"
+        lines = []
+        for i, r in enumerate(results, 1):
+            path = r.get("file_path", "unknown")
+            start = r.get("start_line", "?")
+            end = r.get("end_line", "?")
+            score = r.get("rrf_score", r.get("score", "?"))
+            snippet = r.get("snippet", r.get("content", "")[:200])
+            lines.append(f"### {i}. `{path}:{start}-{end}` (score: {score})")
+            lines.append(f"```\n{snippet}\n```\n")
+        return "\n".join(lines)
+
+    if format == "files":
+        seen: set[str] = set()
+        paths: list[str] = []
+        for r in results:
+            p = r.get("file_path", "")
+            if p and p not in seen:
+                seen.add(p)
+                paths.append(p)
+        return "\n".join(paths)
+
+    return json.dumps(results, indent=2, default=str)
 
 
 def rrf_merge(ranked_lists: list[list[dict]], k: int = 60) -> list[dict]:
