@@ -6,9 +6,58 @@ Supports:
 """
 
 import argparse
+import logging
 import sys
+import time
 from .server import run_server
 import asyncio
+
+
+def _run_index(args) -> int:
+    """Run the indexing pipeline."""
+    from .indexer import IndexerPipeline
+    from .embeddings import EmbeddingClient
+
+    if args.verbose:
+        logging.basicConfig(level=logging.DEBUG, format="%(levelname)s %(name)s: %(message)s")
+    else:
+        logging.basicConfig(level=logging.INFO, format="%(message)s")
+
+    project_path = args.path
+
+    embedding_client = None
+    if args.embedding_endpoint:
+        embedding_client = EmbeddingClient(
+            endpoint=args.embedding_endpoint,
+            model=args.embedding_model,
+        )
+        print(f"Embedding endpoint: {args.embedding_endpoint} (model: {args.embedding_model})")
+    else:
+        print("No embedding endpoint — indexing without embeddings.")
+
+    pipeline = IndexerPipeline(
+        project_path=project_path,
+        embedding_client=embedding_client,
+    )
+    pipeline.register()
+
+    start = time.perf_counter()
+
+    if args.incremental:
+        print(f"Incremental index: {project_path}")
+        stats = pipeline.index_changed()
+    else:
+        print(f"Full index: {project_path}")
+        stats = pipeline.index_project()
+
+    elapsed = time.perf_counter() - start
+
+    print(f"\nDone in {elapsed:.1f}s")
+    print(f"  Files: {stats.files_processed} indexed, {stats.files_skipped} skipped, {stats.files_failed} failed")
+    print(f"  Symbols: {stats.symbols_extracted}")
+    print(f"  Chunks: {stats.chunks_created} ({stats.chunks_embedded} embedded)")
+
+    return 0 if stats.files_failed == 0 else 1
 
 
 def main() -> int:
@@ -24,8 +73,23 @@ def main() -> int:
     index_parser.add_argument("path", help="Path to project to index")
     index_parser.add_argument(
         "--embedding-endpoint",
-        required=True,
-        help="OpenAI-compatible embedding endpoint URL"
+        default=None,
+        help="OpenAI-compatible embedding endpoint URL (optional — indexes without embeddings if omitted)"
+    )
+    index_parser.add_argument(
+        "--embedding-model",
+        default="default",
+        help="Model identifier for the embedding endpoint (default: 'default')"
+    )
+    index_parser.add_argument(
+        "--incremental",
+        action="store_true",
+        help="Only re-index files changed since last indexed commit"
+    )
+    index_parser.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="Enable verbose logging"
     )
 
     # Serve command
@@ -54,8 +118,7 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.command == "index":
-        print(f"Index command stub: {args.path} with endpoint {args.embedding_endpoint}")
-        return 0
+        return _run_index(args)
     elif args.command == "serve":
         return asyncio.run(run_server(
             args.project, args.global_db,
