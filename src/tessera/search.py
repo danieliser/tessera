@@ -439,6 +439,7 @@ def hybrid_search(
     source_type: Optional[list[str]] = None,
     search_types: Optional[list[SearchType]] = None,
     advanced_fts: bool = False,
+    rrf_weights: Optional[dict[str, float]] = None,
 ) -> list[dict]:
     """
     Hybrid search combining keyword (FTS5) and semantic (vector) results.
@@ -470,6 +471,7 @@ def hybrid_search(
     if search_types is None:
         query, search_types = parse_structured_query(query)
 
+    effective_weights = rrf_weights if rrf_weights else DEFAULT_RRF_WEIGHTS
     run_keyword = SearchType.LEX in search_types
     run_semantic = SearchType.VEC in search_types or SearchType.HYDE in search_types
 
@@ -494,7 +496,7 @@ def hybrid_search(
     # keyword match is very high confidence (top score >= 0.85 with >= 0.15 gap)
     if keyword_results and bm25_strong_signal_check(keyword_results):
         logger.debug("BM25 short-circuit: strong signal, skipping semantic/PPR")
-        weights = [DEFAULT_RRF_WEIGHTS["keyword"]]
+        weights = [effective_weights.get("keyword", 1.5)]
         merged = weighted_rrf_merge(ranked_lists, weights=weights)
         results = []
         for item in merged[:limit]:
@@ -628,7 +630,7 @@ def hybrid_search(
     if not ranked_lists:
         return []
 
-    weights = [DEFAULT_RRF_WEIGHTS.get(label, 1.0) for label in list_labels]
+    weights = [effective_weights.get(label, 1.0) for label in list_labels]
     merged = weighted_rrf_merge(ranked_lists, weights=weights)
 
     # 5. Enrich with chunk metadata

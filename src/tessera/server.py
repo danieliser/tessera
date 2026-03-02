@@ -336,7 +336,7 @@ def _register_tools(mcp: FastMCP) -> None:
     # --- Core tools (project scope) ---
 
     @mcp.tool()
-    async def search(query: str, limit: int = 10, filter_language: str = "", source_type: str = "", output_format: str = "json", search_mode: str = "", advanced_fts: bool = False, session_id: str = "") -> str:
+    async def search(query: str, limit: int = 10, filter_language: str = "", source_type: str = "", output_format: str = "json", search_mode: str = "", advanced_fts: bool = False, weights: str = "", session_id: str = "") -> str:
         """Hybrid semantic + keyword search across indexed codebase.
 
         Combines FTS5 keyword matching, FAISS vector similarity, and PageRank
@@ -374,6 +374,9 @@ def _register_tools(mcp: FastMCP) -> None:
             output_format: Result format — "json" (default), "csv", "markdown", or "files".
             search_mode: Override search list routing — "lex", "vec", "hyde", or "lex,vec".
             advanced_fts: Enable FTS5 operators (phrases, NOT, *, NEAR). Default False.
+            weights: Custom RRF fusion weights. Format: "keyword=1.5,semantic=1.0,graph=0.8".
+                Omit to use defaults. Increase a weight to boost that signal; decrease to dampen it.
+                Example: "keyword=3.0" for identifier-heavy searches, "semantic=2.0" for conceptual.
         """
         scope, err = _check_session({"session_id": session_id}, "project")
         if err:
@@ -386,6 +389,17 @@ def _register_tools(mcp: FastMCP) -> None:
             return "Error: No accessible projects"
 
         source_type_filter = [source_type] if source_type else None
+
+        # Parse RRF weights: "keyword=2.0,semantic=0.5" or "" for defaults
+        rrf_weights = None
+        if weights:
+            try:
+                rrf_weights = {}
+                for pair in weights.split(","):
+                    key, val = pair.strip().split("=")
+                    rrf_weights[key.strip()] = float(val.strip())
+            except (ValueError, TypeError):
+                return f"Error: Invalid weights format '{weights}'. Use 'keyword=1.5,semantic=1.0,graph=0.8'."
 
         # Resolve search types: explicit param > inline prefix > default
         search_types = None
@@ -430,7 +444,7 @@ def _register_tools(mcp: FastMCP) -> None:
                 asyncio.to_thread(
                     hybrid_search, query, query_embedding, db,
                     _project_graphs.get(pid), limit, source_type_filter,
-                    search_types, advanced_fts,
+                    search_types, advanced_fts, rrf_weights,
                 )
                 for pid, pname, db in dbs
             ]
