@@ -110,7 +110,8 @@ class TestCrossFileEdgeResolution:
         # Now resolve cross-file edges
         indexer = IndexerPipeline(temp_project['path'], project_db=db)
         indexer.project_id = project_id
-        edges_created = indexer._resolve_cross_file_edges()
+        stats = indexer._resolve_cross_file_edges()
+        edges_created = stats["edges_created"]
 
         # Should have created 3 edges
         assert edges_created == 3
@@ -203,7 +204,8 @@ class TestCrossFileEdgeResolution:
         # Resolve cross-file edges
         indexer = IndexerPipeline(temp_project['path'], project_db=db)
         indexer.project_id = project_id
-        edges_created = indexer._resolve_cross_file_edges()
+        stats = indexer._resolve_cross_file_edges()
+        edges_created = stats["edges_created"]
 
         # Should not create a new edge since it already exists
         assert edges_created == 0
@@ -272,7 +274,8 @@ class TestCrossFileEdgeResolution:
         # Resolve cross-file edges
         indexer = IndexerPipeline(temp_project['path'], project_db=db)
         indexer.project_id = project_id
-        edges_created = indexer._resolve_cross_file_edges()
+        stats = indexer._resolve_cross_file_edges()
+        edges_created = stats["edges_created"]
 
         # Should resolve the short name to the full namespace symbol
         assert edges_created == 1
@@ -341,7 +344,8 @@ class TestCrossFileEdgeResolution:
         # Resolve cross-file edges
         indexer = IndexerPipeline(temp_project['path'], project_db=db)
         indexer.project_id = project_id
-        edges_created = indexer._resolve_cross_file_edges()
+        stats = indexer._resolve_cross_file_edges()
+        edges_created = stats["edges_created"]
 
         # Should skip ambiguous reference (not create edge)
         # Implementation prefers functions > classes > methods, so with both functions,
@@ -408,7 +412,8 @@ class TestCrossFileEdgeResolution:
         # Resolve cross-file edges
         indexer = IndexerPipeline(temp_project['path'], project_db=db)
         indexer.project_id = project_id
-        edges_created = indexer._resolve_cross_file_edges()
+        stats = indexer._resolve_cross_file_edges()
+        edges_created = stats["edges_created"]
 
         # Should prefer function over class
         assert edges_created == 1
@@ -455,7 +460,8 @@ class TestCrossFileEdgeResolution:
         # Resolve cross-file edges
         indexer = IndexerPipeline(temp_project['path'], project_db=db)
         indexer.project_id = project_id
-        edges_created = indexer._resolve_cross_file_edges()
+        stats = indexer._resolve_cross_file_edges()
+        edges_created = stats["edges_created"]
 
         # Should not create any edges
         assert edges_created == 0
@@ -464,3 +470,106 @@ class TestCrossFileEdgeResolution:
         caller_refs = db.get_refs(symbol_id=caller_id)
         assert len(caller_refs) == 1
         assert caller_refs[0]['to_symbol_id'] is None
+
+    def test_resolve_ambiguous_with_proximity_tiebreak(self, temp_project):
+        """Test that ambiguous names resolve via file-proximity when one candidate is closer."""
+        db = temp_project['db']
+        project_id = temp_project['project_id']
+
+        # Create files in different directories — caller is in src/utils/
+        file_caller_id = db.upsert_file(project_id, 'src/utils/caller.py', 'python', 'hash_c')
+        # helper in src/utils/ (same directory as caller)
+        file_near_id = db.upsert_file(project_id, 'src/utils/helpers.py', 'python', 'hash_n')
+        # helper in tests/ (far from caller)
+        file_far_id = db.upsert_file(project_id, 'tests/helpers.py', 'python', 'hash_f')
+
+        # Two functions named 'helper' — ambiguous by name+kind
+        near_id = db.insert_symbols([{
+            'project_id': project_id, 'file_id': file_near_id,
+            'name': 'helper', 'kind': 'function',
+            'line': 1, 'col': 0, 'scope': '', 'signature': '',
+        }])[0]
+        far_id = db.insert_symbols([{
+            'project_id': project_id, 'file_id': file_far_id,
+            'name': 'helper', 'kind': 'function',
+            'line': 1, 'col': 0, 'scope': '', 'signature': '',
+        }])[0]
+
+        caller_id = db.insert_symbols([{
+            'project_id': project_id, 'file_id': file_caller_id,
+            'name': 'caller', 'kind': 'function',
+            'line': 5, 'col': 0, 'scope': '', 'signature': '',
+        }])[0]
+
+        db.insert_refs([{
+            'project_id': project_id, 'from_symbol_id': caller_id,
+            'to_symbol_id': None, 'to_symbol_name': 'helper',
+            'kind': 'calls', 'context': '', 'line': 6,
+        }])
+
+        indexer = IndexerPipeline(temp_project['path'], project_db=db)
+        indexer.project_id = project_id
+        stats = indexer._resolve_cross_file_edges()
+
+        # Should resolve to the closer candidate (src/utils/helpers.py)
+        assert stats["edges_created"] == 1
+        assert stats["resolved_proximity"] == 1
+        assert stats["ambiguous_dropped"] == 0
+
+        edges = db.conn.execute(
+            "SELECT to_id FROM edges WHERE from_id = ?", (caller_id,)
+        ).fetchall()
+        assert len(edges) == 1
+        assert edges[0][0] == near_id
+
+    def test_resolve_suffix_match_for_dotted_names(self, temp_project):
+        """Test suffix matching resolves module.func style names."""
+        db = temp_project['db']
+        project_id = temp_project['project_id']
+
+        file_a_id = db.upsert_file(project_id, 'src/analytics.py', 'python', 'hash_a')
+        file_b_id = db.upsert_file(project_id, 'src/main.py', 'python', 'hash_b')
+
+        # Symbol with dotted name (scope-qualified)
+        tracker_id = db.insert_symbols([{
+            'project_id': project_id, 'file_id': file_a_id,
+            'name': 'Analytics.track', 'kind': 'method',
+            'line': 10, 'col': 0, 'scope': 'Analytics', 'signature': '',
+        }])[0]
+
+        caller_id = db.insert_symbols([{
+            'project_id': project_id, 'file_id': file_b_id,
+            'name': 'main', 'kind': 'function',
+            'line': 1, 'col': 0, 'scope': '', 'signature': '',
+        }])[0]
+
+        # Ref uses short name "track" — no direct match
+        db.insert_refs([{
+            'project_id': project_id, 'from_symbol_id': caller_id,
+            'to_symbol_id': None, 'to_symbol_name': 'track',
+            'kind': 'calls', 'context': '', 'line': 2,
+        }])
+
+        indexer = IndexerPipeline(temp_project['path'], project_db=db)
+        indexer.project_id = project_id
+        stats = indexer._resolve_cross_file_edges()
+
+        assert stats["edges_created"] == 1
+        assert stats["resolved_suffix"] == 1
+
+    def test_stats_dict_completeness(self, temp_project):
+        """Test that stats dict contains all expected keys."""
+        db = temp_project['db']
+        project_id = temp_project['project_id']
+
+        indexer = IndexerPipeline(temp_project['path'], project_db=db)
+        indexer.project_id = project_id
+        stats = indexer._resolve_cross_file_edges()
+
+        expected_keys = {
+            "total_unresolved", "resolved_strict", "resolved_proximity",
+            "resolved_suffix", "ambiguous_dropped", "no_candidate", "edges_created",
+        }
+        assert set(stats.keys()) == expected_keys
+        # With no data, all should be 0
+        assert all(v == 0 for v in stats.values())

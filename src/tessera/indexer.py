@@ -338,8 +338,7 @@ class IndexerPipeline:
                 stats.files_failed += 1
 
         # Resolve cross-file edges
-        cross_file_edges = self._resolve_cross_file_edges()
-        logger.info("Cross-file edge resolution: %d edges created", cross_file_edges)
+        edge_stats = self._resolve_cross_file_edges()
 
         stats.time_elapsed = time.perf_counter() - start
 
@@ -906,8 +905,7 @@ class IndexerPipeline:
                     logger.error(f"Failed to index {file_path}: {result.get('reason')}")
 
             # Resolve cross-file edges
-            cross_file_edges = self._resolve_cross_file_edges()
-            logger.info("Cross-file edge resolution: %d edges created", cross_file_edges)
+            edge_stats = self._resolve_cross_file_edges()
 
             stats.time_elapsed = time.perf_counter() - start
 
@@ -925,18 +923,41 @@ class IndexerPipeline:
                 self.global_db.fail_job(job_id, str(e))
             raise
 
-    def _resolve_cross_file_edges(self) -> int:
+    @staticmethod
+    def _file_proximity(path_a: str, path_b: str) -> int:
+        """Count shared leading path segments between two file paths."""
+        parts_a = Path(path_a).parts
+        parts_b = Path(path_b).parts
+        shared = 0
+        for a, b in zip(parts_a, parts_b):
+            if a == b:
+                shared += 1
+            else:
+                break
+        return shared
+
+    def _resolve_cross_file_edges(self) -> Dict[str, int]:
         """Resolve cross-file references into edges.
 
         Queries unresolved refs (to_symbol_id IS NULL) and matches
         to_symbol_name against all symbols in the project. Creates
         edges for resolved matches and updates refs.to_symbol_id.
 
+        Uses file-proximity tiebreaking for ambiguous names and suffix
+        matching for namespaced symbols.
+
         Returns:
-            Number of cross-file edges created.
+            Stats dict with keys: total_unresolved, resolved_strict,
+            resolved_proximity, resolved_suffix, ambiguous_dropped,
+            no_candidate, edges_created.
         """
+        empty_stats: Dict[str, int] = {
+            "total_unresolved": 0, "resolved_strict": 0,
+            "resolved_proximity": 0, "resolved_suffix": 0,
+            "ambiguous_dropped": 0, "no_candidate": 0, "edges_created": 0,
+        }
         if not self.project_id:
-            return 0
+            return empty_stats
 
         # Query all unresolved refs for this project
         cursor = self.project_db.conn.execute(
@@ -950,98 +971,167 @@ class IndexerPipeline:
         unresolved_refs = [dict(row) for row in cursor.fetchall()]
 
         if not unresolved_refs:
-            return 0
+            return empty_stats
+
+        stats = dict(empty_stats)
+        stats["total_unresolved"] = len(unresolved_refs)
 
         # Build a name-to-symbol lookup for all symbols in the project
+        # Include file_id for proximity tiebreaking
         cursor = self.project_db.conn.execute(
-            "SELECT id, name, kind FROM symbols WHERE project_id = ?",
+            "SELECT id, name, kind, file_id FROM symbols WHERE project_id = ?",
             (self.project_id,)
         )
         all_symbols = [dict(row) for row in cursor.fetchall()]
 
-        # Build lookup: name -> symbol_id (with preference logic)
-        # Prefer: functions > classes > methods
-        # Define preference order
-        kind_priority = {'function': 0, 'class': 1, 'method': 2, 'other': 3}
+        # Build file_id → path lookup
+        cursor = self.project_db.conn.execute(
+            "SELECT id, path FROM files WHERE project_id = ?",
+            (self.project_id,)
+        )
+        file_id_to_path: Dict[int, str] = {row[0]: row[1] for row in cursor.fetchall()}
 
-        # Group symbols by name with their priorities
-        name_to_candidates: Dict[str, List[tuple]] = {}  # name -> [(symbol_id, priority), ...]
+        # Build symbol_id → file_id lookup
+        symbol_to_file: Dict[int, int] = {s['id']: s['file_id'] for s in all_symbols}
+
+        # Build from_symbol_id → file_id for refs (need to look up from_symbol's file)
+        ref_from_ids = {ref['from_symbol_id'] for ref in unresolved_refs}
+        from_symbol_file: Dict[int, int] = {}
+        if ref_from_ids:
+            placeholders = ",".join("?" * len(ref_from_ids))
+            cursor = self.project_db.conn.execute(
+                f"SELECT id, file_id FROM symbols WHERE id IN ({placeholders})",
+                list(ref_from_ids)
+            )
+            from_symbol_file = {row[0]: row[1] for row in cursor.fetchall()}
+
+        # Build lookup: name -> [(symbol_id, priority, file_id), ...]
+        kind_priority = {'function': 0, 'class': 1, 'method': 2, 'other': 3}
+        name_to_candidates: Dict[str, List[tuple]] = {}
         for symbol in all_symbols:
             name = symbol['name']
-            symbol_id = symbol['id']
-            kind = symbol['kind']
-            priority = kind_priority.get(kind, 3)
-
+            priority = kind_priority.get(symbol['kind'], 3)
+            entry = (symbol['id'], priority, symbol['file_id'])
             if name not in name_to_candidates:
                 name_to_candidates[name] = []
-            name_to_candidates[name].append((symbol_id, priority))
+            name_to_candidates[name].append(entry)
 
-        # Resolve each name to a single symbol (if unambiguous)
-        name_to_symbol: Dict[str, int] = {}
-        for name, candidates in name_to_candidates.items():
-            # Sort by priority (lowest first)
-            candidates.sort(key=lambda x: x[1])
-            best_priority = candidates[0][1]
-
-            # Check if ambiguous (multiple symbols with same best priority)
-            best_candidates = [c for c in candidates if c[1] == best_priority]
-            if len(best_candidates) == 1:
-                # Unambiguous: use the single best candidate
-                name_to_symbol[name] = best_candidates[0][0]
-            # else: ambiguous (multiple symbols with same best priority), skip
-
-        # Also handle short names for namespaced symbols (PHP)
-        # Try to resolve short names, but don't override existing mappings
+        # Also build suffix index for namespaced symbols
+        # Maps short_name -> [(symbol_id, priority, file_id), ...]
+        suffix_candidates: Dict[str, List[tuple]] = {}
         for symbol in all_symbols:
             full_name = symbol['name']
-            if '\\' in full_name:
-                short_name = full_name.rsplit('\\', 1)[-1]
-                # Only set if not already mapped (avoid overwriting unambiguous full names)
-                if short_name not in name_to_symbol:
-                    # Check if short_name is unambiguous among namespaced symbols
-                    short_candidates = [s for s in all_symbols if s['name'].endswith('\\' + short_name) or s['name'] == short_name]
-                    if len(short_candidates) == 1:
-                        name_to_symbol[short_name] = symbol['id']
+            priority = kind_priority.get(symbol['kind'], 3)
+            entry = (symbol['id'], priority, symbol['file_id'])
+            for sep in ('\\', '.'):
+                if sep in full_name:
+                    short = full_name.rsplit(sep, 1)[-1]
+                    if short not in suffix_candidates:
+                        suffix_candidates[short] = []
+                    suffix_candidates[short].append(entry)
+
+        # Resolve each name to a single symbol (strict = unambiguous at best priority)
+        name_to_symbol: Dict[str, int] = {}
+        # Names that are ambiguous — need proximity tiebreak per-ref
+        ambiguous_names: Dict[str, List[tuple]] = {}  # name -> candidates
+
+        for name, candidates in name_to_candidates.items():
+            candidates.sort(key=lambda x: x[1])
+            best_priority = candidates[0][1]
+            best = [c for c in candidates if c[1] == best_priority]
+            if len(best) == 1:
+                name_to_symbol[name] = best[0][0]
+            else:
+                ambiguous_names[name] = best
 
         # Check for existing edges to avoid duplicates
         cursor = self.project_db.conn.execute(
-            """
-            SELECT from_id, to_id FROM edges
-            WHERE project_id = ?
-            """,
+            "SELECT from_id, to_id FROM edges WHERE project_id = ?",
             (self.project_id,)
         )
-        existing_edges = set(
-            (row[0], row[1]) for row in cursor.fetchall()
-        )
+        existing_edges = set((row[0], row[1]) for row in cursor.fetchall())
 
         # Resolve refs and prepare edges to insert
         edges_to_insert = []
         refs_to_update = []
 
         for ref in unresolved_refs:
-            to_symbol_name = ref['to_symbol_name']
-            from_symbol_id = ref['from_symbol_id']
+            to_name = ref['to_symbol_name']
+            from_id = ref['from_symbol_id']
             ref_id = ref['id']
             kind = ref['kind']
+            resolved_id = None
+            resolution_type = None
 
-            # Try to resolve the symbol
-            if to_symbol_name in name_to_symbol:
-                to_symbol_id = name_to_symbol[to_symbol_name]
+            # 1. Strict match (unambiguous name)
+            if to_name in name_to_symbol:
+                resolved_id = name_to_symbol[to_name]
+                resolution_type = "strict"
 
-                # Check if edge already exists
-                if (from_symbol_id, to_symbol_id) not in existing_edges:
+            # 2. Ambiguous match — use file-proximity tiebreak
+            elif to_name in ambiguous_names:
+                from_file_id = from_symbol_file.get(from_id)
+                if from_file_id:
+                    from_path = file_id_to_path.get(from_file_id, "")
+                    candidates = ambiguous_names[to_name]
+                    scored = []
+                    for sym_id, _pri, fid in candidates:
+                        cand_path = file_id_to_path.get(fid, "")
+                        score = self._file_proximity(from_path, cand_path)
+                        scored.append((score, sym_id))
+                    scored.sort(key=lambda x: x[0], reverse=True)
+                    # Only resolve if the top candidate is strictly better
+                    if len(scored) >= 2 and scored[0][0] > scored[1][0]:
+                        resolved_id = scored[0][1]
+                        resolution_type = "proximity"
+                    else:
+                        stats["ambiguous_dropped"] += 1
+                else:
+                    stats["ambiguous_dropped"] += 1
+
+            # 3. Suffix match for namespaced symbols
+            elif to_name in suffix_candidates:
+                suffix_cands = suffix_candidates[to_name]
+                suffix_cands_sorted = sorted(suffix_cands, key=lambda x: x[1])
+                best_pri = suffix_cands_sorted[0][1]
+                best_suffix = [c for c in suffix_cands_sorted if c[1] == best_pri]
+                if len(best_suffix) == 1:
+                    resolved_id = best_suffix[0][0]
+                    resolution_type = "suffix"
+                else:
+                    # Try proximity tiebreak on suffix matches
+                    from_file_id = from_symbol_file.get(from_id)
+                    if from_file_id:
+                        from_path = file_id_to_path.get(from_file_id, "")
+                        scored = []
+                        for sym_id, _pri, fid in best_suffix:
+                            cand_path = file_id_to_path.get(fid, "")
+                            score = self._file_proximity(from_path, cand_path)
+                            scored.append((score, sym_id))
+                        scored.sort(key=lambda x: x[0], reverse=True)
+                        if len(scored) >= 2 and scored[0][0] > scored[1][0]:
+                            resolved_id = scored[0][1]
+                            resolution_type = "suffix"
+                        else:
+                            stats["ambiguous_dropped"] += 1
+                    else:
+                        stats["ambiguous_dropped"] += 1
+
+            else:
+                stats["no_candidate"] += 1
+
+            if resolved_id is not None:
+                stats[f"resolved_{resolution_type}"] += 1
+                if (from_id, resolved_id) not in existing_edges:
                     edges_to_insert.append({
                         'project_id': self.project_id,
-                        'from_id': from_symbol_id,
-                        'to_id': to_symbol_id,
+                        'from_id': from_id,
+                        'to_id': resolved_id,
                         'type': kind,
                         'weight': 1.0,
                     })
-                    existing_edges.add((from_symbol_id, to_symbol_id))
-
-                # Update the ref with resolved symbol_id
-                refs_to_update.append((to_symbol_id, ref_id))
+                    existing_edges.add((from_id, resolved_id))
+                refs_to_update.append((resolved_id, ref_id))
 
         # Insert edges in batch
         if edges_to_insert:
@@ -1055,13 +1145,17 @@ class IndexerPipeline:
                     (to_symbol_id, ref_id)
                 )
 
+        stats["edges_created"] = len(edges_to_insert)
         logger.info(
-            "Resolved %d cross-file edges from %d unresolved refs",
-            len(edges_to_insert),
-            len(unresolved_refs)
+            "Cross-file edge resolution: %d unresolved → %d strict, %d proximity, "
+            "%d suffix, %d ambiguous, %d no-candidate (%d edges created)",
+            stats["total_unresolved"], stats["resolved_strict"],
+            stats["resolved_proximity"], stats["resolved_suffix"],
+            stats["ambiguous_dropped"], stats["no_candidate"],
+            stats["edges_created"],
         )
 
-        return len(edges_to_insert)
+        return stats
 
     def search(self, query: str, limit: int = 10) -> List[Dict[str, Any]]:
         """
