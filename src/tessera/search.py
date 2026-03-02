@@ -257,30 +257,36 @@ def extract_snippet(
         all_line_nums.append(innermost_end)
     line_width = len(str(max(all_line_nums))) if all_line_nums else 4
 
+    _DEF_KEYWORDS = (
+        "class ", "def ", "function ", "interface ", "trait ", "enum ",
+        "async def ", "async function ",
+        "public ", "private ", "protected ", "static ", "abstract ", "final ",
+    )
+
     rendered = []
     cursor = 0  # tracks the next absolute line we expect to show
 
+    # Only render ancestors whose definition line is BEFORE the match window
     for anc in ancestors:
         anc_line = anc.get("line", 0)
+        if anc_line >= abs_win_start:
+            break  # this ancestor is inside the match window — skip rendering
+
         kind = anc.get("kind", "")
         sig = anc.get("signature", "")
-        # Use only first line if signature spans multiple lines
         if sig and "\n" in sig:
             sig = sig.split("\n")[0].rstrip()
         keyword = {"class": "class", "function": "def", "method": "def",
                    "interface": "interface", "trait": "trait", "enum": "enum"}.get(kind, "")
         if not sig:
-            # Reconstitute from kind + name when signature wasn't captured
             name = anc.get("name", "")
             sig = f"{keyword} {name}:" if keyword else name
-        elif keyword and not sig.startswith(keyword):
-            # Signature exists but missing keyword prefix (e.g. "foo(self)" -> "def foo(self):")
+        elif keyword and not any(sig.lstrip().startswith(k) for k in _DEF_KEYWORDS):
             sig = f"{keyword} {sig}:"
 
         indent = "    " if kind == "method" else ""
         def_text = f"{indent}{sig}"
 
-        # If there's a gap between cursor and this definition, show collapse
         if cursor > 0 and anc_line > cursor:
             hidden = anc_line - cursor
             if hidden > 0:
@@ -289,11 +295,10 @@ def extract_snippet(
         rendered.append(_render_line(anc_line, def_text, line_width))
         cursor = anc_line + 1
 
-    # Collapse between last ancestor definition and match window
+    # Collapse between last rendered ancestor and match window
     if cursor > 0 and abs_win_start > cursor:
         hidden = abs_win_start - cursor
         if hidden > 0:
-            # Use indentation based on nesting depth
             depth_indent = "    " * len(ancestors)
             rendered.append(_render_collapse(hidden, depth_indent, line_width))
 
