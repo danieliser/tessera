@@ -264,12 +264,15 @@ def extract_snippet(
         anc_line = anc.get("line", 0)
         kind = anc.get("kind", "")
         sig = anc.get("signature", "")
+        keyword = {"class": "class", "function": "def", "method": "def",
+                   "interface": "interface", "trait": "trait", "enum": "enum"}.get(kind, "")
         if not sig:
             # Reconstitute from kind + name when signature wasn't captured
             name = anc.get("name", "")
-            keyword = {"class": "class", "function": "def", "method": "def",
-                       "interface": "interface", "trait": "trait", "enum": "enum"}.get(kind, "")
             sig = f"{keyword} {name}:" if keyword else name
+        elif keyword and not sig.startswith(keyword):
+            # Signature exists but missing keyword prefix (e.g. "foo(self)" -> "def foo(self):")
+            sig = f"{keyword} {sig}:"
 
         indent = "    " if kind == "method" else ""
         def_text = f"{indent}{sig}"
