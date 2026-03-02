@@ -2,6 +2,20 @@
 
 All notable changes to Tessera are documented in this file.
 
+## [0.6.0] — 2026-03-02
+
+### Added
+- **Collapsed Ancestry Snippets** — search results now show structural nesting context (class → method → match) with collapsed regions and line numbers on every visible line
+- `expand_context` param: `"lines"` (default) for collapsed skeleton, `"full"` for complete symbol expansion
+- `max_depth` param to limit ancestor nesting levels shown
+- `end_line` tracking on all symbols (schema v3 migration) via tree-sitter `node.end_point`
+- `get_ancestor_symbols()` range query on ProjectDB
+- Signature reconstitution for display — `def`/`class` keywords prepended when missing from stored signatures
+
+### Fixed
+- Off-by-one in snippet line numbers (chunk start_line is 0-based, display is 1-based)
+- Multiline signatures truncated to first line for clean rendering
+
 ## [0.5.0] — 2026-03-02
 
 ### Added
