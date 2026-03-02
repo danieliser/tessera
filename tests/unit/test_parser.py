@@ -81,7 +81,7 @@ def hello(name):
         assert len(symbols) == 1
         assert symbols[0].name == "hello"
         assert symbols[0].kind == "function"
-        assert symbols[0].signature == "hello(name)"
+        assert symbols[0].signature == "def hello(name):"
 
     def test_extract_class(self):
         code = """
