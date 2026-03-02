@@ -339,14 +339,41 @@ def _register_tools(mcp: FastMCP) -> None:
     async def search(query: str, limit: int = 10, filter_language: str = "", source_type: str = "", output_format: str = "json", search_mode: str = "", advanced_fts: bool = False, session_id: str = "") -> str:
         """Hybrid semantic + keyword search across indexed codebase.
 
+        Combines FTS5 keyword matching, FAISS vector similarity, and PageRank
+        graph ranking via weighted Reciprocal Rank Fusion (RRF). Returns
+        results with file paths, line numbers, relevance scores, and focused
+        code snippets.
+
+        **When to use which mode:**
+        - Default (no search_mode): Best for most queries. Merges keyword + semantic signals.
+        - "lex": Exact identifier lookup. Use for function names, class names, variable names.
+          Example: search("lex:hybrid_search") — fast, precise, FTS5-only.
+        - "vec": Conceptual/semantic search. Use for "how does X work" questions.
+          Example: search("vec:error handling strategy") — finds semantically similar code.
+        - "hyde": Hypothetical document embedding. Best for abstract concepts where you want
+          to find code that *describes* the concept, not code that *uses* the terms.
+          Example: search("hyde:retry with exponential backoff")
+
+        **FTS5 operators** (requires advanced_fts=True):
+        - Phrases: search('"def hybrid_search"', advanced_fts=True) — exact phrase match
+        - Negation: search("error NOT warning", advanced_fts=True) — exclude terms
+        - Prefix: search("hybrid*", advanced_fts=True) — prefix matching
+        - NEAR: search("NEAR(search query, 5)", advanced_fts=True) — proximity
+
+        **Output formats:**
+        - "json": Full metadata (default). Best for programmatic processing.
+        - "markdown": Formatted with code blocks. Best for displaying to users.
+        - "csv": Tabular. Best for analysis or spreadsheet export.
+        - "files": Deduplicated file paths only. Best for knowing which files to read.
+
         Args:
-            output_format: Result format — "json" (default), "csv", "markdown", or "files"
-            search_mode: Controls which search lists fire. "" (default) = auto-detect from
-                query prefix. "lex" = keyword only, "vec" = semantic only, "hyde" = semantic
-                with document embedding (no retrieval prefix), "lex,vec" = both.
-                Prefix syntax also works: "lex:my query" is equivalent to search_mode="lex".
-            advanced_fts: If True, allow FTS5 operators in keyword search (quoted phrases,
-                NOT, *, NEAR). Default False escapes all operators for safe literal matching.
+            query: Search query. Supports prefix syntax: "lex:query", "vec:query", "hyde:query".
+            limit: Max results (default 10).
+            filter_language: Filter by programming language (e.g., "python", "typescript").
+            source_type: Filter by content type — "code" or "markdown".
+            output_format: Result format — "json" (default), "csv", "markdown", or "files".
+            search_mode: Override search list routing — "lex", "vec", "hyde", or "lex,vec".
+            advanced_fts: Enable FTS5 operators (phrases, NOT, *, NEAR). Default False.
         """
         scope, err = _check_session({"session_id": session_id}, "project")
         if err:
@@ -441,10 +468,27 @@ def _register_tools(mcp: FastMCP) -> None:
 
     @mcp.tool()
     async def doc_search_tool(query: str, limit: int = 10, formats: str = "", source_type: str = "", output_format: str = "json", session_id: str = "") -> str:
-        """Search non-code documents only (markdown, PDF, YAML, JSON, assets).
+        """Search non-code documents only — markdown, PDF, YAML, JSON, config files, and assets.
+
+        Use this instead of `search` when you specifically need documentation, specs,
+        config files, or other non-code content. Excludes source code files from results.
+
+        **Supported document types:** markdown, pdf, yaml, json, html, xml, text, txt,
+        rst, csv, tsv, log, ini, cfg, toml, conf.
+
+        **When to use:**
+        - Finding documentation: doc_search("authentication flow")
+        - Searching config files: doc_search("database connection", formats="yaml,toml")
+        - Finding specs: doc_search("API design", formats="markdown")
+        - Searching logs: doc_search("error timeout", formats="log")
 
         Args:
-            output_format: Result format — "json" (default), "csv", "markdown", or "files"
+            query: Search query (same syntax as search tool).
+            limit: Max results (default 10).
+            formats: Comma-separated document types to search (e.g., "markdown,yaml").
+                Leave empty to search all document types.
+            source_type: Filter by a single source type (e.g., "markdown").
+            output_format: Result format — "json" (default), "csv", "markdown", or "files".
         """
         scope, err = _check_session({"session_id": session_id}, "project")
         if err:
@@ -512,7 +556,24 @@ def _register_tools(mcp: FastMCP) -> None:
 
     @mcp.tool()
     async def symbols(query: str = "*", kind: str = "", language: str = "", session_id: str = "") -> str:
-        """List and query symbols (functions, classes, imports) in the codebase."""
+        """Find functions, classes, methods, and imports across the indexed codebase.
+
+        Returns symbol definitions with file paths, line numbers, signatures, and scope.
+        Use this to locate where something is defined before reading the full file.
+
+        **Common patterns:**
+        - Find a specific function: symbols("hybrid_search")
+        - List all classes: symbols("*", kind="class")
+        - Find Python functions: symbols("*", kind="function", language="python")
+        - Find by prefix: symbols("test_*")
+
+        **Symbol kinds:** function, class, method, import, variable, interface, type_alias.
+
+        Args:
+            query: Symbol name pattern. Use "*" for all, or a name/prefix to filter.
+            kind: Filter by symbol kind (e.g., "function", "class", "method", "import").
+            language: Filter by language (e.g., "python", "typescript", "php").
+        """
         scope, err = _check_session({"session_id": session_id}, "project")
         if err:
             return err
@@ -553,7 +614,24 @@ def _register_tools(mcp: FastMCP) -> None:
 
     @mcp.tool()
     async def references(symbol_name: str, kind: str = "all", session_id: str = "") -> str:
-        """Find all references to a specific symbol."""
+        """Find all references to and from a specific symbol.
+
+        Returns two lists: "outgoing" (what this symbol calls/uses) and "callers"
+        (what calls/uses this symbol). Essential for understanding dependency chains
+        and call graphs before making changes.
+
+        **Common patterns:**
+        - Who calls this function: references("handle_request") → check callers list
+        - What does this function depend on: references("handle_request") → check outgoing list
+        - Find all usages of a class: references("ProjectDB")
+        - Filter by reference type: references("MyClass", kind="import")
+
+        **Reference kinds:** call, import, inherit, type_ref, attribute, or "all" (default).
+
+        Args:
+            symbol_name: Exact symbol name to look up.
+            kind: Filter reference kind — "all" (default), "call", "import", "inherit", etc.
+        """
         scope, err = _check_session({"session_id": session_id}, "project")
         if err:
             return err
@@ -615,7 +693,23 @@ def _register_tools(mcp: FastMCP) -> None:
 
     @mcp.tool()
     async def file_context(file_path: str, session_id: str = "") -> str:
-        """Get structural summary of a file (symbols, imports, relationships)."""
+        """Get the structural skeleton of a file — all symbols, imports, and internal references.
+
+        Returns the file's complete symbol table without reading the full source code.
+        Use this to understand a file's structure before deciding which parts to read,
+        or to map dependencies between symbols within a file.
+
+        **Common patterns:**
+        - Understand a module's API: file_context("src/tessera/search.py")
+        - Find all classes in a file: file_context("src/models.py") → filter by kind="class"
+        - Map internal call graph: check references list for intra-file calls
+
+        **Returns:** JSON with {file: {path, language, lines}, symbols: [{name, kind, line,
+        signature, scope}], references: [{from_symbol_id, to_symbol_id, kind, line}]}.
+
+        Args:
+            file_path: Relative path from project root (e.g., "src/tessera/search.py").
+        """
         scope, err = _check_session({"session_id": session_id}, "project")
         if err:
             return err
@@ -677,7 +771,27 @@ def _register_tools(mcp: FastMCP) -> None:
 
     @mcp.tool()
     async def impact(symbol_name: str, depth: int = 3, include_types: bool = True, session_id: str = "") -> str:
-        """Analyze what breaks if a symbol is changed — traverses the dependency graph."""
+        """Analyze the blast radius of changing a symbol — what depends on it and what breaks.
+
+        Traverses the dependency graph outward from the named symbol up to `depth` hops,
+        collecting every function, class, and module that directly or transitively depends
+        on it. Use this before refactoring to understand the full impact of a change.
+
+        **Common patterns:**
+        - Before renaming a function: impact("handle_request") → see all callers at every depth
+        - Before changing a class interface: impact("ProjectDB", depth=2)
+        - Assess risk of a change: impact("normalize_bm25_score") → if few dependents, safe to modify
+
+        **Depth guide:**
+        - depth=1: Direct callers only. Fast. Good for quick "who uses this?" checks.
+        - depth=2-3: Typical refactoring scope. Shows indirect dependents.
+        - depth=5+: Full transitive closure. Slower, but shows cascading impact.
+
+        Args:
+            symbol_name: Exact symbol name to analyze.
+            depth: How many hops to traverse (default 3). Higher = more complete but slower.
+            include_types: Include type references in the graph (default True).
+        """
         scope, err = _check_session({"session_id": session_id}, "project")
         if err:
             return err
