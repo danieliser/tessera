@@ -8,15 +8,24 @@ from unittest.mock import Mock, MagicMock, patch
 import tempfile
 import sqlite3
 
+from fastmcp import Client
 from tessera.server import create_server, _check_session, _get_project_dbs
 from tessera.db import GlobalDB, ProjectDB
 from tessera.auth import create_scope, validate_session
 
 
 async def get_json(server, tool_name, args=None):
-    """Call a tool and parse the JSON result."""
-    content, _ = await server.call_tool(tool_name, args or {})
-    return json.loads(content[0].text)
+    """Call a tool and parse the JSON result.
+
+    Accepts either a FastMCP server (wraps in Client) or a Client directly.
+    """
+    if isinstance(server, Client):
+        result = await server.call_tool(tool_name, args or {})
+        return json.loads(result.content[0].text)
+    # Raw FastMCP server — wrap in Client
+    async with Client(server) as client:
+        result = await client.call_tool(tool_name, args or {})
+        return json.loads(result.content[0].text)
 
 
 class TestCrossRefs:
@@ -408,11 +417,12 @@ class TestCollectionManagementTools:
         mcp = create_server(None, str(global_db_path))
 
         # Should fail with insufficient scope
-        content, _ = await mcp.call_tool("create_collection_tool", {
-            "name": "test",
-            "project_ids": [],
-            "session_id": project_session_id
-        })
-        result = content[0].text
+        async with Client(mcp) as client:
+            call_result = await client.call_tool("create_collection_tool", {
+                "name": "test",
+                "project_ids": [],
+                "session_id": project_session_id
+            })
+            result = call_result.content[0].text
 
         assert "Error" in result or "Insufficient" in result

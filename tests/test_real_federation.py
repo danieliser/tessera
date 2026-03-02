@@ -14,6 +14,7 @@ import tempfile
 
 import pytest
 
+from fastmcp import Client
 from tessera.db import ProjectDB, GlobalDB
 from tessera.indexer import IndexerPipeline
 from tessera.server import create_server
@@ -44,9 +45,16 @@ pytestmark = pytest.mark.skipif(
 
 
 async def get_json(server, tool_name, args=None):
-    """Call a tool and parse the JSON result."""
-    content, _ = await server.call_tool(tool_name, args or {})
-    text = content[0].text
+    """Call a tool and parse the JSON result.
+
+    Accepts either a FastMCP server (wraps in Client) or a Client directly.
+    """
+    if isinstance(server, Client):
+        result = await server.call_tool(tool_name, args or {})
+    else:
+        async with Client(server) as client:
+            result = await client.call_tool(tool_name, args or {})
+    text = result.content[0].text
     try:
         return json.loads(text)
     except json.JSONDecodeError:
@@ -54,9 +62,16 @@ async def get_json(server, tool_name, args=None):
 
 
 async def get_text(server, tool_name, args=None):
-    """Call a tool and return raw text."""
-    content, _ = await server.call_tool(tool_name, args or {})
-    return content[0].text
+    """Call a tool and return raw text.
+
+    Accepts either a FastMCP server (wraps in Client) or a Client directly.
+    """
+    if isinstance(server, Client):
+        result = await server.call_tool(tool_name, args or {})
+    else:
+        async with Client(server) as client:
+            result = await client.call_tool(tool_name, args or {})
+    return result.content[0].text
 
 
 # Session-scoped temp dir for ProjectDB.base_dir
@@ -510,12 +525,13 @@ class TestLatencyBenchmarks:
 
     async def _time_calls(self, server, tool_name, args, n=10):
         """Run a tool n times and return timing stats."""
-        times = []
-        for _ in range(n):
-            start = time.perf_counter()
-            await server.call_tool(tool_name, args)
-            elapsed = (time.perf_counter() - start) * 1000  # ms
-            times.append(elapsed)
+        async with Client(server) as client:
+            times = []
+            for _ in range(n):
+                start = time.perf_counter()
+                await client.call_tool(tool_name, args)
+                elapsed = (time.perf_counter() - start) * 1000  # ms
+                times.append(elapsed)
         return {
             "min": min(times),
             "p50": statistics.median(times),

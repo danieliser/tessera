@@ -29,7 +29,7 @@ from typing import Optional, Any
 from datetime import datetime
 from contextlib import asynccontextmanager
 
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 
 from .db import ProjectDB, GlobalDB
 from .auth import (
@@ -174,21 +174,13 @@ def _get_project_dbs(scope: Optional[ScopeInfo]) -> list[tuple[int, str, Project
     return result
 
 
-def create_server(
+def _init_essential(
     project_path: Optional[str],
     global_db_path: str,
     embedding_endpoint: Optional[str] = None,
     embedding_model: Optional[str] = None,
-) -> FastMCP:
-    """Create and configure the MCP server.
-
-    Args:
-        project_path: Optional path to lock server to a single project.
-                      If None, server operates in multi-project mode.
-        global_db_path: Path to the global.db file.
-        embedding_endpoint: Optional OpenAI-compatible embedding endpoint URL.
-        embedding_model: Optional model identifier for the embedding endpoint.
-    """
+) -> None:
+    """Fast init: DB connections, embedding client, project lock. No heavy I/O."""
     global _db_cache, _locked_project, _global_db, _drift_adapter, _embedding_client, _project_graphs, _graph_stats
 
     # Reset state
@@ -233,6 +225,14 @@ def create_server(
     else:
         logger.info("Server in multi-project mode")
 
+
+def _init_background(project_path: Optional[str] = None) -> None:
+    """Slow init: crash recovery, graph loading, drift adapter. Runs in background."""
+    global _drift_adapter
+
+    if not _global_db:
+        return
+
     # Crash recovery: re-index any jobs that were interrupted (status='running')
     incomplete_jobs = _global_db.get_incomplete_jobs()
     if incomplete_jobs:
@@ -260,48 +260,45 @@ def create_server(
     import time as _time
     total_graph_start = _time.perf_counter()
 
-    if _global_db:
-        projects = _global_db.list_projects()
-        logger.info("Loading PPR graphs for %d projects...", len(projects))
+    projects = _global_db.list_projects()
+    logger.info("Loading PPR graphs for %d projects...", len(projects))
 
-        for project in projects:
-            pid = project["id"]
-            try:
-                db = ProjectDB(project["path"])
-                graph = load_project_graph(db, pid)
-                with _graph_lock:
-                    _project_graphs[pid] = graph
-                _graph_stats[pid] = {
-                    'edge_count': graph.edge_count,
-                    'symbol_count': graph.n_symbols,
-                    'loaded_at': graph.loaded_at,
-                    'sparse': graph.is_sparse_fallback(),
-                }
-                logger.info(
-                    "Loaded graph for project %d (%d symbols, %d edges%s)",
-                    pid, graph.n_symbols, graph.edge_count,
-                    ", SPARSE - PPR skipped" if graph.is_sparse_fallback() else ""
-                )
-            except Exception as e:
-                logger.warning("Failed to load graph for project %d: %s", pid, e)
+    for project in projects:
+        pid = project["id"]
+        try:
+            db = ProjectDB(project["path"])
+            graph = load_project_graph(db, pid)
+            with _graph_lock:
+                _project_graphs[pid] = graph
+            _graph_stats[pid] = {
+                'edge_count': graph.edge_count,
+                'symbol_count': graph.n_symbols,
+                'loaded_at': graph.loaded_at,
+                'sparse': graph.is_sparse_fallback(),
+            }
+            logger.info(
+                "Loaded graph for project %d (%d symbols, %d edges%s)",
+                pid, graph.n_symbols, graph.edge_count,
+                ", SPARSE - PPR skipped" if graph.is_sparse_fallback() else ""
+            )
+        except Exception as e:
+            logger.warning("Failed to load graph for project %d: %s", pid, e)
 
-        total_ms = (_time.perf_counter() - total_graph_start) * 1000
-        logger.info("Total graph startup: %.1fms (%d graphs loaded)", total_ms, len(_project_graphs))
-        if total_ms > 5000:
-            logger.warning("Graph startup exceeded 5s threshold (%.1fms)", total_ms)
+    total_ms = (_time.perf_counter() - total_graph_start) * 1000
+    logger.info("Total graph startup: %.1fms (%d graphs loaded)", total_ms, len(_project_graphs))
+    if total_ms > 5000:
+        logger.warning("Graph startup exceeded 5s threshold (%.1fms)", total_ms)
 
-        # Check LRU cap
-        while len(_project_graphs) > MAX_CACHED_GRAPHS:
-            evict_lru_graph(_project_graphs)
+    # Check LRU cap
+    while len(_project_graphs) > MAX_CACHED_GRAPHS:
+        evict_lru_graph(_project_graphs)
 
-        # Log total memory estimate
-        total_memory = sum(g.estimated_memory_bytes for g in _project_graphs.values())
-        if total_memory > 500 * 1024 * 1024:  # 500MB
-            logger.warning("Graph cache using ~%.1fMB (>500MB threshold)", total_memory / (1024*1024))
-        else:
-            logger.info("Graph cache memory estimate: %.1fMB", total_memory / (1024*1024))
-
-    mcp = FastMCP("tessera")
+    # Log total memory estimate
+    total_memory = sum(g.estimated_memory_bytes for g in _project_graphs.values())
+    if total_memory > 500 * 1024 * 1024:  # 500MB
+        logger.warning("Graph cache using ~%.1fMB (>500MB threshold)", total_memory / (1024*1024))
+    else:
+        logger.info("Graph cache memory estimate: %.1fMB", total_memory / (1024*1024))
 
     # Load drift adapter if available
     if project_path:
@@ -313,6 +310,28 @@ def create_server(
             except Exception as e:
                 logger.warning("Failed to load drift adapter: %s", e)
                 _drift_adapter = None
+
+    logger.info("Background init complete")
+
+
+def _init_state(
+    project_path: Optional[str],
+    global_db_path: str,
+    embedding_endpoint: Optional[str] = None,
+    embedding_model: Optional[str] = None,
+) -> None:
+    """Full synchronous init (for tests and CLI). Runs both essential and background."""
+    _init_essential(project_path, global_db_path, embedding_endpoint, embedding_model)
+    _init_background(project_path)
+
+
+def _register_tools(mcp: FastMCP) -> None:
+    """Register all MCP tool handlers on the server instance.
+
+    This is fast — no I/O, just decorating functions onto the FastMCP instance.
+    Tool handlers read from module globals (_global_db, _db_cache, etc.) which
+    are populated by _init_state() before any tool calls execute.
+    """
 
     # --- Core tools (project scope) ---
 
@@ -1181,6 +1200,56 @@ def create_server(
             _log_audit("delete_collection_tool", 0, scope_level="global")
             return f"Error: {str(e)}"
 
+def create_server(
+    project_path: Optional[str],
+    global_db_path: str,
+    embedding_endpoint: Optional[str] = None,
+    embedding_model: Optional[str] = None,
+) -> FastMCP:
+    """Create and configure the MCP server (synchronous, for tests and CLI).
+
+    Runs _init_state immediately, then registers tools. Use _create_hmr_app()
+    for the lifespan-based pattern that defers init.
+    """
+    _init_state(project_path, global_db_path, embedding_endpoint, embedding_model)
+    mcp = FastMCP("tessera")
+    _register_tools(mcp)
+    return mcp
+
+
+def _create_hmr_app() -> FastMCP:
+    """Create a FastMCP app for mcp-hmr with deferred initialization.
+
+    Returns instantly — tools registered, no I/O. Essential init (DB, embedding
+    client) runs in lifespan. Heavy work (crash recovery, graph loading) fires
+    as a background task so the MCP handshake completes immediately.
+    """
+    @asynccontextmanager
+    async def _lifespan(server):
+        project_path = os.environ.get("TESSERA_PROJECT_PATH")
+        global_db_path = os.environ.get(
+            "TESSERA_GLOBAL_DB",
+            str(Path.home() / ".tessera" / "global.db"),
+        )
+        embedding_endpoint = os.environ.get("TESSERA_EMBEDDING_ENDPOINT")
+        embedding_model = os.environ.get("TESSERA_EMBEDDING_MODEL")
+
+        # Fast: DB connections and project lock (~10ms)
+        _init_essential(project_path, global_db_path, embedding_endpoint, embedding_model)
+        logger.info("Tessera server ready (essential init complete)")
+
+        # Slow: crash recovery + graph loading in background thread
+        bg_task = asyncio.create_task(
+            asyncio.to_thread(_init_background, project_path)
+        )
+        try:
+            yield
+        finally:
+            if not bg_task.done():
+                bg_task.cancel()
+
+    mcp = FastMCP("tessera", lifespan=_lifespan)
+    _register_tools(mcp)
     return mcp
 
 
@@ -1204,3 +1273,8 @@ async def run_server(
         return 1
 
     return 0
+
+
+# Module-level app for mcp-hmr discovery.
+# Created instantly (no I/O) — heavy init deferred to lifespan.
+app = _create_hmr_app()

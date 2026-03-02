@@ -9,6 +9,7 @@ import os
 import tempfile
 
 import pytest
+from fastmcp import Client
 
 from tessera.server import create_server
 from tessera.indexer import IndexerPipeline
@@ -98,8 +99,8 @@ def outer_func():
 
 
 @pytest.fixture
-def indexed_server():
-    """Create a server with indexed sample code."""
+async def indexed_server():
+    """Create a server with indexed sample code, exposed via Client."""
     with tempfile.TemporaryDirectory() as tmpdir:
         # Write sample files
         src_dir = os.path.join(tmpdir, "src")
@@ -124,13 +125,14 @@ def indexed_server():
 
         # Create server pointing at indexed data
         server = create_server(tmpdir, global_db_path)
-        yield server
+        async with Client(server) as client:
+            yield client
 
 
-async def get_json(server, tool_name, args=None):
+async def get_json(client, tool_name, args=None):
     """Call a tool and parse the JSON result."""
-    content, _ = await server.call_tool(tool_name, args or {})
-    return json.loads(content[0].text)
+    result = await client.call_tool(tool_name, args or {})
+    return json.loads(result.content[0].text)
 
 
 class TestServerStartup:
@@ -312,8 +314,8 @@ class TestFileContextE2E:
         assert result is None
 
     async def test_file_context_path_traversal_blocked(self, indexed_server):
-        content, _ = await indexed_server.call_tool("file_context", {"file_path": "../../etc/passwd"})
-        assert "Error" in content[0].text
+        result = await indexed_server.call_tool("file_context", {"file_path": "../../etc/passwd"})
+        assert "Error" in result.content[0].text
 
 
 class TestImpactE2E:
@@ -383,11 +385,11 @@ class TestAdminTools:
     @pytest.mark.asyncio
     async def test_create_scope_invalid_level(self, indexed_server):
         """Invalid scope level should return error."""
-        content, _ = await indexed_server.call_tool("create_scope_tool", {
+        result = await indexed_server.call_tool("create_scope_tool", {
             "agent_id": "test-agent",
             "scope_level": "invalid",
         })
-        assert "Error" in content[0].text
+        assert "Error" in result.content[0].text
 
     @pytest.mark.asyncio
     async def test_revoke_scope(self, indexed_server):
@@ -410,7 +412,7 @@ class TestReindexMode:
     """Tests for the mode parameter on the reindex tool."""
 
     @pytest.fixture
-    def server_with_info(self):
+    async def server_with_info(self):
         """Create an indexed server and expose project_id and global_db_path."""
         with tempfile.TemporaryDirectory() as tmpdir:
             src_dir = os.path.join(tmpdir, "src")
@@ -425,48 +427,48 @@ class TestReindexMode:
 
             server = create_server(tmpdir, global_db_path)
 
-            # Get the project_id from the status tool
-            import asyncio
-            status = asyncio.run(get_json(server, "status", {}))
-            project_id = status["projects"][0]["id"]
+            async with Client(server) as client:
+                # Get the project_id from the status tool
+                status = await get_json(client, "status", {})
+                project_id = status["projects"][0]["id"]
 
-            yield server, project_id, global_db_path, tmpdir
+                yield client, project_id, global_db_path, tmpdir
 
     @pytest.mark.asyncio
     async def test_reindex_full_mode(self, server_with_info):
         """Reindex with mode='full' returns success."""
-        server, project_id, _, _ = server_with_info
-        content, _ = await server.call_tool("reindex", {
+        client, project_id, _, _ = server_with_info
+        result = await client.call_tool("reindex", {
             "project_id": project_id,
             "mode": "full",
         })
-        text = content[0].text
+        text = result.content[0].text
         assert "Error" not in text
-        result = json.loads(text)
-        assert result["project_id"] == project_id
+        data = json.loads(text)
+        assert data["project_id"] == project_id
 
     @pytest.mark.asyncio
     async def test_reindex_incremental_mode(self, server_with_info):
         """Reindex with mode='incremental' returns success."""
-        server, project_id, _, _ = server_with_info
-        content, _ = await server.call_tool("reindex", {
+        client, project_id, _, _ = server_with_info
+        result = await client.call_tool("reindex", {
             "project_id": project_id,
             "mode": "incremental",
         })
-        text = content[0].text
+        text = result.content[0].text
         assert "Error" not in text
-        result = json.loads(text)
-        assert result["project_id"] == project_id
+        data = json.loads(text)
+        assert data["project_id"] == project_id
 
     @pytest.mark.asyncio
     async def test_reindex_invalid_mode(self, server_with_info):
         """Reindex with an invalid mode returns an error containing 'Invalid mode'."""
-        server, project_id, _, _ = server_with_info
-        content, _ = await server.call_tool("reindex", {
+        client, project_id, _, _ = server_with_info
+        result = await client.call_tool("reindex", {
             "project_id": project_id,
             "mode": "invalid",
         })
-        text = content[0].text
+        text = result.content[0].text
         assert "Invalid mode" in text
 
 

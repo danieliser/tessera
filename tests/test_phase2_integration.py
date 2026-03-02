@@ -5,6 +5,7 @@ import json
 import tempfile
 
 import pytest
+from fastmcp import Client
 
 from tessera.db import GlobalDB, ProjectDB
 from tessera.auth import create_scope, validate_session, revoke_scope, SessionNotFoundError
@@ -32,17 +33,18 @@ def global_db(temp_dirs):
 
 
 @pytest.fixture
-def wired_server(temp_dirs):
-    """Create a server wired to real databases."""
+async def wired_server(temp_dirs):
+    """Create a server wired to real databases, exposed via Client."""
     project_dir, global_db_path = temp_dirs
     server = create_server(project_dir, global_db_path)
-    yield server
+    async with Client(server) as client:
+        yield client
 
 
-async def call(server, tool_name, args=None):
-    """Helper to call a tool and return the text content."""
-    content, _ = await server.call_tool(tool_name, args or {})
-    return content
+async def call(client, tool_name, args=None):
+    """Helper to call a tool and return the content list."""
+    result = await client.call_tool(tool_name, args or {})
+    return result.content
 
 
 class TestServerWiring:
@@ -55,7 +57,7 @@ class TestServerWiring:
         assert isinstance(server_mod._db_cache[server_mod._locked_project], ProjectDB)
         assert isinstance(server_mod._global_db, GlobalDB)
 
-    async def test_server_lists_10_tools(self, wired_server):
+    async def test_server_lists_18_tools(self, wired_server):
         tools = await wired_server.list_tools()
         tool_names = [t.name for t in tools]
         assert len(tool_names) == 18  # Updated for Phase 4 (doc_search, drift_train)
