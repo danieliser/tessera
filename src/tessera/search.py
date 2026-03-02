@@ -423,10 +423,16 @@ def hybrid_search(
         chunk_id = item["id"]
         try:
             meta = db.get_chunk(chunk_id)
+            # Resolve file_path from files table (chunk_meta stores file_id)
+            file_path = meta.get("file_path", "")
+            if not file_path and meta.get("file_id"):
+                file_rec = db.get_file(file_id=meta["file_id"])
+                if file_rec:
+                    file_path = file_rec.get("path", "")
             chunk_source_type = meta.get("source_type", "code")
             enriched = {
                 "id": chunk_id,
-                "file_path": meta.get("file_path", ""),
+                "file_path": file_path,
                 "start_line": meta.get("start_line", 0),
                 "end_line": meta.get("end_line", 0),
                 "content": meta.get("content", ""),

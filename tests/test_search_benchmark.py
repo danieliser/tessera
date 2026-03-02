@@ -92,36 +92,9 @@ def report_lines():
     report_path.write_text("\n".join(lines) + "\n")
 
 
-def _resolve_file_paths(db, results):
-    """Resolve file_id → file_path for results missing file paths.
-
-    hybrid_search enriches from chunk_meta which has file_id but not file_path.
-    This joins against the files table to fill in the actual paths.
-    """
-    for r in results:
-        if not r.get("file_path") and r.get("file_id"):
-            row = db.conn.execute(
-                "SELECT path FROM files WHERE id = ?", (r["file_id"],)
-            ).fetchone()
-            if row:
-                r["file_path"] = row[0]
-    return results
-
-
 def _search(db, query, limit=10):
-    """Run keyword-only hybrid search with file path resolution."""
-    results = hybrid_search(query, query_embedding=None, db=db, limit=limit)
-    # hybrid_search enrichment doesn't join files table — fix file_path
-    for r in results:
-        if not r.get("file_path"):
-            chunk = db.get_chunk(r["id"])
-            if chunk and chunk.get("file_id"):
-                row = db.conn.execute(
-                    "SELECT path FROM files WHERE id = ?", (chunk["file_id"],)
-                ).fetchone()
-                if row:
-                    r["file_path"] = row[0]
-    return results
+    """Run keyword-only hybrid search (enriched results with file_path)."""
+    return hybrid_search(query, query_embedding=None, db=db, limit=limit)
 
 
 # ── Benchmark 1: BM25 Normalization ──────────────────────────────────────
