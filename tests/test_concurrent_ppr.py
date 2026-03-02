@@ -157,7 +157,8 @@ class MockProjectDB:
                 self._symbol_to_chunks[sym_id].append(chunk_id)
 
     def keyword_search(
-        self, query: str, limit: int = 10, source_type: List[str] = None
+        self, query: str, limit: int = 10, source_type: List[str] = None,
+        advanced_fts: bool = False,
     ) -> List[Dict]:
         """Mock keyword search returning top-k results.
 

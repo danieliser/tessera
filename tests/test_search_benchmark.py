@@ -36,6 +36,8 @@ from tessera.search import (
     DEFAULT_RRF_WEIGHTS,
     BM25_STRONG_SIGNAL_THRESHOLD,
     BM25_STRONG_SIGNAL_GAP,
+    SearchType,
+    parse_structured_query,
 )
 
 # ── Fixtures ──────────────────────────────────────────────────────────────
@@ -659,6 +661,273 @@ class TestWeightedRRF:
             report_lines.append(
                 f"| ({w_kw}, {w_sem}) | {scores.get(1, 0):.6f} | {scores.get(2, 0):.6f} | {scores.get(3, 0):.6f} | {changes}/3 |"
             )
+
+        report_lines.append("")
+
+
+# ── Benchmark 9: Structured Query Types ───────────────────────────────────
+
+
+STRUCTURED_QUERIES = [
+    "normalize_bm25_score",
+    "error handling",
+    "graph traversal",
+]
+
+
+class TestStructuredQueries:
+    """Test SearchType routing: LEX-only, VEC-only, HYDE, and mixed modes."""
+
+    def test_parse_structured_query(self, report_lines):
+        """Verify the query prefix parser."""
+        report_lines.append("## 9. Structured Query Types")
+        report_lines.append("")
+        report_lines.append("**Query prefix parser:**")
+        report_lines.append("")
+        report_lines.append("| Input | Clean Query | Search Types |")
+        report_lines.append("|-------|------------|-------------|")
+
+        cases = [
+            ("plain query", "plain query", [SearchType.LEX, SearchType.VEC]),
+            ("lex:ProjectDB", "ProjectDB", [SearchType.LEX]),
+            ("vec:error handling", "error handling", [SearchType.VEC]),
+            ("hyde:graph traversal", "graph traversal", [SearchType.HYDE]),
+            ("lex,vec:hybrid_search", "hybrid_search", [SearchType.LEX, SearchType.VEC]),
+            ("VEC:case insensitive", "case insensitive", [SearchType.VEC]),
+        ]
+
+        for input_q, expected_clean, expected_types in cases:
+            clean, types = parse_structured_query(input_q)
+            assert clean == expected_clean, f"Clean query mismatch for '{input_q}': {clean} != {expected_clean}"
+            assert types == expected_types, f"Types mismatch for '{input_q}': {types} != {expected_types}"
+            report_lines.append(f"| `{input_q}` | `{clean}` | {[t.value for t in types]} |")
+
+        report_lines.append("")
+
+    def test_lex_only_matches_keyword_search(self, db, report_lines):
+        """LEX-only results should match db.keyword_search() exactly."""
+        report_lines.append("**LEX-only vs keyword_search():**")
+        report_lines.append("")
+        report_lines.append("| Query | LEX Top-5 IDs | keyword_search Top-5 IDs | Match? |")
+        report_lines.append("|-------|--------------|-------------------------|--------|")
+
+        for query in STRUCTURED_QUERIES:
+            # LEX-only via hybrid_search
+            lex_results = hybrid_search(
+                query, query_embedding=None, db=db, limit=5,
+                search_types=[SearchType.LEX],
+            )
+
+            # Direct keyword_search (with same sanitization)
+            from tessera.db import sanitize_fts5_query
+            safe_q = sanitize_fts5_query(query, allow_advanced=False)
+            kw_results = db.keyword_search(safe_q, limit=5)
+
+            lex_ids = [r["id"] for r in lex_results[:5]]
+            kw_ids = [r["id"] for r in kw_results[:5]]
+            match = lex_ids == kw_ids
+
+            report_lines.append(
+                f"| `{query}` | {lex_ids[:3]}... | {kw_ids[:3]}... | {'Pass' if match else 'FAIL'} |"
+            )
+            assert match, f"LEX-only results differ from keyword_search for '{query}'"
+
+        report_lines.append("")
+
+    def test_vec_only_differs_from_lex(self, db, embedding_client, report_lines):
+        """VEC-only should produce different rankings than LEX-only."""
+        report_lines.append("**VEC-only vs LEX-only (proving complementary signals):**")
+        report_lines.append("")
+        report_lines.append("| Query | LEX Top-3 | VEC Top-3 | Top-5 Overlap | Different? |")
+        report_lines.append("|-------|----------|----------|--------------|-----------|")
+
+        any_differ = False
+        for query in STRUCTURED_QUERIES:
+            lex_results = hybrid_search(
+                query, query_embedding=None, db=db, limit=5,
+                search_types=[SearchType.LEX],
+            )
+            raw = embedding_client.embed_query(query)
+            emb = np.array(raw, dtype=np.float32)
+            vec_results = hybrid_search(
+                query, emb, db, limit=5,
+                search_types=[SearchType.VEC],
+            )
+
+            def _top3(results):
+                return [os.path.basename(r.get("file_path", "?"))[:15] for r in results[:3]]
+
+            lex_ids = set(r["id"] for r in lex_results[:5])
+            vec_ids = set(r["id"] for r in vec_results[:5])
+            overlap = len(lex_ids & vec_ids)
+            differs = overlap < 5
+            if differs:
+                any_differ = True
+
+            report_lines.append(
+                f"| `{query}` | {', '.join(_top3(lex_results))} | {', '.join(_top3(vec_results))} | "
+                f"{overlap}/5 | {'Yes' if differs else 'No'} |"
+            )
+
+        report_lines.append("")
+        # At least one query should show different results between LEX and VEC
+        assert any_differ, "VEC and LEX returned identical top-5 for all queries — signals are not complementary"
+
+    def test_hyde_differs_from_vec(self, db, embedding_client, report_lines):
+        """HYDE (embed_single) should produce different rankings than VEC (embed_query)."""
+        report_lines.append("**HYDE vs VEC (embed_single vs embed_query):**")
+        report_lines.append("")
+        report_lines.append("| Query | VEC Top-3 | HYDE Top-3 | Top-5 Overlap |")
+        report_lines.append("|-------|----------|-----------|--------------|")
+
+        for query in STRUCTURED_QUERIES:
+            # VEC: uses embed_query (retrieval-prefixed)
+            raw_q = embedding_client.embed_query(query)
+            emb_q = np.array(raw_q, dtype=np.float32)
+            vec_results = hybrid_search(
+                query, emb_q, db, limit=5,
+                search_types=[SearchType.VEC],
+            )
+
+            # HYDE: uses embed_single (no prefix)
+            raw_s = embedding_client.embed_single(query)
+            emb_s = np.array(raw_s, dtype=np.float32)
+            hyde_results = hybrid_search(
+                query, emb_s, db, limit=5,
+                search_types=[SearchType.HYDE],
+            )
+
+            def _top3(results):
+                return [os.path.basename(r.get("file_path", "?"))[:15] for r in results[:3]]
+
+            ids_q = set(r["id"] for r in vec_results[:5])
+            ids_s = set(r["id"] for r in hyde_results[:5])
+            overlap = len(ids_q & ids_s)
+
+            report_lines.append(
+                f"| `{query}` | {', '.join(_top3(vec_results))} | {', '.join(_top3(hyde_results))} | {overlap}/5 |"
+            )
+
+        report_lines.append("")
+
+
+# ── Benchmark 10: FTS5 Advanced Mode ──────────────────────────────────────
+
+
+class TestFTS5Advanced:
+    """Test FTS5 sanitization and advanced mode operators."""
+
+    def test_safe_mode_escapes_operators(self, db, report_lines):
+        """Default (safe) mode escapes FTS5 operators — no crashes."""
+        report_lines.append("## 10. FTS5 Advanced Mode")
+        report_lines.append("")
+        report_lines.append("**Safe mode (default):** All FTS5 operators escaped. No syntax errors possible.")
+        report_lines.append("")
+        report_lines.append("| Query | Results (safe) | Error? |")
+        report_lines.append("|-------|---------------|--------|")
+
+        # These queries previously crashed or had unexpected behavior
+        dangerous_queries = [
+            'error handling (async)',       # was: syntax error
+            'foo OR bar AND baz',           # OR/AND are FTS5 operators
+            '"already quoted"',             # nested quotes
+            'hybrid*',                      # prefix operator
+            'error NOT warning',            # NOT operator
+            'NEAR(search query, 5)',        # NEAR operator
+        ]
+
+        for query in dangerous_queries:
+            try:
+                results = db.keyword_search(query, limit=5)  # safe mode (default)
+                report_lines.append(f"| `{query}` | {len(results)} | No |")
+            except Exception as e:
+                report_lines.append(f"| `{query}` | 0 | {str(e)[:40]} |")
+                # Safe mode should NEVER crash
+                assert False, f"Safe mode crashed on '{query}': {e}"
+
+        report_lines.append("")
+
+    def test_advanced_mode_operators(self, db, report_lines):
+        """Advanced mode enables FTS5 operators for power users."""
+        report_lines.append("**Advanced mode (`advanced_fts=True`):** FTS5 operators active.")
+        report_lines.append("")
+        report_lines.append("| Query Type | Query | Results (adv) | Results (safe) | Fewer? |")
+        report_lines.append("|-----------|-------|--------------|---------------|--------|")
+
+        cases = [
+            ("phrase", '"def hybrid_search"'),
+            ("negation", "error NOT warning"),
+            ("prefix", "hybrid*"),
+            ("unquoted", "hybrid_search"),
+        ]
+
+        for qtype, query in cases:
+            try:
+                adv_results = db.keyword_search(query, limit=10, advanced_fts=True)
+                safe_results = db.keyword_search(query, limit=10, advanced_fts=False)
+                adv_count = len(adv_results)
+                safe_count = len(safe_results)
+                fewer = adv_count < safe_count
+                report_lines.append(
+                    f"| {qtype} | `{query}` | {adv_count} | {safe_count} | "
+                    f"{'Yes' if fewer else 'No'} |"
+                )
+            except Exception as e:
+                report_lines.append(f"| {qtype} | `{query}` | ERROR | — | — |")
+
+        report_lines.append("")
+
+    def test_phrase_precision(self, db, report_lines):
+        """Phrase queries should return subset of unquoted results."""
+        report_lines.append("**Phrase precision:** Quoted phrases return fewer, more precise results.")
+        report_lines.append("")
+        report_lines.append("| Phrase | Phrase Results | Unquoted Results | Subset? |")
+        report_lines.append("|--------|---------------|-----------------|---------|")
+
+        phrases = [
+            ('"def hybrid_search"', "def hybrid_search"),
+            ('"keyword search"', "keyword search"),
+            ('"error handling"', "error handling"),
+        ]
+
+        for phrase, unquoted in phrases:
+            adv_results = db.keyword_search(phrase, limit=20, advanced_fts=True)
+            safe_results = db.keyword_search(unquoted, limit=20, advanced_fts=False)
+            adv_ids = set(r["id"] for r in adv_results)
+            safe_ids = set(r["id"] for r in safe_results)
+            is_subset = adv_ids.issubset(safe_ids)
+
+            report_lines.append(
+                f"| `{phrase}` | {len(adv_results)} | {len(safe_results)} | "
+                f"{'Yes' if is_subset else 'No'} |"
+            )
+
+        report_lines.append("")
+
+    def test_fts5_latency(self, db, report_lines):
+        """Latency for safe vs advanced mode."""
+        report_lines.append("**FTS5 latency (safe vs advanced):**")
+        report_lines.append("")
+        report_lines.append("| Query | Safe (ms) | Advanced (ms) |")
+        report_lines.append("|-------|----------|-------------|")
+
+        test_queries = [
+            "hybrid_search",
+            '"def hybrid_search"',
+            "error NOT warning",
+            "hybrid*",
+        ]
+
+        for query in test_queries:
+            t0 = time.perf_counter()
+            db.keyword_search(query, limit=10, advanced_fts=False)
+            safe_ms = (time.perf_counter() - t0) * 1000
+
+            t0 = time.perf_counter()
+            db.keyword_search(query, limit=10, advanced_fts=True)
+            adv_ms = (time.perf_counter() - t0) * 1000
+
+            report_lines.append(f"| `{query}` | {safe_ms:.2f} | {adv_ms:.2f} |")
 
         report_lines.append("")
 

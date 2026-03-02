@@ -142,7 +142,7 @@ class MockProjectDB:
         """Clear old data for a file."""
         pass
 
-    def keyword_search(self, query, limit=10):
+    def keyword_search(self, query, limit=10, source_type=None, advanced_fts=False):
         """Mock keyword search."""
         return []
 

@@ -145,26 +145,26 @@ Before: only `json.dumps`. After: agents can request the format that suits their
 
 | Query | Search (ms) | + Snippet (ms) | + DocID (ms) | Total (ms) | Results |
 |-------|-----------|---------------|-------------|-----------|---------|
-| `normalize_bm25_score` | 0.68 | 0.46 | 0.02 | 1.15 | 10 |
-| `ProjectDB` | 0.53 | 0.54 | 0.02 | 1.08 | 10 |
-| `hybrid_search` | 0.97 | 0.22 | 0.01 | 1.20 | 10 |
-| `error handling` | 0.56 | 0.28 | 0.01 | 0.85 | 10 |
-| `authentication scope` | 0.63 | 0.38 | 0.01 | 1.02 | 9 |
-| `graph traversal` | 0.71 | 0.38 | 0.02 | 1.11 | 10 |
-| `keyword_search limit` | 1.13 | 0.55 | 0.02 | 1.70 | 10 |
-| `create_scope` | 0.98 | 0.51 | 0.02 | 1.51 | 10 |
-| `async to_thread` | 1.22 | 0.44 | 0.01 | 1.67 | 10 |
-| `FTS5 BM25` | 0.57 | 0.35 | 0.01 | 0.93 | 10 |
+| `normalize_bm25_score` | 0.55 | 0.42 | 0.01 | 0.98 | 10 |
+| `ProjectDB` | 0.42 | 0.45 | 0.02 | 0.89 | 10 |
+| `hybrid_search` | 0.79 | 0.19 | 0.01 | 0.98 | 10 |
+| `error handling` | 0.47 | 0.23 | 0.01 | 0.71 | 10 |
+| `authentication scope` | 0.52 | 0.34 | 0.01 | 0.86 | 9 |
+| `graph traversal` | 0.58 | 0.32 | 0.01 | 0.92 | 10 |
+| `keyword_search limit` | 1.01 | 0.46 | 0.02 | 1.49 | 10 |
+| `create_scope` | 0.80 | 0.42 | 0.01 | 1.23 | 10 |
+| `async to_thread` | 1.04 | 0.38 | 0.01 | 1.43 | 10 |
+| `FTS5 BM25` | 0.50 | 0.31 | 0.01 | 0.82 | 10 |
 
 **Full hybrid search** (embed + keyword + semantic + RRF + snippet + docid):
 
 | Query | Embed (ms) | Search (ms) | Post-process (ms) | Total (ms) |
 |-------|-----------|-----------|-------------------|-----------|
-| `normalize_bm25_score` | 0.0 | 11.5 | 0.50 | 12.0 |
-| `ProjectDB` | 0.0 | 10.2 | 0.55 | 10.7 |
-| `hybrid_search` | 0.0 | 11.0 | 0.25 | 11.3 |
-| `error handling` | 0.0 | 12.0 | 0.30 | 12.3 |
-| `authentication scope` | 0.0 | 11.5 | 0.43 | 11.9 |
+| `normalize_bm25_score` | 0.0 | 9.7 | 0.42 | 10.2 |
+| `ProjectDB` | 0.0 | 8.9 | 0.48 | 9.4 |
+| `hybrid_search` | 0.0 | 10.0 | 0.23 | 10.2 |
+| `error handling` | 0.0 | 8.9 | 0.26 | 9.2 |
+| `authentication scope` | 0.0 | 8.9 | 0.37 | 9.3 |
 
 ## 7. BM25 Strong-Signal Short-Circuit
 
@@ -188,11 +188,11 @@ Saves ~30-50ms per query when keyword match is unambiguous.
 
 | Query | Full Pipeline (ms) | Short-Circuit (ms) | Saved (ms) | Triggered? |
 |-------|-------------------|-------------------|-----------|-----------|
-| `normalize_bm25_score` | 11.4 | 1.0 | +10.4 | No |
-| `ProjectDB` | 11.2 | 0.7 | +10.5 | No |
-| `hybrid_search` | 11.2 | 1.3 | +10.0 | No |
-| `error handling` | 13.1 | 0.8 | +12.3 | No |
-| `authentication scope` | 12.0 | 0.8 | +11.2 | No |
+| `normalize_bm25_score` | 8.9 | 0.6 | +8.3 | No |
+| `ProjectDB` | 9.1 | 0.5 | +8.5 | No |
+| `hybrid_search` | 9.4 | 0.9 | +8.5 | No |
+| `error handling` | 9.1 | 0.6 | +8.5 | No |
+| `authentication scope` | 10.1 | 0.7 | +9.4 | No |
 
 ## 8. Weighted RRF Fusion
 
@@ -216,6 +216,82 @@ Keyword results boosted because FTS5 precision is higher for code search.
 | (1.5, 1.0) | 0.040463 | 0.040587 | 0.039939 | 0/3 |
 | (2.0, 1.0) | 0.048660 | 0.048652 | 0.047875 | 2/3 |
 | (1.0, 2.0) | 0.048139 | 0.048916 | 0.048131 | 0/3 |
+
+## 9. Structured Query Types
+
+**Query prefix parser:**
+
+| Input | Clean Query | Search Types |
+|-------|------------|-------------|
+| `plain query` | `plain query` | ['lex', 'vec'] |
+| `lex:ProjectDB` | `ProjectDB` | ['lex'] |
+| `vec:error handling` | `error handling` | ['vec'] |
+| `hyde:graph traversal` | `graph traversal` | ['hyde'] |
+| `lex,vec:hybrid_search` | `hybrid_search` | ['lex', 'vec'] |
+| `VEC:case insensitive` | `case insensitive` | ['vec'] |
+
+**LEX-only vs keyword_search():**
+
+| Query | LEX Top-5 IDs | keyword_search Top-5 IDs | Match? |
+|-------|--------------|-------------------------|--------|
+| `normalize_bm25_score` | [5584855, 5586052, 12303416]... | [5584855, 5586052, 12303416]... | Pass |
+| `error handling` | [12303301, 12301544, 12302566]... | [12303301, 12301544, 12302566]... | Pass |
+| `graph traversal` | [12301643, 12302644, 12303416]... | [12301643, 12302644, 12303416]... | Pass |
+
+**VEC-only vs LEX-only (proving complementary signals):**
+
+| Query | LEX Top-3 | VEC Top-3 | Top-5 Overlap | Different? |
+|-------|----------|----------|--------------|-----------|
+| `normalize_bm25_score` | SPEC.md, 04-search-pipel, test_search_ben | search.py, test_search_ben, benchmark-searc | 0/5 | Yes |
+| `error handling` | test_embeddings, benchmark-searc, spec-v1.md | test_server.py, spec-v2.md, spec-v2.md | 1/5 | Yes |
+| `graph traversal` | research.md, intake.md, test_search_ben | research.md, intake.md, spec-v1.md | 1/5 | Yes |
+
+**HYDE vs VEC (embed_single vs embed_query):**
+
+| Query | VEC Top-3 | HYDE Top-3 | Top-5 Overlap |
+|-------|----------|-----------|--------------|
+| `normalize_bm25_score` | search.py, test_search_ben, benchmark-searc | test_search_ben, search.py, benchmark-searc | 5/5 |
+| `error handling` | test_server.py, spec-v2.md, spec-v2.md | test_server.py, parser.py, spec-v2.md | 3/5 |
+| `graph traversal` | research.md, intake.md, spec-v1.md | spec-v1.md, research.md, research-depend | 1/5 |
+
+## 10. FTS5 Advanced Mode
+
+**Safe mode (default):** All FTS5 operators escaped. No syntax errors possible.
+
+| Query | Results (safe) | Error? |
+|-------|---------------|--------|
+| `error handling (async)` | 5 | No |
+| `foo OR bar AND baz` | 3 | No |
+| `"already quoted"` | 1 | No |
+| `hybrid*` | 5 | No |
+| `error NOT warning` | 5 | No |
+| `NEAR(search query, 5)` | 0 | No |
+
+**Advanced mode (`advanced_fts=True`):** FTS5 operators active.
+
+| Query Type | Query | Results (adv) | Results (safe) | Fewer? |
+|-----------|-------|--------------|---------------|--------|
+| phrase | `"def hybrid_search"` | 10 | 10 | No |
+| negation | `error NOT warning` | 10 | 7 | No |
+| prefix | `hybrid*` | 10 | 10 | No |
+| unquoted | `hybrid_search` | 10 | 10 | No |
+
+**Phrase precision:** Quoted phrases return fewer, more precise results.
+
+| Phrase | Phrase Results | Unquoted Results | Subset? |
+|--------|---------------|-----------------|---------|
+| `"def hybrid_search"` | 19 | 20 | No |
+| `"keyword search"` | 20 | 20 | No |
+| `"error handling"` | 20 | 20 | No |
+
+**FTS5 latency (safe vs advanced):**
+
+| Query | Safe (ms) | Advanced (ms) |
+|-------|----------|-------------|
+| `hybrid_search` | 0.70 | 0.64 |
+| `"def hybrid_search"` | 0.94 | 0.91 |
+| `error NOT warning` | 0.99 | 0.39 |
+| `hybrid*` | 0.30 | 0.31 |
 
 ---
 

@@ -9,6 +9,7 @@ Architecture:
 """
 
 import logging
+import re
 import sqlite3
 import os
 import json
@@ -51,6 +52,43 @@ def normalize_and_validate(project_root: Path, user_path: str) -> Path:
         )
 
     return full_path
+
+
+def sanitize_fts5_query(query: str, allow_advanced: bool = False) -> str:
+    """Sanitize a query string for safe use with FTS5 MATCH.
+
+    Args:
+        query: Raw query string
+        allow_advanced: If True, preserve recognized FTS5 syntax
+            (quoted phrases, NOT, *, NEAR). If False, escape everything.
+
+    Returns:
+        Safe FTS5 query string
+    """
+    if not query or not query.strip():
+        return ""
+
+    query = query.strip()
+
+    if allow_advanced:
+        # Pass through recognized FTS5 syntax, only escape unbalanced parens
+        # Replace unmatched parens that would break FTS5
+        # Count parens — if unbalanced, strip them all
+        if query.count("(") != query.count(")"):
+            query = query.replace("(", " ").replace(")", " ")
+        return query
+
+    # Basic mode: wrap each token in double quotes to escape all operators
+    # This makes "error NOT warning" search for all three words literally
+    # and prevents "hybrid*" from being a prefix search
+    tokens = query.split()
+    quoted = []
+    for token in tokens:
+        # Strip existing quotes to avoid double-quoting
+        clean = token.replace('"', '')
+        if clean:
+            quoted.append(f'"{clean}"')
+    return " ".join(quoted)
 
 
 class GlobalDB:
@@ -1497,18 +1535,25 @@ class ProjectDB:
         return ids
 
     def keyword_search(self, query: str, limit: int = 10,
-                       source_type: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+                       source_type: Optional[List[str]] = None,
+                       advanced_fts: bool = False) -> List[Dict[str, Any]]:
         """Full-text search on chunks using FTS5 BM25.
 
         Args:
             query: Search query
             limit: Max results
             source_type: Optional list of source types to filter by (e.g., ['code', 'markdown'])
+            advanced_fts: If True, allow FTS5 operators (phrases, NOT, *, NEAR).
+                If False (default), escape all operators for safe literal matching.
 
         Returns:
             List of matching chunks with score
         """
         if not query or not query.strip():
+            return []
+
+        query = sanitize_fts5_query(query, allow_advanced=advanced_fts)
+        if not query:
             return []
 
         if source_type:

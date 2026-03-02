@@ -21,6 +21,7 @@ import io
 import json
 import logging
 import re
+from enum import Enum
 from typing import Optional
 import numpy as np
 import faiss
@@ -28,6 +29,43 @@ import faiss
 from .graph import ProjectGraph, ppr_to_ranked_list
 
 logger = logging.getLogger(__name__)
+
+
+class SearchType(str, Enum):
+    """Controls which search lists fire in hybrid_search."""
+    LEX = "lex"     # FTS5 keyword only
+    VEC = "vec"     # FAISS vector (uses embed_query with retrieval prefix)
+    HYDE = "hyde"    # FAISS vector (uses embed_single, no retrieval prefix)
+
+
+# Regex: optional comma-separated prefixes followed by colon, then the query
+_STRUCTURED_QUERY_RE = re.compile(
+    r"^((?:lex|vec|hyde)(?:\s*,\s*(?:lex|vec|hyde))*)\s*:\s*(.+)$",
+    re.IGNORECASE,
+)
+
+
+def parse_structured_query(query: str) -> tuple[str, list[SearchType]]:
+    """Parse structured query prefix from query string.
+
+    Formats:
+        'lex:actual query'       → keyword only
+        'vec:actual query'       → semantic only (embed_query)
+        'hyde:actual query'      → semantic only (embed_single, no prefix)
+        'lex,vec:actual query'   → keyword + semantic
+        'actual query'           → [LEX, VEC] (backward compat)
+
+    Returns:
+        (clean_query, search_types)
+    """
+    m = _STRUCTURED_QUERY_RE.match(query.strip())
+    if not m:
+        return query, [SearchType.LEX, SearchType.VEC]
+
+    prefix_str = m.group(1).lower()
+    clean_query = m.group(2).strip()
+    types = [SearchType(t.strip()) for t in prefix_str.split(",")]
+    return clean_query, list(dict.fromkeys(types))  # dedupe preserving order
 
 
 def normalize_bm25_score(raw_score: float) -> float:
@@ -399,6 +437,8 @@ def hybrid_search(
     graph: Optional["ProjectGraph"] = None,
     limit: int = 10,
     source_type: Optional[list[str]] = None,
+    search_types: Optional[list[SearchType]] = None,
+    advanced_fts: bool = False,
 ) -> list[dict]:
     """
     Hybrid search combining keyword (FTS5) and semantic (vector) results.
@@ -417,24 +457,38 @@ def hybrid_search(
         graph: Optional ProjectGraph for PPR-based ranking
         limit: Max results to return
         source_type: Optional list of source types to filter by (e.g., ['code', 'markdown'])
+        search_types: Which search lists to run. None = parse from query prefix.
+            [LEX] = keyword only, [VEC] = semantic only, [HYDE] = semantic (no prefix).
+        advanced_fts: If True, allow FTS5 operators (phrases, NOT, *, NEAR).
 
     Returns:
         list of SearchResult dicts with:
             id, file_path, start_line, end_line, content, score, rank_sources,
             source_type, trusted, section_heading, key_path, page_number, parent_section, graph_version
     """
+    # Parse structured query prefix if search_types not explicitly provided
+    if search_types is None:
+        query, search_types = parse_structured_query(query)
+
+    run_keyword = SearchType.LEX in search_types
+    run_semantic = SearchType.VEC in search_types or SearchType.HYDE in search_types
+
     ranked_lists = []
     list_labels = []
     ppr_results = []
 
     # 1. Keyword search (SQL-level filtering when source_type is active)
-    try:
-        keyword_results = db.keyword_search(query, limit=limit, source_type=source_type)
-        if keyword_results:
-            ranked_lists.append(keyword_results)
-            list_labels.append("keyword")
-    except Exception:
-        keyword_results = []
+    keyword_results = []
+    if run_keyword:
+        try:
+            keyword_results = db.keyword_search(
+                query, limit=limit, source_type=source_type, advanced_fts=advanced_fts
+            )
+            if keyword_results:
+                ranked_lists.append(keyword_results)
+                list_labels.append("keyword")
+        except Exception:
+            keyword_results = []
 
     # 1b. BM25 strong-signal short-circuit: skip expensive operations when
     # keyword match is very high confidence (top score >= 0.85 with >= 0.15 gap)
@@ -491,9 +545,9 @@ def hybrid_search(
             results.append(enriched)
         return results
 
-    # 2. Semantic search
+    # 2. Semantic search (skipped if only LEX requested)
     semantic_results = []
-    if query_embedding is not None:
+    if run_semantic and query_embedding is not None:
         try:
             all_embeddings = db.get_all_embeddings()
             if all_embeddings and len(all_embeddings) > 0:

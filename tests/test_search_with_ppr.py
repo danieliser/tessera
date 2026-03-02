@@ -78,7 +78,7 @@ class MockDB:
         self.chunks = chunks or {}
         self.embeddings_data = None
 
-    def keyword_search(self, query, limit=10, source_type=None):
+    def keyword_search(self, query, limit=10, source_type=None, advanced_fts=False):
         results = self.keyword_results[:limit]
         if source_type:
             results = [

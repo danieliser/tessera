@@ -37,7 +37,7 @@ from .auth import (
     SessionNotFoundError, SessionExpiredError
 )
 from .indexer import IndexerPipeline
-from .search import hybrid_search, doc_search, normalize_bm25_score, extract_snippet, enrich_with_docid, format_results
+from .search import hybrid_search, doc_search, normalize_bm25_score, extract_snippet, enrich_with_docid, format_results, SearchType
 from .drift_adapter import DriftAdapter
 from .embeddings import EmbeddingClient, EmbeddingUnavailableError
 from .graph import ProjectGraph, load_project_graph, evict_lru_graph, MAX_CACHED_GRAPHS
@@ -336,11 +336,17 @@ def _register_tools(mcp: FastMCP) -> None:
     # --- Core tools (project scope) ---
 
     @mcp.tool()
-    async def search(query: str, limit: int = 10, filter_language: str = "", source_type: str = "", output_format: str = "json", session_id: str = "") -> str:
+    async def search(query: str, limit: int = 10, filter_language: str = "", source_type: str = "", output_format: str = "json", search_mode: str = "", advanced_fts: bool = False, session_id: str = "") -> str:
         """Hybrid semantic + keyword search across indexed codebase.
 
         Args:
             output_format: Result format — "json" (default), "csv", "markdown", or "files"
+            search_mode: Controls which search lists fire. "" (default) = auto-detect from
+                query prefix. "lex" = keyword only, "vec" = semantic only, "hyde" = semantic
+                with document embedding (no retrieval prefix), "lex,vec" = both.
+                Prefix syntax also works: "lex:my query" is equivalent to search_mode="lex".
+            advanced_fts: If True, allow FTS5 operators in keyword search (quoted phrases,
+                NOT, *, NEAR). Default False escapes all operators for safe literal matching.
         """
         scope, err = _check_session({"session_id": session_id}, "project")
         if err:
@@ -354,38 +360,56 @@ def _register_tools(mcp: FastMCP) -> None:
 
         source_type_filter = [source_type] if source_type else None
 
+        # Resolve search types: explicit param > inline prefix > default
+        search_types = None
+        if search_mode:
+            try:
+                search_types = [SearchType(t.strip()) for t in search_mode.split(",")]
+            except ValueError:
+                return f"Error: Invalid search_mode '{search_mode}'. Use lex, vec, hyde, or comma-separated."
+        # If search_types is still None, hybrid_search will parse prefix from query
+
         try:
-            # Embed query if embedding client is available
+            # Determine if we need embeddings based on search types
+            need_embedding = True
+            if search_types and all(t == SearchType.LEX for t in search_types):
+                need_embedding = False
+
+            # Determine embedding method: embed_query (VEC) vs embed_single (HYDE)
+            use_hyde = search_types and SearchType.HYDE in search_types
+
+            # Embed query if embedding client is available and needed
             query_embedding = None
-            if _embedding_client:
+            if need_embedding and _embedding_client:
                 try:
                     import numpy as np
-                    raw = await asyncio.to_thread(_embedding_client.embed_query, query)
+                    if use_hyde:
+                        raw = await asyncio.to_thread(_embedding_client.embed_single, query)
+                    else:
+                        raw = await asyncio.to_thread(_embedding_client.embed_query, query)
                     query_embedding = np.array(raw, dtype=np.float32)
                 except EmbeddingUnavailableError:
                     logger.debug("Embedding endpoint unavailable, falling back to keyword-only search")
 
-            # Parallel query pattern — hybrid when embeddings available, keyword-only otherwise
+            # Parallel query across all accessible projects
             ppr_used = False
-            if query_embedding is not None:
-                for pid, pname, db in dbs:
-                    g = _project_graphs.get(pid)
-                    if g:
-                        ppr_used = True
-                        logger.debug("Search on project %d using graph version %.1f", pid, g.loaded_at)
-                tasks = [
-                    asyncio.to_thread(hybrid_search, query, query_embedding, db, _project_graphs.get(pid), limit, source_type_filter)
-                    for pid, pname, db in dbs
-                ]
-            else:
-                tasks = [
-                    asyncio.to_thread(db.keyword_search, query, limit, source_type_filter)
-                    for pid, pname, db in dbs
-                ]
+            for pid, pname, db in dbs:
+                g = _project_graphs.get(pid)
+                if g:
+                    ppr_used = True
+                    logger.debug("Search on project %d using graph version %.1f", pid, g.loaded_at)
+
+            tasks = [
+                asyncio.to_thread(
+                    hybrid_search, query, query_embedding, db,
+                    _project_graphs.get(pid), limit, source_type_filter,
+                    search_types, advanced_fts,
+                )
+                for pid, pname, db in dbs
+            ]
             results_list = await asyncio.gather(*tasks, return_exceptions=True)
 
             all_results = []
-            is_keyword_only = query_embedding is None
             for (pid, pname, db), result in zip(dbs, results_list):
                 if isinstance(result, Exception):
                     logger.warning("Query on project %d failed: %s", pid, result)
@@ -393,8 +417,6 @@ def _register_tools(mcp: FastMCP) -> None:
                 for r in result:
                     r["project_id"] = pid
                     r["project_name"] = pname
-                    if is_keyword_only and "score" in r:
-                        r["score"] = normalize_bm25_score(r["score"])
                 all_results.extend(result)
 
             # Sort by score descending, cap at limit
