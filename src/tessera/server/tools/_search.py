@@ -170,7 +170,8 @@ def register_search_tools(mcp: FastMCP) -> None:
             db_by_pid = {pid: db for pid, _pn, db in dbs}
             for r in all_results:
                 if r.get("content"):
-                    chunk_start = r.get("start_line", 0)
+                    # start_line is 0-based from chunker; convert to 1-based for display
+                    chunk_start = r.get("start_line", 0) + 1
                     # Quick pass to find best match line for ancestor lookup
                     flat = extract_snippet(r["content"], query)
                     abs_match = chunk_start + flat["best_match_line"]

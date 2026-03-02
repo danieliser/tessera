@@ -264,6 +264,9 @@ def extract_snippet(
         anc_line = anc.get("line", 0)
         kind = anc.get("kind", "")
         sig = anc.get("signature", "")
+        # Use only first line if signature spans multiple lines
+        if sig and "\n" in sig:
+            sig = sig.split("\n")[0].rstrip()
         keyword = {"class": "class", "function": "def", "method": "def",
                    "interface": "interface", "trait": "trait", "enum": "enum"}.get(kind, "")
         if not sig:
