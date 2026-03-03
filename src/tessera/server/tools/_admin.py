@@ -46,12 +46,13 @@ def register_admin_tools(mcp: FastMCP) -> None:
             return f"Error: {str(e)}"
 
     @mcp.tool()
-    async def reindex(project_id: int, mode: str = "full", session_id: str = "") -> str:
+    async def reindex(project_id: int, mode: str = "full", force: bool = False, session_id: str = "") -> str:
         """Trigger re-indexing of a project (global scope only).
 
         Args:
             project_id: ID of the project to reindex
             mode: 'full' (default) for complete reindex, 'incremental' for git-diff based update
+            force: If True, re-index all files even if unchanged (use after parser/extractor changes)
             session_id: Optional session token
         """
         from .._state import _db_cache, _embedding_client, _global_db, _graph_lock, _graph_stats, _project_graphs
@@ -83,7 +84,7 @@ def register_admin_tools(mcp: FastMCP) -> None:
             if mode == "incremental":
                 stats = await asyncio.to_thread(pipeline.index_changed)
             else:
-                stats = await asyncio.to_thread(pipeline.index_project)
+                stats = await asyncio.to_thread(pipeline.index_project, force=force)
 
             # Invalidate cache so next query picks up fresh data
             _db_cache.pop(project_id, None)

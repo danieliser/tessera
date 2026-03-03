@@ -561,12 +561,13 @@ class IndexerPipeline:
         except Exception as e:
             logger.warning("Failed to append asset chunk for SVG %s: %s", file_path, e)
 
-    def index_file(self, file_path: str) -> dict[str, Any]:
+    def index_file(self, file_path: str, *, force: bool = False) -> dict[str, Any]:
         """
         Index a single file: parse, chunk, embed, store.
 
         Args:
             file_path: Absolute path to file
+            force: If True, re-index even if file hash is unchanged
 
         Returns:
             Status dict with 'status' and optional 'reason' or metrics
@@ -615,7 +616,8 @@ class IndexerPipeline:
         # If file was already indexed with the same hash, skip it
         # old_hash is not None means this was an existing file
         if (
-            existing
+            not force
+            and existing
             and existing.get('index_status') == 'indexed'
             and old_hash is not None  # This was an existing file
             and old_hash == file_hash  # And the hash is the same
@@ -782,9 +784,12 @@ class IndexerPipeline:
             'embedded': len(embeddings) if embeddings else 0
         }
 
-    def index_project(self) -> IndexStats:
+    def index_project(self, *, force: bool = False) -> IndexStats:
         """
         Index entire project. Creates a job record in GlobalDB for tracking.
+
+        Args:
+            force: If True, re-index all files even if unchanged (e.g., after parser changes)
 
         Returns:
             IndexStats with aggregate metrics
@@ -805,7 +810,7 @@ class IndexerPipeline:
             stats = IndexStats()
 
             for file_path in files:
-                result = self.index_file(file_path)
+                result = self.index_file(file_path, force=force)
 
                 if result['status'] == 'indexed':
                     stats.files_processed += 1
@@ -817,6 +822,22 @@ class IndexerPipeline:
                 elif result['status'] == 'failed':
                     stats.files_failed += 1
                     logger.error(f"Failed to index {file_path}: {result.get('reason')}")
+
+            # Clean up orphaned files (deleted from disk but still in DB)
+            discovered_rels = {
+                os.path.relpath(fp, self.project_path) for fp in files
+            }
+            db_files = self.project_db.conn.execute(
+                "SELECT id, path FROM files WHERE project_id = ?",
+                (self.project_id,)
+            ).fetchall()
+            for file_id, file_path in db_files:
+                if file_path not in discovered_rels:
+                    self.project_db.clear_file_data(file_id)
+                    self.project_db.conn.execute(
+                        "DELETE FROM files WHERE id = ?", (file_id,)
+                    )
+                    logger.debug("Cleaned up orphaned file: %s", file_path)
 
             # Resolve cross-file edges
             self._resolve_cross_file_edges()
