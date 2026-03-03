@@ -160,9 +160,23 @@ def register_search_tools(mcp: FastMCP) -> None:
                     r["project_name"] = pname
                 all_results.extend(result)
 
-            # Sort by score descending, cap at limit
+            # Sort by score descending
             all_results.sort(key=lambda r: r.get("score", 0), reverse=True)
-            all_results = all_results[:limit]
+
+            # Post-RRF reranking via cross-encoder (if available)
+            from .._state import _reranker
+            if _reranker and all_results:
+                try:
+                    # Rerank top candidates (take more than limit to give reranker room)
+                    rerank_pool = all_results[:limit * 3]
+                    docs = [r.get("content", r.get("snippet", "")) for r in rerank_pool]
+                    reranked = await asyncio.to_thread(_reranker.rerank, query, docs, limit)
+                    all_results = [rerank_pool[idx] for idx, _score in reranked]
+                except Exception as e:
+                    logger.warning("Reranking failed, using RRF order: %s", e)
+                    all_results = all_results[:limit]
+            else:
+                all_results = all_results[:limit]
 
             # Add stable document IDs
             all_results = enrich_with_docid(all_results)

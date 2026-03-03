@@ -1,16 +1,16 @@
-"""Embedding client for local OpenAI-compatible model endpoint.
+"""Embedding providers: HTTP (OpenAI-compatible) and local (fastembed).
 
-Phase 1: Client initialization and caching strategy.
-Will implement:
-  - OpenAI-compatible API client (httpx)
-  - Batch embedding requests
-  - Response caching (to avoid redundant embedding calls)
-  - Error handling and retry logic for transient failures
-  - Support for configurable embedding dimensions
+Provides duck-typed embedding clients and a cross-encoder reranker.
+Use create_embedding_client() and create_reranker() factories for provider selection.
 """
 
+from __future__ import annotations
+
+import logging
 
 import httpx
+
+logger = logging.getLogger("tessera.embeddings")
 
 
 class EmbeddingUnavailableError(Exception):
@@ -163,22 +163,165 @@ class EmbeddingClient:
         self.close()
 
 
-if __name__ == "__main__":
-    # Test client initialization
-    print("=== Embedding Client Initialization Test ===")
+class FastembedClient:
+    """Local embedding client using fastembed (ONNX Runtime, no PyTorch)."""
 
-    client = EmbeddingClient(
-        endpoint="http://localhost:8000/v1/embeddings",
-        model="default"
-    )
+    DEFAULT_MODEL = "BAAI/bge-small-en-v1.5"
 
-    print("Client initialized successfully")
-    print(f"  Endpoint: {client.endpoint}")
-    print(f"  Model: {client.model}")
-    print(f"  Cache size: {len(client._cache)}")
+    def __init__(self, model_name: str | None = None):
+        from fastembed import TextEmbedding
 
-    client.close()
-    print("Client closed successfully")
+        self.model_name = model_name or self.DEFAULT_MODEL
+        logger.info("Loading fastembed model: %s (first run downloads automatically)", self.model_name)
+        self._model = TextEmbedding(model_name=self.model_name)
+        self._cache: dict[str, list[float]] = {}
+        self._cache_max = 10000
 
-    # Note: Not calling real endpoint (it's likely not running)
-    print("\nNote: Real endpoint test skipped (endpoint likely not running)")
+    def embed(self, texts: list[str]) -> list[list[float]]:
+        """Embed texts using local fastembed model."""
+        if not texts:
+            return []
+
+        # Separate cached and uncached
+        results: list[list[float] | None] = []
+        uncached_texts: list[str] = []
+        uncached_indices: list[int] = []
+
+        for text in texts:
+            if text in self._cache:
+                results.append(self._cache[text])
+            else:
+                uncached_indices.append(len(results))
+                results.append(None)
+                uncached_texts.append(text)
+
+        if uncached_texts:
+            embeddings = list(self._model.embed(uncached_texts))
+            for i, emb in enumerate(embeddings):
+                vec = emb.tolist()
+                text = uncached_texts[i]
+                self._cache[text] = vec
+                if len(self._cache) > self._cache_max:
+                    oldest_key = next(iter(self._cache))
+                    del self._cache[oldest_key]
+                results[uncached_indices[i]] = vec
+
+        return results  # type: ignore[return-value]
+
+    def embed_single(self, text: str) -> list[float]:
+        """Embed a single text."""
+        return self.embed([text])[0]
+
+    def embed_query(self, text: str) -> list[float]:
+        """Embed text as a search query with retrieval prefix."""
+        prompt = f"Represent this search query for retrieval: {text}"
+        return self.embed_single(prompt)
+
+    def close(self):
+        """No-op (fastembed has no connection to close)."""
+        pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+
+class FastembedReranker:
+    """Cross-encoder reranker using fastembed's TextCrossEncoder."""
+
+    DEFAULT_MODEL = "jinaai/jina-reranker-v2-base-multilingual"
+
+    def __init__(self, model_name: str | None = None):
+        from fastembed.rerank.cross_encoder import TextCrossEncoder
+
+        self.model_name = model_name or self.DEFAULT_MODEL
+        logger.info("Loading reranker model: %s", self.model_name)
+        self._model = TextCrossEncoder(model_name=self.model_name)
+
+    def rerank(self, query: str, documents: list[str], top_k: int = 10) -> list[tuple[int, float]]:
+        """Rerank documents by relevance to query.
+
+        Returns list of (original_index, score) sorted by descending score.
+        """
+        if not documents:
+            return []
+        scores = list(self._model.rerank(query, documents))
+        # scores is a list of floats in the same order as documents
+        indexed = [(i, float(s)) for i, s in enumerate(scores)]
+        indexed.sort(key=lambda x: x[1], reverse=True)
+        return indexed[:top_k]
+
+    def close(self):
+        pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+
+def create_embedding_client(
+    provider: str = "auto",
+    embedding_endpoint: str | None = None,
+    embedding_model: str | None = None,
+) -> EmbeddingClient | FastembedClient | None:
+    """Create an embedding client based on provider selection.
+
+    Provider logic:
+        - "http": Use HTTP endpoint (returns None if no endpoint)
+        - "fastembed": Use local fastembed (raises ImportError if not installed)
+        - "auto": HTTP endpoint if provided, else fastembed if installed, else None
+    """
+    if provider == "http":
+        if not embedding_endpoint:
+            return None
+        return EmbeddingClient(endpoint=embedding_endpoint, model=embedding_model or "default")
+
+    if provider == "fastembed":
+        try:
+            return FastembedClient(model_name=embedding_model)
+        except ImportError:
+            raise ImportError(
+                "fastembed not installed. Install with: pip install tessera-idx[embed]"
+            ) from None
+
+    # auto: try HTTP first (explicit config wins), then fastembed, then None
+    if embedding_endpoint:
+        logger.info("Using HTTP embedding endpoint: %s", embedding_endpoint)
+        return EmbeddingClient(endpoint=embedding_endpoint, model=embedding_model or "default")
+
+    try:
+        client = FastembedClient(model_name=embedding_model)
+        logger.info("Using local fastembed embeddings (%s)", client.model_name)
+        return client
+    except ImportError:
+        logger.info("No embeddings available (install tessera-idx[embed] for local embeddings)")
+        return None
+
+
+def create_reranker(
+    provider: str = "auto",
+    reranking_model: str | None = None,
+    enabled: bool = True,
+) -> FastembedReranker | None:
+    """Create a reranker if fastembed is available.
+
+    Reranking only works with fastembed (no HTTP reranker). Returns None if
+    fastembed is not installed or reranking is disabled.
+    """
+    if not enabled or provider == "http":
+        return None
+
+    try:
+        reranker = FastembedReranker(model_name=reranking_model)
+        logger.info("Reranker loaded (%s)", reranker.model_name)
+        return reranker
+    except ImportError:
+        logger.debug("fastembed not installed, reranking disabled")
+        return None
+    except Exception as e:
+        logger.warning("Failed to load reranker: %s", e)
+        return None

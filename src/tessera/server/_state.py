@@ -10,7 +10,7 @@ from typing import Any
 from ..auth import ScopeInfo, SessionExpiredError, SessionNotFoundError, validate_session
 from ..db import GlobalDB, ProjectDB
 from ..drift_adapter import DriftAdapter
-from ..embeddings import EmbeddingClient
+from ..embeddings import EmbeddingClient, FastembedClient, FastembedReranker, create_embedding_client, create_reranker
 from ..graph import MAX_CACHED_GRAPHS, evict_lru_graph, load_project_graph
 from ..indexer import IndexerPipeline
 from ..indexer._helpers import compute_parser_digest
@@ -27,7 +27,8 @@ _stale_projects: set[int] = set()       # project IDs whose index was built with
 _locked_project: int | None = None      # If --project given, only this project is queryable
 _global_db: GlobalDB | None = None
 _drift_adapter: DriftAdapter | None = None
-_embedding_client: EmbeddingClient | None = None
+_embedding_client: EmbeddingClient | FastembedClient | None = None
+_reranker: FastembedReranker | None = None
 _project_graphs: dict = {}  # project_id → ProjectGraph
 _graph_stats: dict[int, dict] = {}  # project_id → metadata
 _graph_lock = threading.Lock()  # Explicit lock for graph swap (don't rely on GIL)
@@ -180,9 +181,12 @@ def _init_essential(
     global_db_path: str,
     embedding_endpoint: str | None = None,
     embedding_model: str | None = None,
+    embedding_provider: str = "auto",
+    reranking_model: str | None = None,
+    no_reranking: bool = False,
 ) -> None:
     """Fast init: DB connections, embedding client, project lock. No heavy I/O."""
-    global _db_cache, _locked_project, _global_db, _drift_adapter, _embedding_client, _project_graphs, _graph_stats, _stale_projects
+    global _db_cache, _locked_project, _global_db, _drift_adapter, _embedding_client, _reranker, _project_graphs, _graph_stats, _stale_projects
 
     # Reset state
     _db_cache = {}
@@ -190,16 +194,23 @@ def _init_essential(
     _locked_project = None
     _drift_adapter = None
     _embedding_client = None
+    _reranker = None
     _project_graphs = {}
     _graph_stats = {}
 
-    # Initialize embedding client if endpoint configured
-    if embedding_endpoint:
-        _embedding_client = EmbeddingClient(
-            endpoint=embedding_endpoint,
-            model=embedding_model or "default",
-        )
-        logger.info("Embedding client configured: %s (model=%s)", embedding_endpoint, embedding_model or "default")
+    # Initialize embedding client via provider factory
+    _embedding_client = create_embedding_client(
+        provider=embedding_provider,
+        embedding_endpoint=embedding_endpoint,
+        embedding_model=embedding_model,
+    )
+
+    # Initialize reranker (fastembed only, auto-skip if not installed)
+    _reranker = create_reranker(
+        provider=embedding_provider,
+        reranking_model=reranking_model,
+        enabled=not no_reranking,
+    )
 
     # Initialize global database
     Path(global_db_path).parent.mkdir(parents=True, exist_ok=True)
@@ -321,7 +332,13 @@ def _init_state(
     global_db_path: str,
     embedding_endpoint: str | None = None,
     embedding_model: str | None = None,
+    embedding_provider: str = "auto",
+    reranking_model: str | None = None,
+    no_reranking: bool = False,
 ) -> None:
     """Full synchronous init (for tests and CLI). Runs both essential and background."""
-    _init_essential(project_path, global_db_path, embedding_endpoint, embedding_model)
+    _init_essential(
+        project_path, global_db_path, embedding_endpoint, embedding_model,
+        embedding_provider, reranking_model, no_reranking,
+    )
     _init_background(project_path)

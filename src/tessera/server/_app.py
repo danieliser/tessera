@@ -19,13 +19,19 @@ def create_server(
     global_db_path: str,
     embedding_endpoint: str | None = None,
     embedding_model: str | None = None,
+    embedding_provider: str = "auto",
+    reranking_model: str | None = None,
+    no_reranking: bool = False,
 ) -> FastMCP:
     """Create and configure the MCP server (synchronous, for tests and CLI).
 
     Runs _init_state immediately, then registers tools. Use _create_hmr_app()
     for the lifespan-based pattern that defers init.
     """
-    _init_state(project_path, global_db_path, embedding_endpoint, embedding_model)
+    _init_state(
+        project_path, global_db_path, embedding_endpoint, embedding_model,
+        embedding_provider, reranking_model, no_reranking,
+    )
     mcp = FastMCP("tessera")
     register_tools(mcp)
     return mcp
@@ -47,9 +53,15 @@ def _create_hmr_app() -> FastMCP:
         )
         embedding_endpoint = os.environ.get("TESSERA_EMBEDDING_ENDPOINT")
         embedding_model = os.environ.get("TESSERA_EMBEDDING_MODEL")
+        embedding_provider = os.environ.get("TESSERA_EMBEDDING_PROVIDER", "auto")
+        reranking_model = os.environ.get("TESSERA_RERANKING_MODEL")
+        no_reranking = os.environ.get("TESSERA_NO_RERANKING", "").lower() in ("1", "true", "yes")
 
         # Fast: DB connections and project lock (~10ms)
-        _init_essential(project_path, global_db_path, embedding_endpoint, embedding_model)
+        _init_essential(
+            project_path, global_db_path, embedding_endpoint, embedding_model,
+            embedding_provider, reranking_model, no_reranking,
+        )
         logger.info("Tessera server ready (essential init complete)")
 
         # Slow: crash recovery + graph loading in background thread
@@ -72,13 +84,19 @@ async def run_server(
     global_db_path: str | None = None,
     embedding_endpoint: str | None = None,
     embedding_model: str | None = None,
+    embedding_provider: str = "auto",
+    reranking_model: str | None = None,
+    no_reranking: bool = False,
 ) -> int:
     """Run the MCP server on stdio transport."""
     if not global_db_path:
         home = Path.home()
         global_db_path = str(home / ".tessera" / "global.db")
 
-    mcp = create_server(project_path, global_db_path, embedding_endpoint, embedding_model)
+    mcp = create_server(
+        project_path, global_db_path, embedding_endpoint, embedding_model,
+        embedding_provider, reranking_model, no_reranking,
+    )
 
     try:
         await mcp.run_stdio_async()

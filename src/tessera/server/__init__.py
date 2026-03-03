@@ -23,7 +23,7 @@ def __getattr__(name: str):
     """Proxy mutable globals from _state so `server._global_db` etc. work."""
     _MUTABLE_GLOBALS = {
         "_db_cache", "_locked_project", "_global_db", "_drift_adapter",
-        "_embedding_client", "_project_graphs", "_graph_stats", "_graph_lock",
+        "_embedding_client", "_reranker", "_project_graphs", "_graph_stats", "_graph_lock",
     }
     if name in _MUTABLE_GLOBALS:
         return getattr(_state, name)

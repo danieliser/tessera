@@ -26,9 +26,18 @@ Ported QMD's (tobi/qmd) break-point algorithm to Python. Distance-decay scored s
 
 Published as `tessera-idx` on PyPI via GitHub Actions trusted publisher. `pip install tessera-idx` / `uvx tessera-idx serve`.
 
-### Scoped file read/write with locking
+### Scoped file access enforcement
 
-Add `read_file` and `write_file` MCP tools that enforce scope tokens — agents can only access files within their authorized projects. Advisory file locking to prevent concurrent writes. Scope tokens gain read/write permission bits. Turns Tessera into a full file-system ACL layer for multi-agent workflows.
+Tessera exposes file *discovery* (search, symbols, file_context) but doesn't control what agents do with those paths afterward. An agent can find a file through scoped search, then read/write it via its runtime's native file tools — bypassing the scope gate entirely.
+
+**Core design question:** Tessera defines the *policy* (scope tokens → permitted paths/permissions), but enforcement varies by runtime. Needs a pluggable adapter model:
+
+- **Tessera-native tools** — `read_file`, `write_file`, `edit_file` MCP tools that enforce scope. Works when agents use Tessera exclusively for file I/O.
+- **Claude Code hooks** — PreToolUse hooks that intercept Read/Write/Edit/Bash and check against Tessera scope. Claude Code-specific.
+- **Codex sandbox rules** — Generate sandbox configs from scope tokens. Codex-specific.
+- **Container/mount isolation** — Docker volume mounts or filesystem sandboxing. Runtime-agnostic but heavy.
+
+**Open questions:** File-level vs directory-level vs pattern-based permissions. Read/write/execute granularity. Advisory locking for concurrent writes. How scope delegation interacts with permission bits. Whether Tessera should *enforce* or just *advise*. Needs a proper design session (/strategize).
 
 ### Embedding model validation
 

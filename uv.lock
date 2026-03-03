@@ -1995,8 +1995,8 @@ wheels = [
 ]
 
 [[package]]
-name = "tessera"
-version = "0.7.0"
+name = "tessera-idx"
+version = "0.7.2"
 source = { editable = "." }
 dependencies = [
     { name = "faiss-cpu" },
@@ -2060,8 +2060,8 @@ requires-dist = [
     { name = "pyyaml" },
     { name = "ruff", marker = "extra == 'dev'" },
     { name = "scipy", specifier = ">=1.10" },
-    { name = "tessera", extras = ["core-languages"], marker = "extra == 'all'" },
-    { name = "tessera", extras = ["embed"], marker = "extra == 'all'" },
+    { name = "tessera-idx", extras = ["core-languages"], marker = "extra == 'all'" },
+    { name = "tessera-idx", extras = ["embed"], marker = "extra == 'all'" },
     { name = "tree-sitter", specifier = ">=0.23" },
     { name = "tree-sitter-javascript", marker = "extra == 'core-languages'" },
     { name = "tree-sitter-javascript", marker = "extra == 'dev'" },

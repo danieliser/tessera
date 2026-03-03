@@ -25,7 +25,7 @@ from ..document import (
     chunk_yaml,
 )
 from ..markdown_chunker import chunk_markdown_breakpoint
-from ..embeddings import EmbeddingClient, EmbeddingUnavailableError
+from ..embeddings import EmbeddingClient, EmbeddingUnavailableError, FastembedClient
 from ..ignore import IgnoreFilter
 from ..parser import detect_language, parse_and_extract
 from ..search import hybrid_search
@@ -48,7 +48,7 @@ class IndexerPipeline:
         project_path: str,
         project_db: ProjectDB | None = None,
         global_db: GlobalDB | None = None,
-        embedding_client: EmbeddingClient | None = None,
+        embedding_client: EmbeddingClient | FastembedClient | None = None,
         languages: list[str] | None = None,
     ):
         """
@@ -69,6 +69,18 @@ class IndexerPipeline:
         self.project_id = None  # set during register
         self._package_cache: dict[str, str] = {}  # dir → package name
         self.ignore_filter = IgnoreFilter(self.project_path)
+
+    def _track_embedding_dim(self, dim: int) -> None:
+        """Store embedding dimension on first call, warn on mismatch."""
+        stored = self.project_db.get_meta("embedding_dim")
+        if stored is None:
+            self.project_db.set_meta("embedding_dim", str(dim))
+            logger.info("Embedding dimension: %d", dim)
+        elif int(stored) != dim:
+            logger.warning(
+                "Embedding dimension mismatch: project has %s, got %d (model changed?)",
+                stored, dim,
+            )
 
     def register(self, name: str | None = None) -> int:
         """
@@ -362,6 +374,8 @@ class IndexerPipeline:
                 try:
                     texts = [c['content'] for c in chunk_dicts]
                     embeddings = self.embedding_client.embed(texts) if texts else []
+                    if embeddings:
+                        self._track_embedding_dim(len(embeddings[0]))
                 except EmbeddingUnavailableError:
                     logger.warning("Embedding endpoint unavailable, storing document chunks without embeddings")
                     embeddings = None
@@ -731,6 +745,8 @@ class IndexerPipeline:
             try:
                 texts = [c.content for c in chunks]
                 embeddings = self.embedding_client.embed(texts) if texts else []
+                if embeddings:
+                    self._track_embedding_dim(len(embeddings[0]))
             except EmbeddingUnavailableError:
                 logger.warning("Embedding endpoint unavailable, storing chunks without embeddings")
                 embeddings = None

@@ -16,7 +16,7 @@ from .server import run_server
 
 def _run_index(args) -> int:
     """Run the indexing pipeline."""
-    from .embeddings import EmbeddingClient
+    from .embeddings import create_embedding_client
     from .indexer import IndexerPipeline
 
     if args.verbose:
@@ -26,15 +26,15 @@ def _run_index(args) -> int:
 
     project_path = args.path
 
-    embedding_client = None
-    if args.embedding_endpoint:
-        embedding_client = EmbeddingClient(
-            endpoint=args.embedding_endpoint,
-            model=args.embedding_model,
-        )
-        print(f"Embedding endpoint: {args.embedding_endpoint} (model: {args.embedding_model})")
+    embedding_client = create_embedding_client(
+        provider=args.embedding_provider,
+        embedding_endpoint=args.embedding_endpoint,
+        embedding_model=args.embedding_model,
+    )
+    if embedding_client:
+        print(f"Embeddings: {type(embedding_client).__name__}")
     else:
-        print("No embedding endpoint — indexing without embeddings.")
+        print("No embeddings — indexing without semantic vectors.")
 
     pipeline = IndexerPipeline(
         project_path=project_path,
@@ -73,14 +73,20 @@ def main() -> int:
     index_parser = subparsers.add_parser("index", help="Index a project")
     index_parser.add_argument("path", help="Path to project to index")
     index_parser.add_argument(
+        "--embedding-provider",
+        choices=["auto", "http", "fastembed"],
+        default="auto",
+        help="Embedding provider: auto (fastembed if installed, else HTTP), http, or fastembed"
+    )
+    index_parser.add_argument(
         "--embedding-endpoint",
         default=None,
-        help="OpenAI-compatible embedding endpoint URL (optional — indexes without embeddings if omitted)"
+        help="OpenAI-compatible embedding endpoint URL (used when provider is http or auto)"
     )
     index_parser.add_argument(
         "--embedding-model",
-        default="default",
-        help="Model identifier for the embedding endpoint (default: 'default')"
+        default=None,
+        help="Model identifier (default varies by provider)"
     )
     index_parser.add_argument(
         "--incremental",
@@ -106,6 +112,12 @@ def main() -> int:
         help="Path to global.db (optional)"
     )
     serve_parser.add_argument(
+        "--embedding-provider",
+        choices=["auto", "http", "fastembed"],
+        default="auto",
+        help="Embedding provider: auto (fastembed if installed, else HTTP), http, or fastembed"
+    )
+    serve_parser.add_argument(
         "--embedding-endpoint",
         default=None,
         help="OpenAI-compatible embedding endpoint URL (e.g. http://localhost:8800/v1/embeddings)"
@@ -113,7 +125,17 @@ def main() -> int:
     serve_parser.add_argument(
         "--embedding-model",
         default=None,
-        help="Model identifier for the embedding endpoint (e.g. nomic-embed)"
+        help="Model identifier (default varies by provider)"
+    )
+    serve_parser.add_argument(
+        "--reranking-model",
+        default=None,
+        help="Cross-encoder reranking model (default: jinaai/jina-reranker-v2-base-multilingual)"
+    )
+    serve_parser.add_argument(
+        "--no-reranking",
+        action="store_true",
+        help="Disable cross-encoder reranking"
     )
 
     args = parser.parse_args()
@@ -124,6 +146,8 @@ def main() -> int:
         return asyncio.run(run_server(
             args.project, args.global_db,
             args.embedding_endpoint, args.embedding_model,
+            args.embedding_provider, args.reranking_model,
+            args.no_reranking,
         ))
     else:
         parser.print_help()

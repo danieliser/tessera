@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tessera-idx"
-version = "0.7.2"
+version = "0.8.0"
 description = "Fast code and document search for AI agents via MCP"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -55,7 +55,7 @@ core-languages = [
 ]
 embed = ["fastembed>=0.4"]
 all-languages = ["tree-sitter-language-pack"]
-all = ["tessera[embed]", "tessera[core-languages]"]
+all = ["tessera-idx[embed]", "tessera-idx[core-languages]"]
 
 [project.urls]
 Homepage = "https://github.com/danieliser/tessera"

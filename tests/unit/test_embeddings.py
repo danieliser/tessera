@@ -308,3 +308,169 @@ class TestEmbeddingEmpty:
         result = client.embed([])
         assert result == []
         client.close()
+
+
+# --- FastembedClient tests ---
+
+class TestFastembedClient:
+    """Test FastembedClient with mocked fastembed."""
+
+    def _make_client(self, mock_te):
+        """Create a FastembedClient with mocked TextEmbedding."""
+        import numpy as np
+        mock_model = Mock()
+        mock_model.embed.side_effect = lambda texts: iter([np.array([0.1, 0.2, 0.3]) for _ in texts])
+        mock_te.return_value = mock_model
+
+        from tessera.embeddings import FastembedClient
+        client = FastembedClient(model_name="test-model")
+        return client, mock_model
+
+    @patch("tessera.embeddings.FastembedClient.__init__", return_value=None)
+    def test_embed_basic(self, _mock_init):
+        """Test basic embedding via fastembed."""
+        import numpy as np
+        from tessera.embeddings import FastembedClient
+        client = FastembedClient.__new__(FastembedClient)
+        client._cache = {}
+        client._cache_max = 10000
+        client.model_name = "test"
+        mock_model = Mock()
+        mock_model.embed.side_effect = lambda texts: iter([np.array([0.1, 0.2, 0.3]) for _ in texts])
+        client._model = mock_model
+
+        result = client.embed(["hello", "world"])
+        assert len(result) == 2
+        assert result[0] == [0.1, 0.2, 0.3]
+        mock_model.embed.assert_called_once()
+
+    @patch("tessera.embeddings.FastembedClient.__init__", return_value=None)
+    def test_cache_hit(self, _mock_init):
+        """Test that cached texts are not re-embedded."""
+        import numpy as np
+        from tessera.embeddings import FastembedClient
+        client = FastembedClient.__new__(FastembedClient)
+        client._cache = {"hello": [0.1, 0.2, 0.3]}
+        client._cache_max = 10000
+        client.model_name = "test"
+        mock_model = Mock()
+        mock_model.embed.side_effect = lambda texts: iter([np.array([0.4, 0.5, 0.6]) for _ in texts])
+        client._model = mock_model
+
+        result = client.embed(["hello", "world"])
+        assert result[0] == [0.1, 0.2, 0.3]  # from cache
+        assert result[1] == [0.4, 0.5, 0.6]  # from model
+        # Model should only be called for uncached "world"
+        mock_model.embed.assert_called_once_with(["world"])
+
+    @patch("tessera.embeddings.FastembedClient.__init__", return_value=None)
+    def test_embed_empty(self, _mock_init):
+        """Test embedding empty list."""
+        from tessera.embeddings import FastembedClient
+        client = FastembedClient.__new__(FastembedClient)
+        client._cache = {}
+        result = client.embed([])
+        assert result == []
+
+    @patch("tessera.embeddings.FastembedClient.__init__", return_value=None)
+    def test_embed_query_adds_prefix(self, _mock_init):
+        """Test that embed_query adds retrieval prefix."""
+        import numpy as np
+        from tessera.embeddings import FastembedClient
+        client = FastembedClient.__new__(FastembedClient)
+        client._cache = {}
+        client._cache_max = 10000
+        client.model_name = "test"
+        mock_model = Mock()
+        mock_model.embed.side_effect = lambda texts: iter([np.array([0.1, 0.2, 0.3]) for _ in texts])
+        client._model = mock_model
+
+        client.embed_query("test query")
+        called_texts = mock_model.embed.call_args[0][0]
+        assert called_texts[0].startswith("Represent this search query")
+
+    @patch("tessera.embeddings.FastembedClient.__init__", return_value=None)
+    def test_context_manager(self, _mock_init):
+        """Test context manager support."""
+        from tessera.embeddings import FastembedClient
+        client = FastembedClient.__new__(FastembedClient)
+        client._cache = {}
+        with client as c:
+            assert c is client
+
+
+class TestFastembedReranker:
+    """Test FastembedReranker with mocked TextCrossEncoder."""
+
+    @patch("tessera.embeddings.FastembedReranker.__init__", return_value=None)
+    def test_rerank_basic(self, _mock_init):
+        """Test basic reranking."""
+        from tessera.embeddings import FastembedReranker
+        reranker = FastembedReranker.__new__(FastembedReranker)
+        reranker.model_name = "test"
+        mock_model = Mock()
+        mock_model.rerank.return_value = [0.9, 0.1, 0.5]
+        reranker._model = mock_model
+
+        result = reranker.rerank("query", ["doc1", "doc2", "doc3"], top_k=2)
+        assert len(result) == 2
+        assert result[0] == (0, 0.9)  # doc1 is highest
+        assert result[1] == (2, 0.5)  # doc3 is second
+
+    @patch("tessera.embeddings.FastembedReranker.__init__", return_value=None)
+    def test_rerank_empty(self, _mock_init):
+        """Test reranking empty docs."""
+        from tessera.embeddings import FastembedReranker
+        reranker = FastembedReranker.__new__(FastembedReranker)
+        result = reranker.rerank("query", [])
+        assert result == []
+
+
+class TestCreateEmbeddingClient:
+    """Test the create_embedding_client factory."""
+
+    def test_http_with_endpoint(self):
+        from tessera.embeddings import create_embedding_client, EmbeddingClient
+        client = create_embedding_client("http", embedding_endpoint="http://localhost:8000/v1")
+        assert isinstance(client, EmbeddingClient)
+        client.close()
+
+    def test_http_without_endpoint(self):
+        from tessera.embeddings import create_embedding_client
+        client = create_embedding_client("http")
+        assert client is None
+
+    def test_fastembed_not_installed(self):
+        from tessera.embeddings import create_embedding_client
+        with patch.dict("sys.modules", {"fastembed": None}):
+            with pytest.raises(ImportError, match="tessera-idx"):
+                create_embedding_client("fastembed")
+
+    def test_auto_with_endpoint(self):
+        from tessera.embeddings import create_embedding_client, EmbeddingClient
+        client = create_embedding_client("auto", embedding_endpoint="http://localhost:8000/v1")
+        assert isinstance(client, EmbeddingClient)
+        client.close()
+
+    def test_auto_no_fastembed_no_endpoint(self):
+        from tessera.embeddings import create_embedding_client
+        with patch.dict("sys.modules", {"fastembed": None}):
+            client = create_embedding_client("auto")
+            assert client is None
+
+
+class TestCreateReranker:
+    """Test the create_reranker factory."""
+
+    def test_disabled(self):
+        from tessera.embeddings import create_reranker
+        assert create_reranker(enabled=False) is None
+
+    def test_http_provider(self):
+        from tessera.embeddings import create_reranker
+        assert create_reranker(provider="http") is None
+
+    def test_no_fastembed(self):
+        from tessera.embeddings import create_reranker
+        with patch.dict("sys.modules", {"fastembed": None}):
+            assert create_reranker(provider="auto") is None
