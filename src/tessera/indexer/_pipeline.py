@@ -263,17 +263,18 @@ class IndexerPipeline:
         return stats
 
     def _file_hash(self, file_path: str) -> str:
-        """
-        Compute SHA-256 hash of file contents for change detection.
+        """Compute SHA-256 hash of file contents salted with package version.
 
-        Args:
-            file_path: Absolute path to file
-
-        Returns:
-            SHA-256 hex digest
+        The version salt ensures that upgrading Tessera (which may change
+        parser/extractor logic) automatically invalidates cached hashes,
+        triggering a full re-index without needing ``force=True``.
         """
+        from tessera import __version__
+
         with open(file_path, 'rb') as f:
-            return hashlib.sha256(f.read()).hexdigest()
+            h = hashlib.sha256(f.read())
+        h.update(__version__.encode())
+        return h.hexdigest()
 
     def _is_document_file(self, file_path: str) -> bool:
         """Check if file is a document (not code)."""
