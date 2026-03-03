@@ -1,0 +1,69 @@
+site_name: Tessera
+site_description: Persistent codebase intelligence for autonomous AI agents
+site_url: https://danieliser.github.io/tessera/
+repo_url: https://github.com/danieliser/tessera
+repo_name: danieliser/tessera
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: deep purple
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: deep purple
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+    - toc.follow
+  icon:
+    repo: fontawesome/brands/github
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.snippets
+  - tables
+  - toc:
+      permalink: true
+  - attr_list
+  - md_in_html
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Search:
+      - Search Guide: search-guide.md
+      - Advanced Search: search-advanced.md
+      - Snippet Rendering: snippets.md
+  - Code Intelligence: code-intelligence.md
+  - Multi-Project Federation: multi-project.md
+  - Indexing & Maintenance: indexing.md
+  - Security & Access Control: security.md
+
+plugins:
+  - search

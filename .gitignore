@@ -10,3 +10,4 @@ build/
 .tessera/
 .pytest_cache/
 .claude/
+site/

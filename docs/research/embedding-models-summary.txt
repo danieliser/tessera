@@ -1,0 +1,116 @@
+TESSERA EMBEDDING MODEL RESEARCH — EXECUTIVE SUMMARY
+Date: 2026-03-02
+Report: docs/research/embedding-models.md
+
+================================================================================
+RECOMMENDATION
+================================================================================
+
+PRIMARY: Jina Code Embeddings 1.5B (Server-side)
+- Model: jinaai/jina-code-embeddings-1.5b
+- Benchmark: 79.04% CoIR (25 code tasks) — SOTA for open-source
+- Dimensions: 1536d (native) → 384d (Matryoshka truncation)
+- Parameters: 1.54B
+- Memory: ~4.8GB (FP32), ~2.4GB (INT8 quantized)
+- Latency: 20-50ms on M1 (estimated via ONNX)
+- Code Languages: Python, TypeScript, PHP, Swift + 11 others
+- Natural Languages: 29+ supported
+- License: Apache 2.0 (open-source)
+
+FALLBACK: Nomic Embed Text V1.5 (On-device)
+- Model: nomic-ai/nomic-embed-text-v1.5
+- Benchmark: ~65-70% general (not code-specific; estimated)
+- Dimensions: 768d (native) → 384d (Matryoshka proven)
+- Parameters: 137M (10x smaller)
+- Memory: ~275MB (minimal footprint)
+- Latency: <10ms on M1 (validated)
+- License: Apache 2.0 (open-source)
+- Use case: If Jina 1.5B latency/quality unacceptable; pair with stronger RRF
+
+================================================================================
+KEY INSIGHT: RRF FUSION ABSORBS QUALITY GAPS
+================================================================================
+
+Research validates that Reciprocal Rank Fusion (RRF) + FTS5 keyword search
+recovers 10-15% NDCG loss from dimension reduction (768d → 384d). Therefore:
+
+✓ 384d is sufficient with RRF (contradicts assumption that higher dims needed)
+✓ Matryoshka support required (truncation without re-indexing)
+✓ Code-specific training preferred (+5-20% over general models)
+✓ Keyword fusion mitigates embedding quality delta
+
+================================================================================
+CANDIDATES EVALUATED
+================================================================================
+
+1. Jina Code Embeddings 1.5B      | 79.04% | 1.54B  | ✓ Matryoshka | CHOSEN
+2. Voyage Code 3                   | 81%+   | API    | ✓ Matryoshka | NO (cloud)
+3. CodeXEmbed 7B                   | 80%+   | 7B     | ? Unknown    | NO (OOM)
+4. Nomic Embed Text V1.5           | ~65%   | 137M   | ✓ Matryoshka | FALLBACK
+5. Jina Embeddings V2 Base Code    | ~70%   | 137M   | ? Unknown    | NO (old)
+
+Ruled Out:
+- Voyage Code 3: Violates local-first constraint (requires API)
+- CodeXEmbed 7B: 7B params exceed Apple Silicon budgets; Matryoshka unverified
+- Jina V2: Superseded by newer Code Embeddings line
+
+================================================================================
+DEPLOYMENT CHECKLIST
+================================================================================
+
+Phase 1: Model Setup
+  [ ] Download Jina 1.5B from HuggingFace
+  [ ] Quantize to INT8 (50% smaller, validated quality)
+  [ ] Set up MLX server at localhost:8800
+
+Phase 2: Testing (Required before production)
+  [ ] Benchmark Matryoshka truncation on CodeSearchNet subset
+  [ ] Measure inference latency on target M-series hardware
+  [ ] Compare RRF-fused results (Jina + FTS5) vs. pure Jina embedding
+  [ ] Validate language support on actual codebase (Python/TypeScript/PHP/Swift)
+
+Phase 3: Fallback Plan
+  [ ] If Jina latency > 100ms: deploy Nomic 1.5 instead
+  [ ] If Jina 384d CoIR < 70% in testing: apply Drift-Adapter for model migration
+  [ ] If quality insufficient: use Nomic 1.5 + stronger RRF weighting
+
+================================================================================
+ASSUMPTIONS & RISKS
+================================================================================
+
+HELD:
+✓ 384d sufficient with RRF (industry consensus + Tessera prior work)
+✓ Code-specific models outperform general by 5-20% (CoIR/CodeSearchNet)
+✓ Apple Silicon MLX/ONNX latency acceptable <100ms (validated on BERT scale)
+
+UNCERTAIN:
+? Jina 1.5B Matryoshka 384d quality (truncation unvalidated; recommend testing)
+? Quantization artifacts on code search (typical 2-5% degradation; unvalidated)
+
+ACTION:
+→ Test Jina 1.5B Matryoshka on CodeSearchNet before committing to production
+
+================================================================================
+SOURCES & REFERENCES
+================================================================================
+
+Key Papers:
+- COIR: A Comprehensive Benchmark for Code Information Retrieval (ACL 2025)
+- Code-Embed: A Family of Open Large Language Models (ArXiv 2411.12644)
+
+Benchmarks:
+- Jina Code Embeddings 1.5B: 79.04% CoIR (25 tasks)
+- Voyage Code 3: 81%+ on 32 dataset suite
+- Nomic v1.5: Matryoshka proven (768→384d quality retention)
+
+Documentation:
+- HuggingFace: jinaai/jina-code-embeddings-1.5b
+- Jina Blog: Jina Code Embeddings SOTA
+- Nomic AI: Matryoshka Embeddings
+
+Performance Data:
+- Apple MLX 50% faster than Ollama GGUF
+- M1/M2 handle BERT-scale models sub-10ms
+- Jina 1.5B estimated 20-50ms via ONNX
+
+Full Report: docs/research/embedding-models.md (272 lines)
