@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "tessera"
+name = "tessera-idx"
 version = "0.7.0"
 description = "Hierarchical, scope-gated codebase indexing and persistent memory system for AI agents"
 readme = "README.md"
