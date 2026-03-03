@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tessera-idx"
-version = "0.7.0"
+version = "0.7.2"
 description = "Fast code and document search for AI agents via MCP"
 readme = "README.md"
 requires-python = ">=3.12"
