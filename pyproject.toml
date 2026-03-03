@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "tessera-idx"
 version = "0.7.0"
-description = "Hierarchical, scope-gated codebase indexing and persistent memory system for AI agents"
+description = "Fast code and document search for AI agents via MCP"
 readme = "README.md"
 requires-python = ">=3.12"
 license = {text = "MIT"}

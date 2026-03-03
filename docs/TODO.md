@@ -22,9 +22,13 @@ Ported QMD's (tobi/qmd) break-point algorithm to Python. Distance-decay scored s
 
 ## Backlog
 
-### PyPI packaging
+### ~~PyPI packaging~~ — v0.7.1
 
-`pyproject.toml` already has the `[project.scripts]` entry point. Needs `uv build && uv publish` to enable `pip install tessera` / `uvx tessera serve`. Lowest effort, highest accessibility win.
+Published as `tessera-idx` on PyPI via GitHub Actions trusted publisher. `pip install tessera-idx` / `uvx tessera-idx serve`.
+
+### Scoped file read/write with locking
+
+Add `read_file` and `write_file` MCP tools that enforce scope tokens — agents can only access files within their authorized projects. Advisory file locking to prevent concurrent writes. Scope tokens gain read/write permission bits. Turns Tessera into a full file-system ACL layer for multi-agent workflows.
 
 ### Embedding model validation
 

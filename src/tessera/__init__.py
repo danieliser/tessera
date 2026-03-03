@@ -1,7 +1,8 @@
-"""Tessera: Hierarchical, scope-gated indexing and retrieval for AI agents.
+"""Tessera: Fast code and document search for AI agents via MCP.
 
-A scope-gated MCP server providing search, symbol navigation, reference tracing,
-and impact analysis across multi-language, multi-repo projects.
+Indexes entire file systems with scope-gated access control. Provides search,
+symbol navigation, reference tracing, and impact analysis across multi-language,
+multi-project workspaces.
 """
 
 __version__ = "0.7.0"

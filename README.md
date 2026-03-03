@@ -171,7 +171,7 @@ MCP Server (stdio)
 
 ## Project Status
 
-**v0.6.0** — Hybrid search with semantic snippet scoring, PPR graph ranking, collapsed ancestry context, and stale index detection.
+**v0.7.0** — Break-point markdown chunker, PyPI packaging (`pip install tessera-idx`), hybrid search with semantic snippet scoring, PPR graph ranking.
 
 | Phase | Status | What |
 |-------|--------|------|

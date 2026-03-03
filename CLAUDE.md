@@ -1,12 +1,10 @@
 # Tessera — Project Context
 
 ## Overview
-Tessera is a hierarchical, scope-gated codebase indexing and persistent memory system for always-on AI agents. It's an MCP server that provides search, symbol navigation, reference tracing, and impact analysis across multi-language, multi-repo projects.
+Tessera is a fast code and document search server for AI agents, exposed via MCP. It indexes entire file systems — code, docs, config, assets — with scope-gated access control, and provides search, symbol navigation, reference tracing, and impact analysis across multi-language, multi-project workspaces.
 
 ## Project Status
-**Phase 1: Active Implementation**
-
-Scaffolding complete. Architecture design documented in `docs/plans/architecture/`. Proceeding with modular implementation, validating CTO conditions via spike tests.
+**v0.7.0** — Published on PyPI as `tessera-idx`. Break-point markdown chunker, hybrid search (FTS5 + FAISS + PPR), scope-gated multi-project federation, document/asset indexing.
 
 ## Tech Stack
 - **Language**: Python 3.11+

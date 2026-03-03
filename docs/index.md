@@ -5,7 +5,7 @@ hide:
 
 <div class="hero" markdown>
 
-# Tessera <span class="version-badge">v0.6.0</span>
+# Tessera <span class="version-badge">v0.7.0</span>
 
 Persistent codebase intelligence for autonomous AI agents.<br>
 Bottom-up file access. Top-down code understanding. Security from the ground up.
@@ -212,7 +212,7 @@ MCP Server (stdio)
 
 ## Project Status
 
-**v0.6.0** — Hybrid search with semantic snippet scoring, PPR graph ranking, collapsed ancestry context, and stale index detection.
+**v0.7.0** — Break-point markdown chunker, PyPI packaging (`pip install tessera-idx`), hybrid search with semantic snippet scoring, PPR graph ranking.
 
 | Phase | Status | What |
 |-------|--------|------|
