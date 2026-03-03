@@ -69,7 +69,7 @@ Tessera indexes everything — code, documents, config files, media assets, bina
 ### Document & Text Search
 - **Chunked indexing** — Files are split into focused, searchable chunks with metadata (by header, key path, or line group) — not stored as monolithic blobs
 - **Code + docs unified** — Query across everything, or filter by source type (`code`, `asset`, `document`)
-- **Structural formats** — PDF, Markdown (header hierarchy), YAML/JSON (key-path chunking)
+- **Structural formats** — PDF, Markdown (break-point scoring with distance decay), YAML/JSON (key-path chunking)
 - **Markup** — HTML/XML with tag stripping
 - **Plaintext** — `.txt`, `.rst`, `.csv`, `.log`, `.ini`, `.cfg`, `.toml`, config files, dotfiles
 

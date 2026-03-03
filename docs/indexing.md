@@ -31,8 +31,8 @@ Documents are chunked by their structure, not line-based:
 
 | Format | Chunking Strategy |
 |--------|-------------------|
-| **Markdown** | By heading hierarchy (H1, H2, H3) — preserves section tree structure |
-| **PDF** | By page, with text extraction via pymupdf4llm |
+| **Markdown** | Break-point algorithm — scores split points (headers, code fences, blank lines, list items, HRs) with distance decay; 15% overlap between chunks; never splits inside fenced code blocks |
+| **PDF** | Text extraction via pymupdf4llm, then break-point chunking (same as Markdown) |
 | **YAML / JSON** | By key-path (e.g., `config.database.host`) — respects nesting |
 | **HTML / XML** | Tag stripping + plaintext chunking — preserves semantic structure |
 | **Plaintext** (.txt, .rst, .csv, .log, .ini, .cfg, .toml, .conf, etc.) | Line-based chunking |
