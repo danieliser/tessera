@@ -14,17 +14,9 @@ Collapsed ancestry snippets with `expand_context` ("lines" / "full") and `max_de
 
 Implicit session scoping via environment variable. Precedence: explicit tool param > env var > dev mode.
 
----
+### ~~Markdown break-point chunker~~ — v0.7.0
 
-## Up Next
-
-### Markdown-aware chunking (break-point algorithm)
-
-**Priority: HIGH** — Current `chunk_markdown()` in `document.py` splits on headers only. The QMD branch (`feature/qmd-feature-adoption`, Phase 2) has a break-point algorithm (`markdown_chunker.py`, 228 lines) that scores split points by structural boundaries: headers, code fences, blank lines, list items, thematic breaks. Never splits inside fenced code blocks.
-
-**Why it matters:** Blog posts, support tickets, documentation — anything written in markdown gets chunked poorly today. Header-only splitting produces chunks that are either too large (long sections) or too granular (many sub-headers). The break-point algorithm produces semantically coherent chunks regardless of header structure.
-
-**Approach:** Port `markdown_chunker.py` from the QMD branch to main. It's a clean standalone module with no dependencies on other QMD changes. Wire it into the indexer pipeline as a replacement for the current `chunk_markdown()`.
+Ported QMD's (tobi/qmd) break-point algorithm to Python. Distance-decay scored split points: headers, code fences, blank lines, list items, horizontal rules. 15% overlap between chunks. Never selects break points inside fenced code blocks. Replaces header-only `chunk_markdown()` in the indexer pipeline.
 
 ---
 

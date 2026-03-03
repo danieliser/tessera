@@ -20,11 +20,11 @@ from ..document import (
     DocumentExtractionError,
     chunk_html,
     chunk_json,
-    chunk_markdown,
     chunk_text_file,
     chunk_xml,
     chunk_yaml,
 )
+from ..markdown_chunker import chunk_markdown_breakpoint
 from ..embeddings import EmbeddingClient, EmbeddingUnavailableError
 from ..ignore import IgnoreFilter
 from ..parser import detect_language, parse_and_extract
@@ -287,10 +287,10 @@ class IndexerPipeline:
                         "pymupdf4llm not installed. Install with: pip install pymupdf4llm"
                     ) from None
                 markdown_text = pymupdf4llm.to_markdown(file_path)
-                chunks = chunk_markdown(markdown_text)
+                chunks = chunk_markdown_breakpoint(markdown_text)
             elif file_path.endswith('.md'):
                 content = Path(file_path).read_text(encoding='utf-8', errors='replace')
-                chunks = chunk_markdown(content)
+                chunks = chunk_markdown_breakpoint(content)
             elif file_path.endswith(('.yaml', '.yml')):
                 chunks = chunk_yaml(file_path)
             elif file_path.endswith('.json'):

@@ -2,6 +2,22 @@
 
 All notable changes to Tessera are documented in this file.
 
+## [0.7.0] — 2026-03-03
+
+### Added
+- **Break-point Markdown Chunker** — ported from QMD (tobi/qmd) TypeScript implementation
+  - Distance-decay scored break points: headers (H1-H6), code fences, blank lines, list items, horizontal rules
+  - Squared distance decay so headings far back still beat low-quality breaks near the boundary
+  - Code fence protection — never selects break points inside ``` regions
+  - 15% overlap between adjacent chunks for context continuity
+  - Heading hierarchy tracking (`section_heading`, `parent_section`) on every chunk
+  - Defaults: 3600 chars max (~900 tokens), 800 char search window (~200 tokens)
+- New module: `src/tessera/markdown_chunker.py` — standalone, no external dependencies
+
+### Changed
+- Indexer pipeline now uses `chunk_markdown_breakpoint()` for `.md` and `.pdf` files (was `chunk_markdown()`)
+- Old `chunk_markdown()` in `document.py` retained for backward compatibility
+
 ## [0.6.0] — 2026-03-02
 
 ### Added
