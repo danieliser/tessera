@@ -1,8 +1,10 @@
 """Indexer helpers: constants, package detection, and statistics."""
 
+import hashlib
 import json
 import os
 from dataclasses import dataclass
+from pathlib import Path
 
 DOCUMENT_EXTENSIONS = ['.pdf', '.md', '.yaml', '.yml', '.json']
 
@@ -82,6 +84,23 @@ def _extract_pyproject_name(content: str) -> str:
                 return value.strip().strip('"').strip("'")
     return ""
 
+
+
+def compute_parser_digest() -> str:
+    """Compute a SHA-256 digest of all parser, extractor, and chunker source files.
+
+    This digest changes only when the code that produces indexed output changes.
+    Used to detect stale indexes after Tessera upgrades.
+    """
+    pkg_root = Path(__file__).resolve().parent.parent  # src/tessera/
+    source_files = sorted([
+        *pkg_root.glob("parser/*.py"),
+        *pkg_root.glob("chunker*.py"),
+    ])
+    h = hashlib.sha256()
+    for path in source_files:
+        h.update(path.read_bytes())
+    return h.hexdigest()[:16]  # 16 hex chars is plenty for change detection
 
 
 @dataclass

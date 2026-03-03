@@ -34,6 +34,7 @@ from ._helpers import (
     TEXT_EXTENSIONS,
     IndexStats,
     _detect_package_name,
+    compute_parser_digest,
 )
 
 logger = logging.getLogger(__name__)
@@ -263,18 +264,9 @@ class IndexerPipeline:
         return stats
 
     def _file_hash(self, file_path: str) -> str:
-        """Compute SHA-256 hash of file contents salted with package version.
-
-        The version salt ensures that upgrading Tessera (which may change
-        parser/extractor logic) automatically invalidates cached hashes,
-        triggering a full re-index without needing ``force=True``.
-        """
-        from tessera import __version__
-
+        """Compute SHA-256 hash of file contents for change detection."""
         with open(file_path, 'rb') as f:
-            h = hashlib.sha256(f.read())
-        h.update(__version__.encode())
-        return h.hexdigest()
+            return hashlib.sha256(f.read()).hexdigest()
 
     def _is_document_file(self, file_path: str) -> bool:
         """Check if file is a document (not code)."""
@@ -852,6 +844,9 @@ class IndexerPipeline:
             head = self._get_git_head()
             if head and self.global_db:
                 self.global_db.update_last_indexed_commit(self.project_id, head)
+
+            # Store parser digest so the server can detect stale indexes
+            self.project_db.set_meta("parser_digest", compute_parser_digest())
 
             return stats
         except Exception as e:

@@ -55,7 +55,15 @@ def register_admin_tools(mcp: FastMCP) -> None:
             force: If True, re-index all files even if unchanged (use after parser/extractor changes)
             session_id: Optional session token
         """
-        from .._state import _db_cache, _embedding_client, _global_db, _graph_lock, _graph_stats, _project_graphs
+        from .._state import (
+            _db_cache,
+            _embedding_client,
+            _global_db,
+            _graph_lock,
+            _graph_stats,
+            _project_graphs,
+            _stale_projects,
+        )
 
         scope, err = _check_session({"session_id": session_id}, "global")
         if err:
@@ -86,8 +94,9 @@ def register_admin_tools(mcp: FastMCP) -> None:
             else:
                 stats = await asyncio.to_thread(pipeline.index_project, force=force)
 
-            # Invalidate cache so next query picks up fresh data
+            # Invalidate cache and clear stale status
             _db_cache.pop(project_id, None)
+            _stale_projects.discard(project_id)
 
             # Rebuild graph after reindex
             try:

@@ -140,6 +140,14 @@ class MockProjectDB:
         """Clear old data for a file."""
         pass
 
+    def get_meta(self, key):
+        """Mock meta getter."""
+        return None
+
+    def set_meta(self, key, value):
+        """Mock meta setter."""
+        pass
+
     def keyword_search(self, query, limit=10, source_type=None, advanced_fts=False):
         """Mock keyword search."""
         return []

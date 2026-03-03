@@ -13,6 +13,7 @@ from ..drift_adapter import DriftAdapter
 from ..embeddings import EmbeddingClient
 from ..graph import MAX_CACHED_GRAPHS, evict_lru_graph, load_project_graph
 from ..indexer import IndexerPipeline
+from ..indexer._helpers import compute_parser_digest
 
 # Scope level hierarchy for comparison
 _SCOPE_LEVELS = {"project": 0, "collection": 1, "global": 2}
@@ -22,6 +23,7 @@ audit_logger = logging.getLogger("tessera.server.audit")
 
 # Global database references (set during create_server)
 _db_cache: dict[int, ProjectDB] = {}       # project_id → ProjectDB (lazy-loaded)
+_stale_projects: set[int] = set()       # project IDs whose index was built with an older parser
 _locked_project: int | None = None      # If --project given, only this project is queryable
 _global_db: GlobalDB | None = None
 _drift_adapter: DriftAdapter | None = None
@@ -76,6 +78,22 @@ def _check_session(arguments: dict[str, Any], required_level: str = "project") -
         return None, f"Error: Insufficient scope. Required: {required_level}, have: {scope.level}"
 
     return scope, None
+
+
+def _stale_index_warning(project_ids: list[int]) -> str:
+    """Return a warning string if any of the given projects have stale indexes."""
+    stale = [pid for pid in project_ids if pid in _stale_projects]
+    if not stale:
+        return ""
+    names = []
+    if _global_db:
+        for pid in stale:
+            p = _global_db.get_project(pid)
+            names.append(p["name"] if p else str(pid))
+    return (
+        f"⚠ Stale index detected for: {', '.join(names or [str(s) for s in stale])}. "
+        "The parser has changed since last indexing. Run `reindex(project_id=..., force=True)` to update.\n\n"
+    )
 
 
 def _get_project_dbs(scope: ScopeInfo | None) -> list[tuple[int, str, ProjectDB]]:
@@ -139,6 +157,17 @@ def _get_project_dbs(scope: ScopeInfo | None) -> list[tuple[int, str, ProjectDB]
         try:
             db = ProjectDB(project_path)
             _db_cache[pid] = db
+            # Check if index was built with current parser version
+            stored_digest = db.get_meta("parser_digest")
+            if stored_digest and stored_digest != compute_parser_digest():
+                _stale_projects.add(pid)
+                logger.warning(
+                    "Project %d (%s) index is stale — run reindex with force=True",
+                    pid, project["name"],
+                )
+            elif not stored_digest:
+                # Pre-digest index — mark stale to be safe
+                _stale_projects.add(pid)
             result.append((pid, project["name"], db))
         except Exception as e:
             logger.warning("Failed to open ProjectDB for %d (%s): %s", pid, project_path, e)
@@ -153,10 +182,11 @@ def _init_essential(
     embedding_model: str | None = None,
 ) -> None:
     """Fast init: DB connections, embedding client, project lock. No heavy I/O."""
-    global _db_cache, _locked_project, _global_db, _drift_adapter, _embedding_client, _project_graphs, _graph_stats
+    global _db_cache, _locked_project, _global_db, _drift_adapter, _embedding_client, _project_graphs, _graph_stats, _stale_projects
 
     # Reset state
     _db_cache = {}
+    _stale_projects = set()
     _locked_project = None
     _drift_adapter = None
     _embedding_client = None

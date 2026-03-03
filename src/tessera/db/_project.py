@@ -130,6 +130,21 @@ class ProjectDB:
                 raise
         self.conn.commit()
 
+    def get_meta(self, key: str) -> str | None:
+        """Read a value from the _meta key-value store."""
+        row = self.conn.execute(
+            "SELECT value FROM _meta WHERE key = ?", (key,)
+        ).fetchone()
+        return row[0] if row else None
+
+    def set_meta(self, key: str, value: str) -> None:
+        """Write a value to the _meta key-value store."""
+        self.conn.execute(
+            "INSERT OR REPLACE INTO _meta (key, value) VALUES (?, ?)",
+            (key, value),
+        )
+        self.conn.commit()
+
     def _create_schema(self):
         """Create project database schema if it doesn't exist."""
         with self.conn:

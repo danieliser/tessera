@@ -18,6 +18,7 @@ from .._state import (
     _check_session,
     _get_project_dbs,
     _log_audit,
+    _stale_index_warning,
 )
 
 logger = logging.getLogger("tessera.server")
@@ -193,7 +194,8 @@ def register_search_tools(mcp: FastMCP) -> None:
                     r.update(snippet_info)
 
             _log_audit("search", len(all_results), agent_id=agent_id, ppr_used=ppr_used)
-            return format_results(all_results, format=output_format)
+            warning = _stale_index_warning([pid for pid, _, _ in dbs])
+            return warning + format_results(all_results, format=output_format)
         except Exception as e:
             logger.exception("Search tool error")
             _log_audit("search", 0, agent_id=agent_id)
@@ -283,7 +285,8 @@ def register_search_tools(mcp: FastMCP) -> None:
                     r.update(snippet_info)
 
             _log_audit("doc_search", len(all_results), agent_id=agent_id)
-            return format_results(all_results, format=output_format)
+            warning = _stale_index_warning([pid for pid, _, _ in dbs])
+            return warning + format_results(all_results, format=output_format)
         except Exception as e:
             logger.exception("doc_search error")
             _log_audit("doc_search", 0, agent_id=agent_id)
