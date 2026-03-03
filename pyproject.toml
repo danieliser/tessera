@@ -4,13 +4,22 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tessera"
-version = "0.6.0"
+version = "0.7.0"
 description = "Hierarchical, scope-gated codebase indexing and persistent memory system for AI agents"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 license = {text = "MIT"}
 authors = [
     {name = "Daniel Iser", email = "daniel@example.com"}
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries",
+    "Intended Audience :: Developers",
 ]
 
 dependencies = [
@@ -44,7 +53,14 @@ core-languages = [
     "tree-sitter-typescript",
     "tree-sitter-php",
 ]
+embed = ["fastembed>=0.4"]
 all-languages = ["tree-sitter-language-pack"]
+all = ["tessera[embed]", "tessera[core-languages]"]
+
+[project.urls]
+Homepage = "https://github.com/danieliser/tessera"
+Repository = "https://github.com/danieliser/tessera"
+Changelog = "https://github.com/danieliser/tessera/blob/main/CHANGELOG.md"
 
 [project.scripts]
 tessera = "tessera.__main__:main"
