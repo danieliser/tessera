@@ -60,7 +60,7 @@ def _check_session(arguments: dict[str, Any], required_level: str = "project") -
         (scope_info, None) on success, or (None, error_message) on failure.
         If no session_id provided, returns (None, None) for dev mode fallback.
     """
-    session_id = arguments.get("session_id")
+    session_id = arguments.get("session_id") or os.environ.get("TESSERA_SESSION_ID")
     if not session_id:
         return None, None  # Dev mode
 

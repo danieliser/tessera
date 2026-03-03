@@ -26,8 +26,11 @@ Without a session token, an agent gets **no access** to search, navigate, or ins
 
 ### How It Works
 
-1. **Agent calls a tool** — e.g., `search(query="login handler", session_id="abc-123...")`
-2. **Tessera validates the session** — Looks up `session_id` in the sessions table
+1. **Agent calls a tool** — e.g., `search(query="login handler")`
+2. **Tessera resolves the session token** — checked in order:
+     1. Explicit `session_id` parameter on the tool call
+     2. `TESSERA_SESSION_ID` environment variable (set once at process startup)
+     3. Neither → dev mode (no scoping)
 3. **If validation fails**, the tool returns an error:
    - Token not found → "Error: Invalid session"
    - Token expired → "Error: Session expired"
@@ -427,119 +430,176 @@ ignore.should_ignore('src/main.py')               # False (allowed)
 
 ---
 
-## Practical Workflows
+## Passing Tokens to Sub-Agents
 
-### Workflow 1: Single Orchestrator with Task Agents
+The orchestrator creates a scoped token via `create_scope_tool`, then passes it to sub-agents. How the token reaches the sub-agent depends on your setup.
 
-**Setup:**
-- Orchestrator has global scope (can see all 5 projects)
-- Task agents have project-scoped tokens (each can see 1-2 projects)
-- Each task agent gets a short-lived token (30 min)
+### `TESSERA_SESSION_ID` Environment Variable
 
-**Steps:**
+Tessera reads `TESSERA_SESSION_ID` from the environment at startup. When set, every tool call from that process is automatically scoped — agents don't need to know about session tokens at all.
+
+**Precedence:** explicit `session_id` tool parameter > `TESSERA_SESSION_ID` env var > dev mode (no scoping).
+
+### Method 1: CLI Orchestrator (Inline Env Var)
+
+The simplest approach. The orchestrator spawns a sub-agent CLI process with the token as an inline environment variable:
+
+```bash
+TESSERA_SESSION_ID=550e8400-e29b-41d4-a716-446655440000 \
+  claude "refactor the auth module"
+```
+
+The env var propagates to the `claude` process, which propagates it to the Tessera MCP subprocess. Every tool call is scoped automatically.
+
+**Shared scope for all sub-agents:** Export once, every child inherits:
+
+```bash
+export TESSERA_SESSION_ID=550e8400-e29b-41d4-a716-446655440000
+claude "refactor auth module"
+claude "update tests for auth"
+claude "review auth changes"
+# All three agents share the same scoped access
+```
+
+**Per-agent scope:** Inline env var overrides the parent:
+
+```bash
+export TESSERA_SESSION_ID=global-orchestrator-token
+
+# This agent gets a different, narrower scope
+TESSERA_SESSION_ID=project-scoped-token-for-auth \
+  claude "refactor the auth module"
+
+# This agent gets the parent's global scope
+claude "check cross-project dependencies"
+```
+
+### Method 2: MCP Config with Baked-In Token
+
+The orchestrator writes a temporary `.mcp.json` with the token in the env block, then passes it to the sub-agent via `--mcp-config`:
 
 ```python
-# Orchestrator initialization (global scope, no token needed in dev mode)
-# But in production, orchestrator still needs auth:
-orchestrator_token = create_scope_tool(
-    agent_id="orchestrator",
-    scope_level="global",
-    project_ids=[]
-)
+import json, tempfile
 
-# Orchestrator registers 5 projects
-projects = [
-    register_project(path="/home/src/auth-service"),
-    register_project(path="/home/src/api-gateway"),
-    register_project(path="/home/src/web-ui"),
-    register_project(path="/home/src/data-pipeline"),
-    register_project(path="/home/src/ml-models"),
-]
-
-# Orchestrator creates a task for auth-service
-auth_task_token = create_scope_tool(
-    agent_id="auth-task-agent",
+# Orchestrator creates a scoped token
+token = create_scope_tool(
+    agent_id="auth-task",
     scope_level="project",
-    project_ids=[projects[0]["id"]],     # Only auth-service
+    project_ids=[1],
     ttl_minutes=30
 )
 
-# Pass token to task agent
-task_agent.initialize(session_id=auth_task_token)
+# Write temp MCP config with token baked in
+config = {
+    "mcpServers": {
+        "tessera": {
+            "command": "uv",
+            "args": ["--directory", "/path/to/tessera",
+                     "run", "python", "-m", "tessera", "serve"],
+            "env": {"TESSERA_SESSION_ID": token["session_id"]}
+        }
+    }
+}
 
-# Task agent calls search within its scope
-results = task_agent.search(
-    query="password validation",
-    session_id=auth_task_token
-)
-# Results only from auth-service; api-gateway, web-ui, etc. are invisible
+with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+    json.dump(config, f)
+    config_path = f.name
 
-# After 30 minutes, token expires; task agent's tools stop working
-# Orchestrator manually revokes if task completes early
-revoke_scope_tool(agent_id="auth-task-agent")
+# Spawn sub-agent with scoped config
+subprocess.run(["claude", "--mcp-config", config_path, "refactor auth"])
 ```
 
-### Workflow 2: Customer-Facing Setup with Collections
+This is ideal when different sub-agents need different MCP server configurations (not just different tokens).
 
-**Setup:**
-- Orchestrator manages projects for 3 customers (A, B, C)
-- Customer A has 5 projects (web, api, db, ml, infra)
-- Each customer-task agent gets a collection-scoped token
-- Agents cannot see other customers' projects
+### Method 3: API-Driven (Tool Injection)
 
-**Steps:**
+For non-CLI orchestrators that build prompts and inject tools programmatically, patch the token directly into tool call parameters at the application layer:
 
 ```python
-# Orchestrator creates collections for each customer
+# Orchestrator creates a scoped token
+token = create_scope_tool(
+    agent_id="task-agent",
+    scope_level="project",
+    project_ids=[1, 2]
+)
+
+# During prompt building / tool injection, the orchestrator
+# patches session_id into every Tessera tool definition
+for tool in tessera_tools:
+    tool["parameters"]["session_id"] = token["session_id"]
+
+# Sub-agent calls search(query="...") — the session_id is
+# already baked in. The agent never knows it's scoped.
+```
+
+This is the cleanest path for orchestrators that already manage tool definitions (e.g., the persistence layer during prompt construction).
+
+---
+
+## Practical Workflows
+
+### Workflow 1: CLI Orchestrator with Task Agents
+
+**Setup:**
+- Orchestrator has global scope
+- Task agents get project-scoped tokens via inline env vars
+
+```python
+# Orchestrator creates scoped tokens for each task
+auth_token = create_scope_tool(
+    agent_id="auth-task",
+    scope_level="project",
+    project_ids=[1],        # Only auth-service
+    ttl_minutes=30
+)
+
+api_token = create_scope_tool(
+    agent_id="api-task",
+    scope_level="project",
+    project_ids=[2, 3],     # api-gateway + web-ui
+    ttl_minutes=30
+)
+```
+
+```bash
+# Spawn sub-agents with scoped access
+TESSERA_SESSION_ID=<auth_token> claude "fix the password validation bug"
+TESSERA_SESSION_ID=<api_token> claude "add rate limiting to the API"
+
+# Each agent can only search their authorized projects
+# auth-task sees auth-service only
+# api-task sees api-gateway + web-ui only
+```
+
+After task completion:
+```python
+revoke_scope_tool(agent_id="auth-task")
+revoke_scope_tool(agent_id="api-task")
+```
+
+### Workflow 2: Collection-Based Customer Isolation
+
+```python
+# Group projects by customer
 collection_a = create_collection_tool(name="customer-a")
-collection_b = create_collection_tool(name="customer-b")
-collection_c = create_collection_tool(name="customer-c")
+for proj_id in [1, 2, 3, 4, 5]:
+    add_to_collection_tool(collection_id=collection_a["id"], project_id=proj_id)
 
-# Register projects and group by customer
-cust_a_projects = [
-    register_project(path="/customers/a/web"),
-    register_project(path="/customers/a/api"),
-    register_project(path="/customers/a/db"),
-    register_project(path="/customers/a/ml"),
-    register_project(path="/customers/a/infra"),
-]
-
-for proj in cust_a_projects:
-    add_to_collection_tool(
-        collection_id=collection_a["id"],
-        project_id=proj["id"]
-    )
-
-# Customer A hires a task agent to refactor their code
-agent_a = "customer-a-refactor-task"
+# Create collection-scoped token
 token_a = create_scope_tool(
-    agent_id=agent_a,
+    agent_id="customer-a-agent",
     scope_level="collection",
     collection_ids=[collection_a["id"]],
-    ttl_minutes=480  # 8-hour task
+    ttl_minutes=480
 )
+```
 
-# Agent A can search all 5 customer-a projects
-# But cannot see customer-b or customer-c projects
-results = agent_a.search(
-    query="database connection",
-    session_id=token_a
-)
-# Results from customer-a/db and customer-a/api
-# Results from customer-b and customer-c are filtered out
-
-# If customer A cancels the project, revoke immediately
-revoke_scope_tool(agent_id=agent_a)
+```bash
+# Agent sees all 5 customer-a projects, nothing else
+TESSERA_SESSION_ID=<token_a> claude "refactor the database layer"
 ```
 
 ### Workflow 3: Securing Credentials During Indexing
-
-**Setup:**
-- Each project has `.env`, `config/secrets.json`, SSH keys
-- Default `.tesseraignore` excludes `node_modules`, `.git`, etc.
-- Custom `.tesseraignore` adds project-specific exclusions
-
-**Steps:**
 
 ```bash
 # Project structure
@@ -559,32 +619,8 @@ revoke_scope_tool(agent_id=agent_a)
     # Custom exclusions
     temp_backups/
     *.tmp.sql
-    # These patterns are allowed because they're not security tier
-    # But security patterns cannot be negated:
+    # Security patterns cannot be negated:
     # !.env    ← This line is logged as warning and ignored
-```
-
-When Tessera indexes this project:
-
-```python
-ignore = IgnoreFilter('/projects/myapp')
-
-indexed = [
-    'src/main.py',             # ✓ Indexed
-    'config/app.yaml',         # ✓ Indexed
-    'README.md',               # ✓ Indexed
-]
-
-blocked = [
-    '.env',                    # Security pattern
-    '.env.production',         # Security pattern
-    'config/secrets.json',     # Security pattern
-    '.ssh/deploy_key.pem',     # Security pattern
-    'node_modules/lodash/...',  # Default pattern
-    '__pycache__/...',         # Default pattern
-    'temp_backups/...',        # Custom pattern
-    '*.tmp.sql',               # Custom pattern
-]
 ```
 
 ---
@@ -630,28 +666,23 @@ print(f"Deleted {count} expired sessions")
 
 ## Common Mistakes & Pitfalls
 
-### ❌ Mistake 1: Forgetting to Pass Session ID to Sub-Agents
+### ❌ Mistake 1: Not Setting the Session Token for Sub-Agents
 
 **Problem:**
-```python
-# Orchestrator creates a token
-token = create_scope_tool(agent_id="task-1", ...)
-# But forgets to pass it to the sub-agent
-
-# Sub-agent calls search without a session_id
-results = sub_agent.search(query="...")
-# In dev mode: works (no auth)
-# In production: "Error: Invalid session" or "Error: Insufficient scope"
+```bash
+# Orchestrator creates a token but doesn't pass it to the sub-agent
+claude "search the codebase for auth bugs"
+# In dev mode: works (no scoping)
+# In production: agent has no access
 ```
 
-**Solution:** Always include session_id in MCP initialization:
-```json
-{
-  "initializationOptions": {
-    "session_id": "550e8400-e29b-41d4-a716-446655440000"
-  }
-}
+**Solution:** Use `TESSERA_SESSION_ID` environment variable:
+```bash
+TESSERA_SESSION_ID=550e8400-e29b-41d4-a716-446655440000 \
+  claude "search the codebase for auth bugs"
 ```
+
+Or bake it into the MCP config's `env` block (see [Passing Tokens to Sub-Agents](#passing-tokens-to-sub-agents)).
 
 ### ❌ Mistake 2: Attempting to Negate Security Patterns
 

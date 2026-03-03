@@ -419,6 +419,15 @@ result = client.call_tool("create_scope_tool", {
 # Returns: {"session_id": "abc123...", "valid_until": "2026-03-10T...", ...}
 ```
 
+Pass the token to the sub-agent via the `TESSERA_SESSION_ID` environment variable:
+
+```bash
+# Spawn a sub-agent with scoped access to the collection
+TESSERA_SESSION_ID=abc123... claude "analyze plugin compatibility"
+```
+
+Or bake it into an MCP config file (see [Passing Tokens to Sub-Agents](security.md#passing-tokens-to-sub-agents)).
+
 The sub-agent can now search and analyze across all projects in that collection, but cannot see projects outside it.
 
 ### Grant Access to Specific Projects
@@ -432,9 +441,13 @@ result = client.call_tool("create_scope_tool", {
 })
 ```
 
+```bash
+TESSERA_SESSION_ID=<returned_session_id> claude "clean up dead code"
+```
+
 The sub-agent can now search and analyze only these two projects.
 
-See [Security & Access Control](./security.md) for full details on scope tokens and session management.
+See [Security & Access Control](security.md) for full details on scope tokens, environment variables, and session management.
 
 ---
 
@@ -706,8 +719,11 @@ scope = client.call_tool("create_scope_tool", {
     "scope_level": "collection",
     "collection_ids": [1]
 })
+```
 
-# Pass scope["session_id"] to the sub-agent
+```bash
+# Pass the token via environment variable
+TESSERA_SESSION_ID=<scope_session_id> claude "review code quality"
 ```
 
 ### Monitor Cross-Project Dependencies
