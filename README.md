@@ -171,7 +171,7 @@ MCP Server (stdio)
 
 ## Project Status
 
-**v0.3.0** — Core system operational. Code intelligence, document indexing, media asset cataloging, federation, and access control all working.
+**v0.6.0** — Hybrid search with semantic snippet scoring, PPR graph ranking, collapsed ancestry context, and stale index detection.
 
 | Phase | Status | What |
 |-------|--------|------|
@@ -180,7 +180,7 @@ MCP Server (stdio)
 | 3 | Done | Collection federation + cross-project refs |
 | 4 | Done | Document indexing + drift adapter + ignore config + text formats |
 | 4.5 | Done | Media/binary file metadata catalog |
-| 5 | Planned | PPR graph intelligence |
+| 5 | Done | PPR graph ranking + semantic snippet scoring |
 | 6 | Planned | Always-on file watcher |
 
 ## License

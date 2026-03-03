@@ -1,10 +1,51 @@
-# Tessera
+---
+hide:
+  - toc
+---
 
-Persistent codebase intelligence for autonomous AI agents. Tessera gives agents bottom-up file access and top-down code understanding — across every project they're authorized to touch, with security from the ground up.
+<div class="hero" markdown>
+
+# Tessera <span class="version-badge">v0.6.0</span>
+
+Persistent codebase intelligence for autonomous AI agents.<br>
+Bottom-up file access. Top-down code understanding. Security from the ground up.
+
+[Get Started](getting-started.md){ .md-button .md-button--primary }
+[View on GitHub](https://github.com/danieliser/tessera){ .md-button }
+
+</div>
+
+---
+
+<div class="feature-grid" markdown>
+
+<div class="card" markdown>
+### :material-magnify: Hybrid Search
+Three ranking signals — keyword (FTS5), semantic (FAISS), and graph (PageRank) — merged via Reciprocal Rank Fusion. [Learn more](search-guide.md)
+</div>
+
+<div class="card" markdown>
+### :material-file-tree: Code Intelligence
+Symbol lookup, reference tracing, impact analysis, and cross-project dependency tracking via tree-sitter AST graphs. [Learn more](code-intelligence.md)
+</div>
+
+<div class="card" markdown>
+### :material-shield-lock: Scope-Gated Security
+Deny-by-default access control. Session tokens, scoped delegation, un-negatable credential protection. [Learn more](security.md)
+</div>
+
+<div class="card" markdown>
+### :material-lan: Multi-Project Federation
+Index multiple projects, group into collections, search across all of them. Data stays local, merged at query time. [Learn more](multi-project.md)
+</div>
+
+</div>
+
+---
 
 ## The Problem
 
-Persistent AI agents — orchestrators like AutoJack, task agents like OpenClaw — need to understand codebases the way a senior developer does. Not just "find this string in a file," but "what calls this function, across which projects, and what breaks if I change it?"
+Persistent AI agents need to understand codebases the way a senior developer does. Not just "find this string in a file," but "what calls this function, across which projects, and what breaks if I change it?"
 
 Today's agents burn context window and wall-clock time on repeated `grep` / `find` / `cat` cycles. They lose track of project structure between conversations. They can't safely delegate to sub-agents without leaking access to projects those agents shouldn't see. And they can't search documentation, config files, or assets alongside code.
 
@@ -171,7 +212,7 @@ MCP Server (stdio)
 
 ## Project Status
 
-**v0.3.0** — Core system operational. Code intelligence, document indexing, media asset cataloging, federation, and access control all working.
+**v0.6.0** — Hybrid search with semantic snippet scoring, PPR graph ranking, collapsed ancestry context, and stale index detection.
 
 | Phase | Status | What |
 |-------|--------|------|
@@ -180,7 +221,7 @@ MCP Server (stdio)
 | 3 | Done | Collection federation + cross-project refs |
 | 4 | Done | Document indexing + drift adapter + ignore config + text formats |
 | 4.5 | Done | Media/binary file metadata catalog |
-| 5 | Planned | PPR graph intelligence |
+| 5 | Done | PPR graph ranking + semantic snippet scoring |
 | 6 | Planned | Always-on file watcher |
 
 ## License
