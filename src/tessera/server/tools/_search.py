@@ -167,6 +167,11 @@ def register_search_tools(mcp: FastMCP) -> None:
             # Add stable document IDs
             all_results = enrich_with_docid(all_results)
 
+            # Build embed_fn for semantic snippet scoring (when available)
+            snippet_embed_fn = None
+            if query_embedding is not None and _embedding_client:
+                snippet_embed_fn = _embedding_client.embed
+
             # Extract best-matching snippets with ancestor context
             db_by_pid = {pid: db for pid, _pn, db in dbs}
             for r in all_results:
@@ -174,7 +179,9 @@ def register_search_tools(mcp: FastMCP) -> None:
                     # start_line is 0-based from chunker; convert to 1-based for display
                     chunk_start = r.get("start_line", 0) + 1
                     # Quick pass to find best match line for ancestor lookup
-                    flat = extract_snippet(r["content"], query)
+                    flat = extract_snippet(r["content"], query,
+                                           query_embedding=query_embedding,
+                                           embed_fn=snippet_embed_fn)
                     abs_match = chunk_start + flat["best_match_line"]
 
                     # Look up ancestor symbols for nesting context
@@ -190,6 +197,8 @@ def register_search_tools(mcp: FastMCP) -> None:
                         chunk_start_line=chunk_start,
                         mode=expand_context,
                         max_depth=max_depth,
+                        query_embedding=query_embedding,
+                        embed_fn=snippet_embed_fn,
                     )
                     r.update(snippet_info)
 

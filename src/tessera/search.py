@@ -22,6 +22,7 @@ import json
 import logging
 import re
 from enum import StrEnum
+from collections.abc import Callable
 from typing import Optional
 
 import faiss
@@ -128,8 +129,26 @@ def bm25_strong_signal_check(
     return (top_score - second_score) >= gap
 
 
-def _find_best_match_line(lines: list[str], query: str) -> int:
-    """Find the line with the highest keyword overlap with the query."""
+def _find_best_match_line(
+    lines: list[str],
+    query: str,
+    query_embedding: Optional[np.ndarray] = None,
+    embed_fn: Optional[Callable[..., list]] = None,
+) -> int:
+    """Find the line with the highest relevance to the query.
+
+    When query_embedding and embed_fn are provided, scores 3-line sliding
+    windows by cosine similarity against the query embedding. Falls back
+    to keyword overlap when unavailable or on error.
+    """
+    # Try semantic scoring first
+    if query_embedding is not None and embed_fn is not None and len(lines) > 0:
+        try:
+            return _semantic_best_line(lines, query_embedding, embed_fn)
+        except Exception:
+            logger.debug("Semantic snippet scoring failed, falling back to keyword")
+
+    # Keyword overlap fallback
     _tokenize = re.compile(r"[a-z0-9]+", re.IGNORECASE).findall
     query_terms = set(t.lower() for t in _tokenize(query))
 
@@ -141,6 +160,38 @@ def _find_best_match_line(lines: list[str], query: str) -> int:
             best_overlap = overlap
             best_line_idx = i
     return best_line_idx
+
+
+def _semantic_best_line(
+    lines: list[str],
+    query_embedding: np.ndarray,
+    embed_fn: callable,
+    window_size: int = 3,
+) -> int:
+    """Score sliding windows by cosine similarity, return center line of best."""
+    # Build sliding windows
+    windows = []
+    for i in range(len(lines)):
+        start = max(0, i - window_size // 2)
+        end = min(len(lines), start + window_size)
+        if end - start < window_size and start > 0:
+            start = max(0, end - window_size)
+        windows.append("\n".join(lines[start:end]))
+
+    # Batch embed all windows
+    embeddings = embed_fn(windows)
+    if not embeddings or len(embeddings) != len(windows):
+        raise ValueError("embed_fn returned unexpected result")
+
+    emb_matrix = np.array(embeddings, dtype=np.float32)
+
+    # Normalize for cosine similarity
+    q_norm = query_embedding / (np.linalg.norm(query_embedding) + 1e-10)
+    row_norms = np.linalg.norm(emb_matrix, axis=1, keepdims=True) + 1e-10
+    emb_normed = emb_matrix / row_norms
+
+    similarities = emb_normed @ q_norm
+    return int(np.argmax(similarities))
 
 
 def _render_line(abs_line: int, text: str, line_width: int) -> str:
@@ -162,6 +213,8 @@ def extract_snippet(
     chunk_start_line: int = 0,
     mode: str = "lines",
     max_depth: int | None = None,
+    query_embedding: Optional[np.ndarray] = None,
+    embed_fn: Optional[Callable[..., list]] = None,
 ) -> dict:
     """Extract best-matching snippet from chunk content with optional ancestry.
 
@@ -190,7 +243,7 @@ def extract_snippet(
         return empty
 
     lines = chunk_content.split("\n")
-    best_line_idx = _find_best_match_line(lines, query)
+    best_line_idx = _find_best_match_line(lines, query, query_embedding, embed_fn)
 
     # Match window (chunk-relative indices)
     win_start = max(0, best_line_idx - context_lines)

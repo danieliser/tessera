@@ -329,6 +329,75 @@ class TestExtractSnippet:
         assert result["ancestors"] == []
         assert "foo" in result["snippet"]
 
+    def test_semantic_scoring_finds_try_except(self):
+        """Semantic scoring picks try/except over a comment containing query words."""
+        import numpy as np
+        from tessera.search import extract_snippet
+
+        # Lines 0-4 are filler, lines 5-7 are the error handling block.
+        # Keyword scoring would pick line 0 ("error handling" words match).
+        # Semantic scoring should pick the try/except area.
+        content = (
+            "# error handling comment here\n"            # line 0
+            "import os\n"                                # line 1
+            "import sys\n"                               # line 2
+            "import logging\n"                           # line 3
+            "logger = logging.getLogger()\n"             # line 4
+            "def process():\n"                           # line 5
+            "    try:\n"                                  # line 6
+            "        result = transform(data)\n"          # line 7
+            "    except ValueError as e:\n"               # line 8
+            "        logger.warning(e)\n"                 # line 9
+            "        raise\n"                             # line 10
+            "    return result"                           # line 11
+        )
+
+        query_emb = np.array([1.0, 0.0, 0.0], dtype=np.float32)
+
+        # Mock embed_fn: only windows containing try/except score high
+        def mock_embed(texts: list[str]) -> list[list[float]]:
+            results = []
+            for text in texts:
+                if "try:" in text and "except" in text:
+                    results.append([0.95, 0.05, 0.0])
+                elif "try:" in text or "except" in text:
+                    results.append([0.8, 0.1, 0.0])
+                else:
+                    results.append([0.1, 0.8, 0.2])
+            return results
+
+        result = extract_snippet(
+            content, "error handling",
+            context_lines=1,
+            query_embedding=query_emb,
+            embed_fn=mock_embed,
+        )
+
+        # Semantic scoring should pick the try/except area (lines 6-8),
+        # not line 0 where "error handling" appears as text
+        assert result["best_match_line"] in (6, 7, 8), (
+            f"Expected try/except area (6-8), got line {result['best_match_line']}"
+        )
+
+    def test_semantic_scoring_fallback_on_error(self):
+        """Falls back to keyword scoring when embed_fn raises."""
+        import numpy as np
+        from tessera.search import extract_snippet
+
+        content = "alpha\nbeta\nerror_handler\ndelta"
+        query_emb = np.array([1.0, 0.0], dtype=np.float32)
+
+        def broken_embed(texts):
+            raise RuntimeError("embedding server down")
+
+        result = extract_snippet(
+            content, "error_handler",
+            query_embedding=query_emb,
+            embed_fn=broken_embed,
+        )
+        # Should fall back to keyword and find "error_handler" on line 2
+        assert result["best_match_line"] == 2
+
 
 class TestGetAncestorSymbols:
     """Test ProjectDB.get_ancestor_symbols()."""
