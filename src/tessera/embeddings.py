@@ -228,6 +228,56 @@ class FastembedClient:
         self.close()
 
 
+class HTTPReranker:
+    """Reranker client for Cohere-compatible /v1/rerank endpoint."""
+
+    def __init__(
+        self,
+        endpoint: str = "http://localhost:8800/v1/rerank",
+        model: str = "jina-reranker",
+        timeout: float = 30.0,
+    ):
+        self.endpoint = endpoint
+        self.model = model
+        self._client = httpx.Client(timeout=timeout)
+
+    def rerank(self, query: str, documents: list[str], top_k: int = 10) -> list[tuple[int, float]]:
+        """Rerank documents via Cohere-compatible API.
+
+        Returns list of (original_index, score) sorted by descending score.
+        """
+        if not documents:
+            return []
+
+        try:
+            response = self._client.post(
+                self.endpoint,
+                json={
+                    "query": query,
+                    "documents": documents,
+                    "top_n": top_k,
+                    "model": self.model,
+                },
+            )
+            response.raise_for_status()
+        except (httpx.RequestError, httpx.HTTPStatusError) as e:
+            logger.warning("Reranker endpoint unavailable: %s", e)
+            return [(i, 0.0) for i in range(min(top_k, len(documents)))]
+
+        data = response.json()
+        results = data.get("results", [])
+        return [(r["index"], float(r["relevance_score"])) for r in results]
+
+    def close(self):
+        self._client.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+
 class FastembedReranker:
     """Cross-encoder reranker using fastembed's TextCrossEncoder."""
 
@@ -248,7 +298,6 @@ class FastembedReranker:
         if not documents:
             return []
         scores = list(self._model.rerank(query, documents))
-        # scores is a list of floats in the same order as documents
         indexed = [(i, float(s)) for i, s in enumerate(scores)]
         indexed.sort(key=lambda x: x[1], reverse=True)
         return indexed[:top_k]
@@ -305,15 +354,38 @@ def create_embedding_client(
 def create_reranker(
     provider: str = "auto",
     reranking_model: str | None = None,
+    reranking_endpoint: str | None = None,
     enabled: bool = True,
-) -> FastembedReranker | None:
-    """Create a reranker if fastembed is available.
+) -> HTTPReranker | FastembedReranker | None:
+    """Create a reranker based on provider selection.
 
-    Reranking only works with fastembed (no HTTP reranker). Returns None if
-    fastembed is not installed or reranking is disabled.
+    Provider logic:
+        - "http": Use HTTP endpoint (returns None if no endpoint)
+        - "fastembed": Use local fastembed (returns None if not installed)
+        - "auto": HTTP endpoint if provided, else fastembed if installed, else None
     """
-    if not enabled or provider == "http":
+    if not enabled:
         return None
+
+    if provider == "http":
+        if not reranking_endpoint:
+            return None
+        logger.info("Using HTTP reranker endpoint: %s", reranking_endpoint)
+        return HTTPReranker(endpoint=reranking_endpoint, model=reranking_model or "jina-reranker")
+
+    if provider == "fastembed":
+        try:
+            reranker = FastembedReranker(model_name=reranking_model)
+            logger.info("Reranker loaded (%s)", reranker.model_name)
+            return reranker
+        except ImportError:
+            logger.debug("fastembed not installed, reranking disabled")
+            return None
+
+    # auto: HTTP endpoint if provided, else fastembed, else None
+    if reranking_endpoint:
+        logger.info("Using HTTP reranker endpoint: %s", reranking_endpoint)
+        return HTTPReranker(endpoint=reranking_endpoint, model=reranking_model or "jina-reranker")
 
     try:
         reranker = FastembedReranker(model_name=reranking_model)

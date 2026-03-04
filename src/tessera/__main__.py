@@ -133,6 +133,11 @@ def main() -> int:
         help="Cross-encoder reranking model (default: jinaai/jina-reranker-v2-base-multilingual)"
     )
     serve_parser.add_argument(
+        "--reranking-endpoint",
+        default=None,
+        help="Cohere-compatible reranking endpoint URL (e.g. http://localhost:8800/v1/rerank)"
+    )
+    serve_parser.add_argument(
         "--no-reranking",
         action="store_true",
         help="Disable cross-encoder reranking"
@@ -147,7 +152,7 @@ def main() -> int:
             args.project, args.global_db,
             args.embedding_endpoint, args.embedding_model,
             args.embedding_provider, args.reranking_model,
-            args.no_reranking,
+            args.reranking_endpoint, args.no_reranking,
         ))
     else:
         parser.print_help()

@@ -10,7 +10,7 @@ from typing import Any
 from ..auth import ScopeInfo, SessionExpiredError, SessionNotFoundError, validate_session
 from ..db import GlobalDB, ProjectDB
 from ..drift_adapter import DriftAdapter
-from ..embeddings import EmbeddingClient, FastembedClient, FastembedReranker, create_embedding_client, create_reranker
+from ..embeddings import EmbeddingClient, FastembedClient, HTTPReranker, FastembedReranker, create_embedding_client, create_reranker
 from ..graph import MAX_CACHED_GRAPHS, evict_lru_graph, load_project_graph
 from ..indexer import IndexerPipeline
 from ..indexer._helpers import compute_parser_digest
@@ -28,7 +28,7 @@ _locked_project: int | None = None      # If --project given, only this project 
 _global_db: GlobalDB | None = None
 _drift_adapter: DriftAdapter | None = None
 _embedding_client: EmbeddingClient | FastembedClient | None = None
-_reranker: FastembedReranker | None = None
+_reranker: HTTPReranker | FastembedReranker | None = None
 _project_graphs: dict = {}  # project_id → ProjectGraph
 _graph_stats: dict[int, dict] = {}  # project_id → metadata
 _graph_lock = threading.Lock()  # Explicit lock for graph swap (don't rely on GIL)
@@ -183,6 +183,7 @@ def _init_essential(
     embedding_model: str | None = None,
     embedding_provider: str = "auto",
     reranking_model: str | None = None,
+    reranking_endpoint: str | None = None,
     no_reranking: bool = False,
 ) -> None:
     """Fast init: DB connections, embedding client, project lock. No heavy I/O."""
@@ -205,10 +206,11 @@ def _init_essential(
         embedding_model=embedding_model,
     )
 
-    # Initialize reranker (fastembed only, auto-skip if not installed)
+    # Initialize reranker (HTTP endpoint or fastembed, auto-skip if neither available)
     _reranker = create_reranker(
         provider=embedding_provider,
         reranking_model=reranking_model,
+        reranking_endpoint=reranking_endpoint,
         enabled=not no_reranking,
     )
 
@@ -334,11 +336,12 @@ def _init_state(
     embedding_model: str | None = None,
     embedding_provider: str = "auto",
     reranking_model: str | None = None,
+    reranking_endpoint: str | None = None,
     no_reranking: bool = False,
 ) -> None:
     """Full synchronous init (for tests and CLI). Runs both essential and background."""
     _init_essential(
         project_path, global_db_path, embedding_endpoint, embedding_model,
-        embedding_provider, reranking_model, no_reranking,
+        embedding_provider, reranking_model, reranking_endpoint, no_reranking,
     )
     _init_background(project_path)

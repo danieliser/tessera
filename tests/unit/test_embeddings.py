@@ -459,6 +459,81 @@ class TestCreateEmbeddingClient:
             assert client is None
 
 
+class TestHTTPReranker:
+    """Test HTTPReranker with mocked httpx."""
+
+    @patch.object(httpx.Client, 'post')
+    def test_rerank_basic(self, mock_post):
+        """Test basic HTTP reranking."""
+        from tessera.embeddings import HTTPReranker
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.raise_for_status = Mock()
+        mock_response.json.return_value = {
+            "results": [
+                {"index": 2, "relevance_score": 0.95},
+                {"index": 0, "relevance_score": 0.80},
+            ]
+        }
+        mock_post.return_value = mock_response
+
+        reranker = HTTPReranker(endpoint="http://localhost:8800/v1/rerank", model="test")
+        result = reranker.rerank("query", ["doc1", "doc2", "doc3"], top_k=2)
+
+        assert len(result) == 2
+        assert result[0] == (2, 0.95)
+        assert result[1] == (0, 0.80)
+        reranker.close()
+
+    @patch.object(httpx.Client, 'post')
+    def test_rerank_sends_correct_payload(self, mock_post):
+        """Test that correct payload is sent to the endpoint."""
+        from tessera.embeddings import HTTPReranker
+        mock_response = Mock()
+        mock_response.raise_for_status = Mock()
+        mock_response.json.return_value = {"results": []}
+        mock_post.return_value = mock_response
+
+        reranker = HTTPReranker(endpoint="http://localhost:8800/v1/rerank", model="jina-reranker")
+        reranker.rerank("test query", ["doc1", "doc2"], top_k=5)
+
+        call_json = mock_post.call_args[1]["json"]
+        assert call_json["query"] == "test query"
+        assert call_json["documents"] == ["doc1", "doc2"]
+        assert call_json["top_n"] == 5
+        assert call_json["model"] == "jina-reranker"
+        reranker.close()
+
+    def test_rerank_empty_documents(self):
+        """Test reranking empty document list."""
+        from tessera.embeddings import HTTPReranker
+        reranker = HTTPReranker()
+        result = reranker.rerank("query", [])
+        assert result == []
+        reranker.close()
+
+    @patch.object(httpx.Client, 'post')
+    def test_rerank_endpoint_error_returns_fallback(self, mock_post):
+        """Test graceful fallback on endpoint error."""
+        from tessera.embeddings import HTTPReranker
+        mock_post.side_effect = httpx.RequestError("Connection failed")
+
+        reranker = HTTPReranker()
+        result = reranker.rerank("query", ["doc1", "doc2"], top_k=2)
+
+        # Should return fallback indices instead of raising
+        assert len(result) == 2
+        assert result[0][0] == 0
+        assert result[1][0] == 1
+        reranker.close()
+
+    def test_context_manager(self):
+        """Test context manager support."""
+        from tessera.embeddings import HTTPReranker
+        with HTTPReranker() as r:
+            assert r is not None
+
+
 class TestCreateReranker:
     """Test the create_reranker factory."""
 
@@ -466,11 +541,23 @@ class TestCreateReranker:
         from tessera.embeddings import create_reranker
         assert create_reranker(enabled=False) is None
 
-    def test_http_provider(self):
+    def test_http_with_endpoint(self):
+        from tessera.embeddings import create_reranker, HTTPReranker
+        reranker = create_reranker(provider="http", reranking_endpoint="http://localhost:8800/v1/rerank")
+        assert isinstance(reranker, HTTPReranker)
+        reranker.close()
+
+    def test_http_without_endpoint(self):
         from tessera.embeddings import create_reranker
         assert create_reranker(provider="http") is None
 
+    def test_auto_with_endpoint(self):
+        from tessera.embeddings import create_reranker, HTTPReranker
+        reranker = create_reranker(provider="auto", reranking_endpoint="http://localhost:8800/v1/rerank")
+        assert isinstance(reranker, HTTPReranker)
+        reranker.close()
+
     def test_no_fastembed(self):
         from tessera.embeddings import create_reranker
-        with patch.dict("sys.modules", {"fastembed": None}):
+        with patch.dict("sys.modules", {"fastembed": None, "fastembed.rerank": None, "fastembed.rerank.cross_encoder": None}):
             assert create_reranker(provider="auto") is None

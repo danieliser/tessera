@@ -129,7 +129,11 @@ class IndexerPipeline:
             # Skip hidden dirs, node_modules, vendor, .git, .tessera
             dirs[:] = [
                 d for d in dirs
-                if not d.startswith('.') and d not in ('node_modules', 'vendor', '__pycache__', '.tessera')
+                if not d.startswith('.') and d not in (
+                    'node_modules', 'vendor', '__pycache__', '.tessera',
+                    'site', 'dist', 'build', '_build', '.next', '.output', 'out',
+                    'scripts',
+                )
             ]
             for f in filenames:
                 # Skip TypeScript declaration files — generated from source .ts

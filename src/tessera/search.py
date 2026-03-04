@@ -98,8 +98,8 @@ BM25_STRONG_SIGNAL_GAP = 0.15
 
 # Per-list weights for weighted RRF fusion
 DEFAULT_RRF_WEIGHTS = {
-    "keyword": 1.5,
-    "semantic": 1.0,
+    "keyword": 1.0,
+    "semantic": 1.2,
     "graph": 0.8,
 }
 
@@ -685,7 +685,7 @@ def hybrid_search(
     # keyword match is very high confidence (top score >= 0.85 with >= 0.15 gap)
     if keyword_results and bm25_strong_signal_check(keyword_results):
         logger.debug("BM25 short-circuit: strong signal, skipping semantic/PPR")
-        weights = [effective_weights.get("keyword", 1.5)]
+        weights = [effective_weights.get("keyword", 1.0)]
         merged = weighted_rrf_merge(ranked_lists, weights=weights)
         results = []
         for item in merged[:limit]:

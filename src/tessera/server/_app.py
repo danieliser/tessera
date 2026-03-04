@@ -21,6 +21,7 @@ def create_server(
     embedding_model: str | None = None,
     embedding_provider: str = "auto",
     reranking_model: str | None = None,
+    reranking_endpoint: str | None = None,
     no_reranking: bool = False,
 ) -> FastMCP:
     """Create and configure the MCP server (synchronous, for tests and CLI).
@@ -30,7 +31,7 @@ def create_server(
     """
     _init_state(
         project_path, global_db_path, embedding_endpoint, embedding_model,
-        embedding_provider, reranking_model, no_reranking,
+        embedding_provider, reranking_model, reranking_endpoint, no_reranking,
     )
     mcp = FastMCP("tessera")
     register_tools(mcp)
@@ -55,12 +56,13 @@ def _create_hmr_app() -> FastMCP:
         embedding_model = os.environ.get("TESSERA_EMBEDDING_MODEL")
         embedding_provider = os.environ.get("TESSERA_EMBEDDING_PROVIDER", "auto")
         reranking_model = os.environ.get("TESSERA_RERANKING_MODEL")
+        reranking_endpoint = os.environ.get("TESSERA_RERANKING_ENDPOINT")
         no_reranking = os.environ.get("TESSERA_NO_RERANKING", "").lower() in ("1", "true", "yes")
 
         # Fast: DB connections and project lock (~10ms)
         _init_essential(
             project_path, global_db_path, embedding_endpoint, embedding_model,
-            embedding_provider, reranking_model, no_reranking,
+            embedding_provider, reranking_model, reranking_endpoint, no_reranking,
         )
         logger.info("Tessera server ready (essential init complete)")
 
@@ -86,6 +88,7 @@ async def run_server(
     embedding_model: str | None = None,
     embedding_provider: str = "auto",
     reranking_model: str | None = None,
+    reranking_endpoint: str | None = None,
     no_reranking: bool = False,
 ) -> int:
     """Run the MCP server on stdio transport."""
@@ -95,7 +98,7 @@ async def run_server(
 
     mcp = create_server(
         project_path, global_db_path, embedding_endpoint, embedding_model,
-        embedding_provider, reranking_model, no_reranking,
+        embedding_provider, reranking_model, reranking_endpoint, no_reranking,
     )
 
     try:

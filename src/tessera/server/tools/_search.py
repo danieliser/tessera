@@ -62,7 +62,10 @@ def register_search_tools(mcp: FastMCP) -> None:
             query: Search query. Supports prefix syntax: "lex:query", "vec:query", "hyde:query".
             limit: Max results (default 10).
             filter_language: Filter by programming language (e.g., "python", "typescript").
-            source_type: Filter by content type — "code" or "markdown".
+            source_type: Filter by content type — "code", "markdown", "text", "yaml",
+                "json", "xml", "html", "asset". Use "code" to exclude non-code files
+                (README, docs, config) that often match keywords but aren't source code.
+                Recommended when results contain too much noise from documentation files.
             output_format: Result format — "json" (default), "csv", "markdown", or "files".
             search_mode: Override search list routing — "lex", "vec", "hyde", or "lex,vec".
             advanced_fts: Enable FTS5 operators (phrases, NOT, *, NEAR). Default False.
