@@ -82,6 +82,7 @@ nav:
   - Code Intelligence: code-intelligence.md
   - Multi-Project Federation: multi-project.md
   - Indexing & Maintenance: indexing.md
+  - Benchmarks: benchmarks.md
   - Security & Access Control: security.md
 
 plugins:
