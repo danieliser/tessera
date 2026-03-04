@@ -281,7 +281,7 @@ class HTTPReranker:
 class FastembedReranker:
     """Cross-encoder reranker using fastembed's TextCrossEncoder."""
 
-    DEFAULT_MODEL = "jinaai/jina-reranker-v2-base-multilingual"
+    DEFAULT_MODEL = "jinaai/jina-reranker-v1-tiny-en"
 
     def __init__(self, model_name: str | None = None):
         from fastembed.rerank.cross_encoder import TextCrossEncoder
