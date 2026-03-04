@@ -53,15 +53,31 @@ HTTP_MODELS = {
     "qwen3": ("qwen3-embed", "Qwen3-1024d"),
 }
 
-# Local fastembed models
+# Local fastembed models — ordered by size tier
 FASTEMBED_MODELS = {
+    # ~23-90MB tier (ultra-compact)
+    "arctic-xs": ("Snowflake/snowflake-arctic-embed-xs", "Arctic-XS-384d", 90),
+    "minilm": ("sentence-transformers/all-MiniLM-L6-v2", "MiniLM-L6-384d", 90),
+    # ~67-130MB tier (small)
     "bge-small": ("BAAI/bge-small-en-v1.5", "BGE-small-384d", 67),
-    "arctic": ("Snowflake/snowflake-arctic-embed-xs", "Arctic-XS-384d", 23),
+    "nomic-q": ("nomic-ai/nomic-embed-text-v1.5-Q", "Nomic-Q-768d", 130),
+    "arctic-s": ("snowflake/snowflake-arctic-embed-s", "Arctic-S-384d", 130),
+    "jina-small": ("jinaai/jina-embeddings-v2-small-en", "Jina-small-512d", 120),
+    # ~210-440MB tier (base)
+    "bge-base": ("BAAI/bge-base-en-v1.5", "BGE-base-768d", 210),
+    "arctic-m": ("snowflake/snowflake-arctic-embed-m", "Arctic-M-768d", 430),
+    "gte-base": ("thenlper/gte-base", "GTE-base-768d", 440),
+    # ~520-640MB tier (large / code-specialized)
+    "nomic": ("nomic-ai/nomic-embed-text-v1.5", "Nomic-768d", 520),
+    "jina-code": ("jinaai/jina-embeddings-v2-base-code", "Jina-Code-768d", 640),
+    "mxbai-large": ("mixedbread-ai/mxbai-embed-large-v1", "MxBAI-large-1024d", 640),
 }
 
 FASTEMBED_RERANKERS = {
+    "ms-marco": ("Xenova/ms-marco-MiniLM-L-6-v2", "MiniLM-L6-reranker", 80),
+    "ms-marco-12": ("Xenova/ms-marco-MiniLM-L-12-v2", "MiniLM-L12-reranker", 120),
     "jina-tiny": ("jinaai/jina-reranker-v1-tiny-en", "Jina-tiny-reranker", 130),
-    "ms-marco": ("Xenova/ms-marco-MiniLM-L-6-v2", "MiniLM-reranker", 80),
+    "jina-turbo": ("jinaai/jina-reranker-v1-turbo-en", "Jina-turbo-reranker", 150),
 }
 
 QUERIES = [

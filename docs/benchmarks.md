@@ -11,34 +11,126 @@ Real-world search quality measurements on a production PHP codebase: [Popup Make
 - **MRR** (Mean Reciprocal Rank): How high the correct file ranks on average. 1.0 = always rank 1.
 - **Top-K Accuracy**: Percentage of queries where the correct file appears in the top K results.
 
-## Embedding Model Comparison
+## Recommended Configurations
 
-All models tested with VEC+code mode (semantic search, code files only) and VEC+rerank where a reranker is available.
+### Zero-Config Default (~200MB)
 
-### With Reranker (Best Mode)
+```bash
+pip install tessera-idx[embed]
+tessera index /path/to/project
+```
 
-| Setup | Embedding | Reranker | Download | MRR | Top-1 | Top-3 | Top-10 |
-|-------|-----------|---------|----------|-----|-------|-------|--------|
-| Gateway + rerank | Nomic 768d | Jina reranker | Server required | **0.854** | **75%** | **95%** | **100%** |
-| Gateway + rerank | Qwen3 1024d | Jina reranker | Server required | 0.825 | 70% | 100% | 100% |
-| Local ~200MB | BGE-small 384d | Jina-tiny reranker | ~197MB | 0.739 | 60% | 85% | 95% |
-| Local ~100MB | Arctic-XS 384d | MiniLM reranker | ~103MB | 0.649 | 50% | 65% | 95% |
+Uses **BGE-small-en-v1.5** (67MB, 384d) + **Jina-reranker-v1-tiny** (130MB). Total ~200MB downloaded on first run. No GPU, no server, no config.
 
-### Without Reranker (Embedding Only)
+**Expected quality:** 0.739 MRR, 85% Top-3, 95% Top-10.
 
-| Setup | Embedding | Download | MRR | Top-1 | Top-3 | Top-10 |
-|-------|-----------|----------|-----|-------|-------|--------|
-| Gateway | Nomic 768d | Server required | 0.696 | 55% | 75% | 100% |
-| Local ~67MB | BGE-small 384d | ~67MB | 0.609 | 45% | 80% | 95% |
-| Gateway | Qwen3 1024d | Server required | 0.615 | 45% | 70% | 100% |
-| Local ~23MB | Arctic-XS 384d | ~23MB | 0.626 | 45% | 75% | 90% |
+### Quality Local (~340MB)
 
-**Key findings:**
+```bash
+tessera index /path/to/project \
+  --embedding-model BAAI/bge-base-en-v1.5
+```
 
-- Cross-encoder reranking is the single biggest quality lever (+0.158 MRR over VEC-only).
-- The 200MB local stack (BGE-small + Jina-tiny) achieves 86% of the gateway's best score with zero server setup.
-- Higher embedding dimensions (1024d Qwen3) do not beat lower dimensions (768d Nomic) — model training quality matters more than vector size.
-- The 100MB ultra-compact tier drops too far — the reranker cannot compensate for weak embeddings.
+Uses **BGE-base-en-v1.5** (210MB, 768d) + **Jina-reranker-v1-tiny** (130MB).
+
+**Expected quality:** 0.766 MRR, 85% Top-3, 100% Top-10.
+
+### Maximum Local (~590MB)
+
+```bash
+tessera index /path/to/project \
+  --embedding-model thenlper/gte-base \
+  --reranking-model jinaai/jina-reranker-v1-turbo-en
+```
+
+Uses **GTE-base** (440MB, 768d) + **Jina-reranker-v1-turbo** (150MB). Matches gateway-quality scores with zero server setup.
+
+**Expected quality:** 0.825 MRR, 90% Top-3, 100% Top-10.
+
+### Maximum Quality (model server)
+
+Run an embedding + reranker server (e.g., LM Studio, vLLM, or a local gateway):
+
+```bash
+tessera index /path/to/project \
+  --embedding-endpoint http://localhost:8800/v1/embeddings \
+  --embedding-model nomic-embed
+```
+
+With **Nomic-embed-text** (768d) + Jina cross-encoder reranking via HTTP.
+
+**Expected quality:** 0.854 MRR, 95% Top-3, 100% Top-10.
+
+---
+
+## Full Embedding Model Comparison
+
+All 12 fastembed-compatible models tested with VEC+code mode (semantic search, code files only), sorted by reranked MRR. Reranker: Jina-reranker-v1-tiny (130MB) unless noted.
+
+| Model | Size | Dim | Index Time | VEC MRR | Top-1 | Top-3 | Top-10 | +Rerank MRR | Top-1 | Top-3 | Top-10 |
+|-------|------|-----|-----------|---------|-------|-------|--------|-------------|-------|-------|--------|
+| **GTE-base** | 440MB | 768d | 183s | 0.696 | 55% | 80% | 100% | 0.743 | 60% | 85% | 100% |
+| **BGE-small** | 67MB | 384d | 64s | 0.609 | 45% | 80% | 95% | 0.739 | 60% | 85% | 95% |
+| **BGE-base** | 210MB | 768d | 187s | 0.621 | 45% | 85% | 90% | **0.766** | 65% | 85% | 100% |
+| Jina-Code | 640MB | 768d | 1109s | 0.475 | 35% | 50% | 70% | 0.716 | 55% | 85% | 95% |
+| Arctic-XS | 90MB | 384d | 32s | 0.626 | 45% | 75% | 90% | 0.704 | 60% | 70% | 95% |
+| Arctic-S | 130MB | 384d | 59s | 0.623 | 40% | 85% | 100% | 0.704 | 55% | 80% | 100% |
+| Arctic-M | 430MB | 768d | 182s | 0.490 | 35% | 55% | 80% | 0.645 | 55% | 65% | 85% |
+| MxBAI-large | 640MB | 1024d | 706s | 0.592 | 40% | 80% | 90% | 0.625 | 45% | 75% | 95% |
+| Jina-small | 120MB | 512d | 195s | 0.440 | 30% | 55% | 75% | 0.617 | 50% | 70% | 80% |
+| MiniLM-L6 | 90MB | 384d | 21s | 0.422 | 25% | 50% | 80% | 0.609 | 45% | 70% | 90% |
+| Nomic-full | 520MB | 768d | 1011s | 0.401 | 30% | 40% | 65% | 0.468 | 35% | 55% | 70% |
+| Nomic-Q | 130MB | 768d | 790s | 0.346 | 25% | 40% | 50% | 0.399 | 30% | 45% | 60% |
+
+Gateway models (HTTP endpoint required):
+
+| Model | Dim | VEC MRR | Top-1 | Top-3 | Top-10 | +Rerank MRR | Top-1 | Top-3 | Top-10 |
+|-------|-----|---------|-------|-------|--------|-------------|-------|-------|--------|
+| **Nomic-embed-text** | 768d | 0.696 | 55% | 75% | 100% | **0.854** | 75% | 95% | 100% |
+| Qwen3-embed | 1024d | 0.615 | 45% | 70% | 100% | 0.825 | 70% | 100% | 100% |
+
+## Cross-Test: Embedder x Reranker Matrix
+
+The top 4 local embedders tested against all 4 rerankers. The best reranker depends on which embedder you use.
+
+| Embedder | Reranker | Total Size | MRR | Top-1 | Top-3 | Top-10 |
+|----------|----------|------------|-----|-------|-------|--------|
+| GTE-base 768d | Jina-turbo (150MB) | 590MB | **0.825** | 70% | 90% | 100% |
+| GTE-base 768d | MiniLM-L12 (120MB) | 560MB | 0.806 | 70% | 95% | 100% |
+| GTE-base 768d | MiniLM-L6 (80MB) | 520MB | 0.795 | 70% | 85% | 100% |
+| BGE-base 768d | Jina-tiny (130MB) | 340MB | 0.766 | 65% | 85% | 100% |
+| GTE-base 768d | Jina-tiny (130MB) | 570MB | 0.743 | 60% | 85% | 100% |
+| BGE-small 384d | Jina-tiny (130MB) | 197MB | 0.739 | 60% | 85% | 95% |
+| BGE-base 768d | Jina-turbo (150MB) | 360MB | 0.731 | 55% | 95% | 100% |
+| BGE-base 768d | MiniLM-L12 (120MB) | 330MB | 0.726 | 60% | 90% | 100% |
+| BGE-small 384d | MiniLM-L12 (120MB) | 187MB | 0.721 | 60% | 85% | 95% |
+| BGE-base 768d | MiniLM-L6 (80MB) | 290MB | 0.718 | 60% | 85% | 100% |
+| BGE-small 384d | Jina-turbo (150MB) | 217MB | 0.708 | 55% | 85% | 95% |
+| BGE-small 384d | MiniLM-L6 (80MB) | 147MB | 0.703 | 60% | 75% | 95% |
+
+!!! note "Reranker interaction matters"
+    Jina-tiny is the best reranker for BGE models (0.739, 0.766) but the *worst* for GTE-base (0.743 vs 0.825 with Jina-turbo). Always cross-test your specific combination.
+
+## Reranker Comparison
+
+All rerankers tested with GTE-base (768d) embeddings.
+
+| Reranker | Size | MRR | Top-1 | Top-3 | Top-10 |
+|----------|------|-----|-------|-------|--------|
+| **Jina-turbo** | 150MB | **0.825** | 70% | 90% | 100% |
+| MiniLM-L12 | 120MB | 0.806 | 70% | 95% | 100% |
+| MiniLM-L6 | 80MB | 0.795 | 70% | 85% | 100% |
+| Jina-tiny | 130MB | 0.743 | 60% | 85% | 100% |
+
+## Key Findings
+
+- **Cross-encoder reranking is the single biggest quality lever.** +0.13-0.16 MRR over embedding-only search across all models.
+- **Bigger is NOT better for local ONNX models.** Nomic-full (520MB) and MxBAI-large (640MB) scored worse than BGE-small (67MB). ONNX quantization and model architecture matter more than parameter count.
+- **The 200MB default stack (BGE-small + Jina-tiny) is the sweet spot for zero-config.** 87% of the gateway's best score, zero server setup, fast indexing (64s).
+- **590MB gets you gateway-level quality locally.** GTE-base + Jina-turbo hits 0.825 MRR — matching the Qwen3 gateway setup.
+- **Higher dimensions don't guarantee better results.** BGE-small (384d) outperforms MxBAI-large (1024d). Model training quality dominates.
+- **Nomic ONNX quantized variants perform poorly.** The fastembed Nomic-Q (0.399 MRR) is dramatically worse than Nomic via HTTP gateway (0.854). The quantization destroys quality for this model.
+- **Reranker-embedder interaction is real.** Jina-tiny pairs best with BGE models; Jina-turbo pairs best with GTE. Always cross-test.
 
 ## Search Mode Comparison
 
@@ -71,40 +163,28 @@ PageRank-based ranking uses the code's reference graph (who-calls-what) to boost
 | Newsletter AJAX (`Subscribe.php`) | rank 9 | rank 7 | Weak structural signal |
 | Scheduling (`scheduling.php`) | rank 4 | rank 6 | PPR noise (gated in current build) |
 
-## Recommended Configuration
-
-### Zero-Config (pip install)
-
-```bash
-pip install tessera-idx[embed]
-tessera index /path/to/project
-```
-
-Uses BGE-small-en-v1.5 (67MB, 384d) + Jina-reranker-v1-tiny (130MB). Total ~200MB downloaded on first run. No GPU, no server, no config.
-
-**Expected quality:** 0.739 MRR, 85% Top-3, 95% Top-10.
-
-### Maximum Quality (model server)
-
-Run an embedding + reranker server (e.g., LM Studio, vLLM, or a local gateway):
-
-```bash
-tessera index /path/to/project \
-  --embedding-endpoint http://localhost:8800/v1/embeddings \
-  --embedding-model nomic-embed
-```
-
-With Nomic-embed-text (768d) + Jina cross-encoder reranking.
-
-**Expected quality:** 0.854 MRR, 95% Top-3, 100% Top-10.
-
 ## Reproducing
+
+All benchmarks are fully reproducible using the scripts in the `scripts/` directory.
 
 ```bash
 # Self-benchmark (indexes Tessera's own codebase)
 uv run python scripts/benchmark_quick.py
 
-# Full PM benchmark (requires Popup Maker source)
-uv run python scripts/benchmark_pm.py --all              # gateway models
-uv run python scripts/benchmark_pm.py --provider fastembed --all  # local models
+# Full PM benchmark — single model (requires Popup Maker source)
+uv run python scripts/benchmark_pm.py --all              # gateway models (HTTP endpoint)
+uv run python scripts/benchmark_pm.py --provider fastembed --all  # local fastembed models
+
+# Batch benchmark — all 12 embedding models + 4 rerankers
+uv run python scripts/benchmark_all_models.py              # embedding models only
+uv run python scripts/benchmark_all_models.py --rerankers   # + reranker comparison
+
+# Cross-test matrix — top embedders × all rerankers
+uv run python scripts/benchmark_cross.py
 ```
+
+### Requirements
+
+- **Gateway benchmarks**: Requires an OpenAI-compatible embedding endpoint (e.g., LM Studio, vLLM) at `http://localhost:8800/v1/embeddings`
+- **Local benchmarks**: Requires `pip install tessera-idx[embed]` (installs fastembed). Models auto-download on first run.
+- **PM benchmark**: Requires Popup Maker core + Pro source code at `~/Projects/ProContent/ProductCode/popup-maker{,-pro}`
