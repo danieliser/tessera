@@ -765,25 +765,28 @@ def hybrid_search(
         except Exception:
             semantic_results = []
 
-    # 3. NEW: PPR search (graph-aware ranking)
+    # 3. PPR search (graph-aware ranking) — only when query targets symbols
     if graph and not graph.is_sparse_fallback():
         try:
-            # Identify seed symbols from keyword/semantic results
-            seed_symbol_ids = set()
+            # Gate: check if query terms match actual symbol names in the DB.
+            # PPR boosts structurally-central code, which is only useful when
+            # the query is about specific symbols/APIs, not conceptual text.
+            query_tokens = set(re.findall(r'[A-Za-z_]\w+', query.lower()))
+            matched_symbols = db.conn.execute(
+                "SELECT COUNT(*) FROM symbols WHERE LOWER(name) IN ({})".format(
+                    ",".join("?" for _ in query_tokens)
+                ),
+                list(query_tokens),
+            ).fetchone()[0] if query_tokens else 0
 
-            # Extract symbol IDs from keyword results
-            for result in keyword_results:
-                chunk = db.get_chunk(result["id"])
-                if chunk and chunk.get("symbol_ids"):
-                    try:
-                        sids = json.loads(chunk["symbol_ids"])
-                        seed_symbol_ids.update(sids)
-                    except (json.JSONDecodeError, TypeError):
-                        pass
+            if matched_symbols == 0:
+                logger.debug("PPR skipped: no query tokens match symbol names")
+                seed_symbol_ids = set()
+            else:
+                # Identify seed symbols from keyword/semantic results
+                seed_symbol_ids = set()
 
-            # Extract symbol IDs from semantic results
-            if semantic_results:
-                for result in semantic_results:
+                for result in keyword_results:
                     chunk = db.get_chunk(result["id"])
                     if chunk and chunk.get("symbol_ids"):
                         try:
@@ -791,6 +794,16 @@ def hybrid_search(
                             seed_symbol_ids.update(sids)
                         except (json.JSONDecodeError, TypeError):
                             pass
+
+                if semantic_results:
+                    for result in semantic_results:
+                        chunk = db.get_chunk(result["id"])
+                        if chunk and chunk.get("symbol_ids"):
+                            try:
+                                sids = json.loads(chunk["symbol_ids"])
+                                seed_symbol_ids.update(sids)
+                            except (json.JSONDecodeError, TypeError):
+                                pass
 
             if seed_symbol_ids:
                 # Compute PPR from seeds
