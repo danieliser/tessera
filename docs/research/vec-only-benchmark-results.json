@@ -1,0 +1,678 @@
+{
+  "LEX-only": [
+    {
+      "desc": "Core hybrid search",
+      "top1": false,
+      "top3": false,
+      "top5": false,
+      "top10": false,
+      "mrr": 0.0,
+      "top_score": 0.02459016393442623,
+      "top_file": "index.html",
+      "top3_files": [
+        "index.html",
+        "index.html",
+        "search-advanced.md"
+      ]
+    },
+    {
+      "desc": "Embedding client",
+      "top1": true,
+      "top3": true,
+      "top5": true,
+      "top10": true,
+      "mrr": 1.0,
+      "top_score": 0.02459016393442623,
+      "top_file": "test_embeddings.py",
+      "top3_files": [
+        "test_embeddings.py",
+        "benchmark_embeddings.py",
+        "CLAUDE.md"
+      ]
+    },
+    {
+      "desc": "Parser orchestration",
+      "top1": false,
+      "top3": false,
+      "top5": false,
+      "top10": false,
+      "mrr": 0.0,
+      "top_score": 0.02459016393442623,
+      "top_file": "benchmark_embeddings.py",
+      "top3_files": [
+        "benchmark_embeddings.py",
+        "search_index.json"
+      ]
+    },
+    {
+      "desc": "Auth/scope system",
+      "top1": false,
+      "top3": false,
+      "top5": false,
+      "top10": false,
+      "mrr": 0.0,
+      "top_score": 0.02459016393442623,
+      "top_file": "benchmark_embeddings.py",
+      "top3_files": [
+        "benchmark_embeddings.py",
+        "search_index.json"
+      ]
+    },
+    {
+      "desc": "Incremental indexer",
+      "top1": false,
+      "top3": false,
+      "top5": false,
+      "top10": false,
+      "mrr": 0.0,
+      "top_score": 0.02459016393442623,
+      "top_file": "index.html",
+      "top3_files": [
+        "index.html",
+        "index.html",
+        "indexing.md"
+      ]
+    },
+    {
+      "desc": "FTS5 integration",
+      "top1": false,
+      "top3": false,
+      "top5": false,
+      "top10": false,
+      "mrr": 0.0,
+      "top_score": 0.02459016393442623,
+      "top_file": "index.html",
+      "top3_files": [
+        "index.html",
+        "benchmark_embeddings.py",
+        "index.md"
+      ]
+    },
+    {
+      "desc": "RRF algorithm",
+      "top1": false,
+      "top3": true,
+      "top5": true,
+      "top10": true,
+      "mrr": 0.3333333333333333,
+      "top_score": 0.02459016393442623,
+      "top_file": "index.html",
+      "top3_files": [
+        "index.html",
+        "index.html",
+        "search.py"
+      ]
+    },
+    {
+      "desc": "FAISS index management",
+      "top1": false,
+      "top3": false,
+      "top5": false,
+      "top10": false,
+      "mrr": 0.0,
+      "top_score": 0.02459016393442623,
+      "top_file": "search.py",
+      "top3_files": [
+        "search.py",
+        "index.html",
+        "benchmark_embeddings.py"
+      ]
+    },
+    {
+      "desc": "MCP server setup",
+      "top1": false,
+      "top3": false,
+      "top5": false,
+      "top10": false,
+      "mrr": 0.0,
+      "top_score": 0.02459016393442623,
+      "top_file": "index.html",
+      "top3_files": [
+        "index.html",
+        "__init__.py",
+        "benchmark_embeddings.py"
+      ]
+    },
+    {
+      "desc": "PPR/graph ranking",
+      "top1": false,
+      "top3": false,
+      "top5": false,
+      "top10": false,
+      "mrr": 0.0,
+      "top_score": 0.02459016393442623,
+      "top_file": "benchmark_embeddings.py",
+      "top3_files": [
+        "benchmark_embeddings.py",
+        "index.html",
+        "spec-v2.md"
+      ]
+    },
+    {
+      "desc": "Code chunking",
+      "top1": false,
+      "top3": false,
+      "top5": false,
+      "top10": false,
+      "mrr": 0.0,
+      "top_score": 0.02459016393442623,
+      "top_file": "benchmark_embeddings.py",
+      "top3_files": [
+        "benchmark_embeddings.py",
+        "search_index.json"
+      ]
+    },
+    {
+      "desc": "Score normalization",
+      "top1": false,
+      "top3": false,
+      "top5": false,
+      "top10": false,
+      "mrr": 0.0,
+      "top_score": 0.02459016393442623,
+      "top_file": "test_search_benchmark.py",
+      "top3_files": [
+        "test_search_benchmark.py",
+        "index.html",
+        "benchmark-search-quality.md"
+      ]
+    },
+    {
+      "desc": "Reranker integration",
+      "top1": true,
+      "top3": true,
+      "top5": true,
+      "top10": true,
+      "mrr": 1.0,
+      "top_score": 0.02459016393442623,
+      "top_file": "benchmark_embeddings.py",
+      "top3_files": [
+        "benchmark_embeddings.py"
+      ]
+    },
+    {
+      "desc": "Snippet extraction",
+      "top1": true,
+      "top3": true,
+      "top5": true,
+      "top10": true,
+      "mrr": 1.0,
+      "top_score": 0.02459016393442623,
+      "top_file": "test_search.py",
+      "top3_files": [
+        "test_search.py",
+        "benchmark_embeddings.py",
+        "snippets.md"
+      ]
+    },
+    {
+      "desc": "Session management",
+      "top1": true,
+      "top3": true,
+      "top5": true,
+      "top10": true,
+      "mrr": 1.0,
+      "top_score": 0.02459016393442623,
+      "top_file": "auth.py",
+      "top3_files": [
+        "auth.py",
+        "security.md",
+        "benchmark_embeddings.py"
+      ]
+    }
+  ],
+  "VEC:BGE-Small": [
+    {
+      "desc": "Core hybrid search",
+      "top1": true,
+      "top3": true,
+      "top5": true,
+      "top10": true,
+      "mrr": 1.0,
+      "top_score": 0.01639344262295082,
+      "top_file": "search.py",
+      "top3_files": [
+        "search.py",
+        "test_search_benchmark.py",
+        "index.html"
+      ]
+    },
+    {
+      "desc": "Embedding client",
+      "top1": false,
+      "top3": false,
+      "top5": false,
+      "top10": false,
+      "mrr": 0.0,
+      "top_score": 0.01639344262295082,
+      "top_file": "test_search_benchmark.py",
+      "top3_files": [
+        "test_search_benchmark.py",
+        "index.html",
+        "index.html"
+      ]
+    },
+    {
+      "desc": "Parser orchestration",
+      "top1": false,
+      "top3": false,
+      "top5": false,
+      "top10": false,
+      "mrr": 0.0,
+      "top_score": 0.01639344262295082,
+      "top_file": "research.md",
+      "top3_files": [
+        "research.md",
+        "index.html",
+        "index.html"
+      ]
+    },
+    {
+      "desc": "Auth/scope system",
+      "top1": false,
+      "top3": false,
+      "top5": false,
+      "top10": false,
+      "mrr": 0.0,
+      "top_score": 0.01639344262295082,
+      "top_file": "index.html",
+      "top3_files": [
+        "index.html",
+        "spec-v1.md",
+        "index.html"
+      ]
+    },
+    {
+      "desc": "Incremental indexer",
+      "top1": false,
+      "top3": false,
+      "top5": false,
+      "top10": false,
+      "mrr": 0.0,
+      "top_score": 0.01639344262295082,
+      "top_file": "research.md",
+      "top3_files": [
+        "research.md",
+        "index.html",
+        "index.html"
+      ]
+    },
+    {
+      "desc": "FTS5 integration",
+      "top1": false,
+      "top3": true,
+      "top5": true,
+      "top10": true,
+      "mrr": 0.3333333333333333,
+      "top_score": 0.01639344262295082,
+      "top_file": "index.html",
+      "top3_files": [
+        "index.html",
+        "search-advanced.md",
+        "search.py"
+      ]
+    },
+    {
+      "desc": "RRF algorithm",
+      "top1": true,
+      "top3": true,
+      "top5": true,
+      "top10": true,
+      "mrr": 1.0,
+      "top_score": 0.01639344262295082,
+      "top_file": "search.py",
+      "top3_files": [
+        "search.py",
+        "index.html",
+        "index.html"
+      ]
+    },
+    {
+      "desc": "FAISS index management",
+      "top1": false,
+      "top3": false,
+      "top5": false,
+      "top10": false,
+      "mrr": 0.0,
+      "top_score": 0.01639344262295082,
+      "top_file": "search.py",
+      "top3_files": [
+        "search.py",
+        "spec-v1.md",
+        "index.html"
+      ]
+    },
+    {
+      "desc": "MCP server setup",
+      "top1": false,
+      "top3": false,
+      "top5": false,
+      "top10": false,
+      "mrr": 0.0,
+      "top_score": 0.01639344262295082,
+      "top_file": "_search.py",
+      "top3_files": [
+        "_search.py",
+        "index.html",
+        "__init__.py"
+      ]
+    },
+    {
+      "desc": "PPR/graph ranking",
+      "top1": false,
+      "top3": false,
+      "top5": false,
+      "top10": false,
+      "mrr": 0.0,
+      "top_score": 0.01639344262295082,
+      "top_file": "index.html",
+      "top3_files": [
+        "index.html",
+        "spec-v2.md",
+        "index.html"
+      ]
+    },
+    {
+      "desc": "Code chunking",
+      "top1": false,
+      "top3": false,
+      "top5": true,
+      "top10": true,
+      "mrr": 0.2,
+      "top_score": 0.01639344262295082,
+      "top_file": "index.html",
+      "top3_files": [
+        "index.html",
+        "search-guide.md",
+        "index.html"
+      ]
+    },
+    {
+      "desc": "Score normalization",
+      "top1": false,
+      "top3": false,
+      "top5": true,
+      "top10": true,
+      "mrr": 0.25,
+      "top_score": 0.01639344262295082,
+      "top_file": "index.html",
+      "top3_files": [
+        "index.html",
+        "test_search_benchmark.py",
+        "index.html"
+      ]
+    },
+    {
+      "desc": "Reranker integration",
+      "top1": false,
+      "top3": true,
+      "top5": true,
+      "top10": true,
+      "mrr": 0.3333333333333333,
+      "top_score": 0.01639344262295082,
+      "top_file": "research.md",
+      "top3_files": [
+        "research.md",
+        "index.html",
+        "embeddings.py"
+      ]
+    },
+    {
+      "desc": "Snippet extraction",
+      "top1": false,
+      "top3": true,
+      "top5": true,
+      "top10": true,
+      "mrr": 0.5,
+      "top_score": 0.01639344262295082,
+      "top_file": "index.html",
+      "top3_files": [
+        "index.html",
+        "search.py",
+        "index.html"
+      ]
+    },
+    {
+      "desc": "Session management",
+      "top1": false,
+      "top3": false,
+      "top5": false,
+      "top10": false,
+      "mrr": 0.0,
+      "top_score": 0.01639344262295082,
+      "top_file": "index.html",
+      "top3_files": [
+        "index.html",
+        "benchmark_embeddings.py",
+        "spec-v1.md"
+      ]
+    }
+  ],
+  "VEC:BGE-Base": [
+    {
+      "desc": "Core hybrid search",
+      "top1": false,
+      "top3": false,
+      "top5": false,
+      "top10": false,
+      "mrr": 0.0,
+      "top_score": 0.01639344262295082,
+      "top_file": "spec-v1.md",
+      "top3_files": [
+        "spec-v1.md",
+        "index.html",
+        "index.html"
+      ]
+    },
+    {
+      "desc": "Embedding client",
+      "top1": false,
+      "top3": false,
+      "top5": false,
+      "top10": false,
+      "mrr": 0.0,
+      "top_score": 0.01639344262295082,
+      "top_file": "index.html",
+      "top3_files": [
+        "index.html",
+        "index.html",
+        "index.html"
+      ]
+    },
+    {
+      "desc": "Parser orchestration",
+      "top1": false,
+      "top3": false,
+      "top5": false,
+      "top10": false,
+      "mrr": 0.0,
+      "top_score": 0.01639344262295082,
+      "top_file": "index.html",
+      "top3_files": [
+        "index.html",
+        "index.html",
+        "benchmark_embeddings.py"
+      ]
+    },
+    {
+      "desc": "Auth/scope system",
+      "top1": false,
+      "top3": false,
+      "top5": false,
+      "top10": false,
+      "mrr": 0.0,
+      "top_score": 0.01639344262295082,
+      "top_file": "index.html",
+      "top3_files": [
+        "index.html",
+        "index.html",
+        "index.html"
+      ]
+    },
+    {
+      "desc": "Incremental indexer",
+      "top1": false,
+      "top3": false,
+      "top5": false,
+      "top10": false,
+      "mrr": 0.0,
+      "top_score": 0.01639344262295082,
+      "top_file": "index.html",
+      "top3_files": [
+        "index.html",
+        "index.html",
+        "index.html"
+      ]
+    },
+    {
+      "desc": "FTS5 integration",
+      "top1": false,
+      "top3": false,
+      "top5": false,
+      "top10": false,
+      "mrr": 0.0,
+      "top_score": 0.01639344262295082,
+      "top_file": "index.html",
+      "top3_files": [
+        "index.html",
+        "index.html",
+        "index.html"
+      ]
+    },
+    {
+      "desc": "RRF algorithm",
+      "top1": false,
+      "top3": false,
+      "top5": false,
+      "top10": false,
+      "mrr": 0.0,
+      "top_score": 0.01639344262295082,
+      "top_file": "research.md",
+      "top3_files": [
+        "research.md",
+        "index.html",
+        "index.html"
+      ]
+    },
+    {
+      "desc": "FAISS index management",
+      "top1": false,
+      "top3": false,
+      "top5": false,
+      "top10": false,
+      "mrr": 0.0,
+      "top_score": 0.01639344262295082,
+      "top_file": "spec-v1.md",
+      "top3_files": [
+        "spec-v1.md",
+        "search-guide.md",
+        "search-guide.md"
+      ]
+    },
+    {
+      "desc": "MCP server setup",
+      "top1": false,
+      "top3": false,
+      "top5": false,
+      "top10": false,
+      "mrr": 0.0,
+      "top_score": 0.01639344262295082,
+      "top_file": "index.html",
+      "top3_files": [
+        "index.html",
+        "index.html",
+        "index.html"
+      ]
+    },
+    {
+      "desc": "PPR/graph ranking",
+      "top1": false,
+      "top3": false,
+      "top5": false,
+      "top10": false,
+      "mrr": 0.0,
+      "top_score": 0.01639344262295082,
+      "top_file": "index.html",
+      "top3_files": [
+        "index.html",
+        "index.html",
+        "index.html"
+      ]
+    },
+    {
+      "desc": "Code chunking",
+      "top1": false,
+      "top3": false,
+      "top5": false,
+      "top10": false,
+      "mrr": 0.0,
+      "top_score": 0.01639344262295082,
+      "top_file": "index.html",
+      "top3_files": [
+        "index.html",
+        "index.html",
+        "index.html"
+      ]
+    },
+    {
+      "desc": "Score normalization",
+      "top1": false,
+      "top3": false,
+      "top5": false,
+      "top10": false,
+      "mrr": 0.0,
+      "top_score": 0.01639344262295082,
+      "top_file": "index.html",
+      "top3_files": [
+        "index.html",
+        "benchmark-search-quality.md",
+        "index.html"
+      ]
+    },
+    {
+      "desc": "Reranker integration",
+      "top1": false,
+      "top3": false,
+      "top5": false,
+      "top10": true,
+      "mrr": 0.16666666666666666,
+      "top_score": 0.01639344262295082,
+      "top_file": "research.md",
+      "top3_files": [
+        "research.md",
+        "index.html",
+        "index.html"
+      ]
+    },
+    {
+      "desc": "Snippet extraction",
+      "top1": false,
+      "top3": false,
+      "top5": false,
+      "top10": false,
+      "mrr": 0.0,
+      "top_score": 0.01639344262295082,
+      "top_file": "index.html",
+      "top3_files": [
+        "index.html",
+        "index.html",
+        "index.html"
+      ]
+    },
+    {
+      "desc": "Session management",
+      "top1": false,
+      "top3": false,
+      "top5": false,
+      "top10": false,
+      "mrr": 0.0,
+      "top_score": 0.01639344262295082,
+      "top_file": "index.html",
+      "top3_files": [
+        "index.html",
+        "index.html",
+        "benchmark_embeddings.py"
+      ]
+    }
+  ]
+}

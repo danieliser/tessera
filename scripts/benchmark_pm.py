@@ -1,11 +1,20 @@
 """Real-world benchmark: Popup Maker (core + Pro) — PHP codebase, ~580 files.
 
 Indexes both popup-maker and popup-maker-pro, then runs 20 search queries with
-known ground-truth file expectations. Tests VEC-only, LEX-only, and HYBRID modes.
+known ground-truth file expectations. Tests multiple search modes with optional
+PPR graph ranking, reranking, and multiple embedding models.
+
+Usage:
+    uv run python scripts/benchmark_pm.py                    # default: Nomic 768d
+    uv run python scripts/benchmark_pm.py --model qwen3      # Qwen3 1536d
+    uv run python scripts/benchmark_pm.py --rerank            # enable reranking
+    uv run python scripts/benchmark_pm.py --all               # all modes + PPR + rerank
 """
 
 from __future__ import annotations
 
+import argparse
+import logging
 import os
 import shutil
 import sys
@@ -17,9 +26,12 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 import numpy as np
 
 from tessera.db import ProjectDB
-from tessera.embeddings import EmbeddingClient
+from tessera.embeddings import EmbeddingClient, HTTPReranker
+from tessera.graph import load_project_graph
 from tessera.indexer import IndexerPipeline
 from tessera.search import SearchType, hybrid_search
+
+logger = logging.getLogger(__name__)
 
 PM_CORE = os.path.expanduser(
     "~/Projects/ProContent/ProductCode/popup-maker"
@@ -28,170 +40,168 @@ PM_PRO = os.path.expanduser(
     "~/Projects/ProContent/ProductCode/popup-maker-pro"
 )
 
-# Ground truth: (query, expected_files, description)
-# expected_files are basenames (or partial) that SHOULD appear in top results.
+EMBEDDING_MODELS = {
+    "nomic": ("nomic-embed", "Nomic-768d"),
+    "qwen3": ("qwen3-embed", "Qwen3-1536d"),
+}
+
 QUERIES = [
     # --- Core popup lifecycle ---
-    (
-        "popup rendering in WordPress footer hook",
-        ["Popups.php"],  # Controllers/Frontend/Popups.php
-        "Frontend rendering",
-    ),
-    (
-        "register popup and popup_theme custom post types",
-        ["PostTypes.php"],
-        "Post type registration",
-    ),
-    (
-        "popup data model with triggers conditions and settings",
-        ["Popup.php"],  # Model/Popup.php
-        "Popup model",
-    ),
+    ("popup rendering in WordPress footer hook", ["Popups.php"], "Frontend rendering"),
+    ("register popup and popup_theme custom post types", ["PostTypes.php"], "Post type registration"),
+    ("popup data model with triggers conditions and settings", ["Popup.php"], "Popup model"),
     # --- Trigger system ---
-    (
-        "singleton registry for popup trigger types",
-        ["Triggers.php"],
-        "Trigger registry",
-    ),
-    (
-        "exit intent mouse detection trigger",
-        ["Triggers.php", "entry--plugin-init.php"],
-        "Exit intent trigger",
-    ),
+    ("singleton registry for popup trigger types", ["Triggers.php"], "Trigger registry"),
+    ("exit intent mouse detection trigger", ["Triggers.php", "entry--plugin-init.php"], "Exit intent trigger"),
     # --- Conditions / targeting ---
-    (
-        "condition callback evaluation for page targeting",
-        ["ConditionCallbacks.php", "Conditions.php"],
-        "Condition callbacks",
-    ),
-    (
-        "check if popup is loadable on current page",
-        ["conditionals.php"],  # functions/popups/conditionals.php
-        "Popup conditionals",
-    ),
+    ("condition callback evaluation for page targeting", ["ConditionCallbacks.php", "Conditions.php"], "Condition callbacks"),
+    ("check if popup is loadable on current page", ["conditionals.php"], "Popup conditionals"),
     # --- Cookies / display frequency ---
-    (
-        "popup cookie expiration session hours days",
-        ["Cookies.php", "PopupCookie.php"],
-        "Cookie system",
-    ),
+    ("popup cookie expiration session hours days", ["Cookies.php", "PopupCookie.php"], "Cookie system"),
     # --- Newsletter / forms ---
-    (
-        "newsletter subscription form AJAX submission handler",
-        ["Newsletters.php", "Subscribe.php"],
-        "Newsletter AJAX",
-    ),
-    (
-        "Gravity Forms integration for popup form submission",
-        ["GravityForms.php"],
-        "Gravity Forms integration",
-    ),
+    ("newsletter subscription form AJAX submission handler", ["Newsletters.php", "Subscribe.php"], "Newsletter AJAX"),
+    ("Gravity Forms integration for popup form submission", ["GravityForms.php"], "Gravity Forms integration"),
     # --- Shortcodes ---
-    (
-        "shortcode to trigger popup on click element",
-        ["PopupTrigger.php"],
-        "Trigger shortcode",
-    ),
-    (
-        "pum_subscribe email subscription shortcode",
-        ["Subscribe.php"],
-        "Subscribe shortcode",
-    ),
+    ("shortcode to trigger popup on click element", ["PopupTrigger.php"], "Trigger shortcode"),
+    ("pum_subscribe email subscription shortcode", ["Subscribe.php"], "Subscribe shortcode"),
     # --- REST API / AJAX ---
-    (
-        "REST API endpoint for license validation",
-        ["RestAPI.php", "License.php"],
-        "License REST API",
-    ),
-    (
-        "AJAX analytics tracking popup open and conversion events",
-        ["Analytics.php"],
-        "Analytics tracking",
-    ),
+    ("REST API endpoint for license validation", ["RestAPI.php", "License.php"], "License REST API"),
+    ("AJAX analytics tracking popup open and conversion events", ["Analytics.php"], "Analytics tracking"),
     # --- Admin ---
-    (
-        "admin settings page for global plugin options",
-        ["Settings.php"],  # Admin/Settings.php
-        "Admin settings",
-    ),
-    (
-        "Gutenberg block editor integration for popups",
-        ["BlockEditor.php"],
-        "Block editor",
-    ),
+    ("admin settings page for global plugin options", ["Settings.php"], "Admin settings"),
+    ("Gutenberg block editor integration for popups", ["BlockEditor.php"], "Block editor"),
     # --- DI / architecture ---
-    (
-        "Pimple dependency injection container service registration",
-        ["Container.php", "Core.php"],
-        "DI container",
-    ),
+    ("Pimple dependency injection container service registration", ["Container.php", "Core.php"], "DI container"),
     # --- Pro features ---
-    (
-        "FluentCRM add tag to contact on popup conversion",
-        ["AddTag.php", "FluentCRM.php"],
-        "FluentCRM tagging",
-    ),
-    (
-        "popup schedule date range recurring daily weekly",
-        ["scheduling.php", "scheduled-actions.php"],
-        "Scheduling",
-    ),
-    (
-        "attribution model calculation for conversion tracking",
-        ["Attribution.php", "Conversions.php"],
-        "Attribution service",
-    ),
+    ("FluentCRM add tag to contact on popup conversion", ["AddTag.php", "FluentCRM.php"], "FluentCRM tagging"),
+    ("popup schedule date range recurring daily weekly", ["scheduling.php", "scheduled-actions.php"], "Scheduling"),
+    ("attribution model calculation for conversion tracking", ["Attribution.php", "Conversions.php"], "Attribution service"),
 ]
 
 
-def run_search(db, client, queries, search_types=None, label=""):
+def evaluate_hits(hit_files: list[str], expected_files: list[str]) -> dict:
+    """Score a single query result against ground truth."""
+    top1 = any(exp in hit_files[0] for exp in expected_files) if hit_files else False
+    top3 = any(any(exp in f for exp in expected_files) for f in hit_files[:3])
+    top5 = any(any(exp in f for exp in expected_files) for f in hit_files[:5])
+    top10 = any(any(exp in f for exp in expected_files) for f in hit_files[:10])
+
+    mrr = 0.0
+    for rank, f in enumerate(hit_files, 1):
+        if any(exp in f for exp in expected_files):
+            mrr = 1.0 / rank
+            break
+
+    return {"top1": top1, "top3": top3, "top5": top5, "top10": top10, "mrr": mrr}
+
+
+def search_both_dbs(
+    query: str,
+    query_embedding: np.ndarray | None,
+    db_core: ProjectDB,
+    db_pro: ProjectDB,
+    graph_core=None,
+    graph_pro=None,
+    search_types=None,
+    src_filter=None,
+    reranker=None,
+) -> list[dict]:
+    """Search both core and pro DBs, merge by score, optionally rerank."""
+    hits_core = hybrid_search(
+        query, query_embedding, db_core,
+        graph=graph_core, limit=10,
+        source_type=src_filter, search_types=search_types,
+        advanced_fts=False, rrf_weights=None,
+    )
+    hits_pro = hybrid_search(
+        query, query_embedding, db_pro,
+        graph=graph_pro, limit=10,
+        source_type=src_filter, search_types=search_types,
+        advanced_fts=False, rrf_weights=None,
+    )
+
+    all_hits = []
+    for h in hits_core:
+        h["_source"] = "core"
+        all_hits.append(h)
+    for h in hits_pro:
+        h["_source"] = "pro"
+        all_hits.append(h)
+    all_hits.sort(
+        key=lambda x: x.get("rrf_score", x.get("score", 0)),
+        reverse=True,
+    )
+
+    # Post-RRF reranking
+    if reranker and all_hits:
+        docs = [h.get("content", "")[:512] for h in all_hits[:20]]
+        reranked = reranker.rerank(query, docs, top_k=10)
+        if reranked and reranked[0][1] > 0:  # non-fallback scores
+            reordered = []
+            for orig_idx, score in reranked:
+                if orig_idx < len(all_hits):
+                    item = all_hits[orig_idx]
+                    item["rerank_score"] = score
+                    reordered.append(item)
+            all_hits = reordered
+
+    return all_hits
+
+
+def run_mode(
+    mode_label: str,
+    search_types,
+    src_filter,
+    client: EmbeddingClient,
+    db_core: ProjectDB,
+    db_pro: ProjectDB,
+    graph_core=None,
+    graph_pro=None,
+    reranker=None,
+) -> list[dict]:
+    """Run all queries for a single mode, return results with timing."""
     results = []
-    for query, expected_files, desc in queries:
-        if search_types and SearchType.VEC in search_types:
-            raw = client.embed_query(query)
-            query_embedding = np.array(raw, dtype=np.float32)
-        elif search_types is None:
-            raw = client.embed_query(query)
-            query_embedding = np.array(raw, dtype=np.float32)
-        else:
-            query_embedding = None
+    total_ms = 0.0
 
-        hits = hybrid_search(
-            query, query_embedding, db,
-            graph=None, limit=10,
-            source_type=None, search_types=search_types,
-            advanced_fts=False, rrf_weights=None,
+    for query, expected_files, desc in QUERIES:
+        needs_embedding = (
+            (search_types and SearchType.VEC in search_types)
+            or search_types is None
         )
+        query_embedding = None
+        if needs_embedding:
+            raw = client.embed_query(query)
+            query_embedding = np.array(raw, dtype=np.float32)
 
-        hit_files = [os.path.basename(h.get("file_path", "")) for h in hits]
+        t0 = time.perf_counter()
+        all_hits = search_both_dbs(
+            query, query_embedding, db_core, db_pro,
+            graph_core, graph_pro, search_types, src_filter, reranker,
+        )
+        elapsed_ms = (time.perf_counter() - t0) * 1000
+        total_ms += elapsed_ms
 
-        top1 = any(exp in hit_files[0] for exp in expected_files) if hits else False
-        top3 = any(any(exp in f for exp in expected_files) for f in hit_files[:3])
-        top5 = any(any(exp in f for exp in expected_files) for f in hit_files[:5])
-        top10 = any(any(exp in f for exp in expected_files) for f in hit_files[:10])
+        hit_files = [os.path.basename(h.get("file_path", "")) for h in all_hits]
+        scores = evaluate_hits(hit_files, expected_files)
+        scores["desc"] = desc
+        scores["top_file"] = hit_files[0] if hit_files else "—"
+        scores["top3_files"] = hit_files[:3]
+        scores["latency_ms"] = elapsed_ms
+        results.append(scores)
 
-        mrr = 0.0
-        for rank, f in enumerate(hit_files, 1):
-            if any(exp in f for exp in expected_files):
-                mrr = 1.0 / rank
-                break
-
-        results.append({
-            "desc": desc, "top1": top1, "top3": top3, "top5": top5, "top10": top10,
-            "mrr": mrr, "top_file": hit_files[0] if hits else "—",
-            "top3_files": hit_files[:3],
-        })
+    avg_ms = total_ms / len(QUERIES)
+    print(f"    {mode_label}: avg {avg_ms:.0f}ms/query")
     return results
 
 
-def print_comparison(all_results, labels):
+def print_comparison(all_results: dict, labels: list[str]):
     n = len(QUERIES)
 
-    print(f"\n{'=' * 80}")
+    print(f"\n{'=' * 100}")
     print("AGGREGATE METRICS")
-    print(f"{'=' * 80}")
+    print(f"{'=' * 100}")
 
-    header = f"{'Metric':<20}" + "".join(f"{l:>20}" for l in labels)
+    header = f"{'Metric':<20}" + "".join(f"{l:>16}" for l in labels)
     print(header)
     print("-" * len(header))
 
@@ -205,19 +215,26 @@ def print_comparison(all_results, labels):
         for label in labels:
             r = all_results[label]
             acc = sum(1 for x in r if x[key]) / n * 100
-            row += f"{acc:>19.0f}%"
+            row += f"{acc:>15.0f}%"
         print(row)
 
     row = f"{'MRR':<20}"
     for label in labels:
         r = all_results[label]
         mrr = sum(x["mrr"] for x in r) / n
-        row += f"{mrr:>20.3f}"
+        row += f"{mrr:>16.3f}"
     print(row)
 
-    print(f"\n{'=' * 80}")
+    row = f"{'Avg Latency (ms)':<20}"
+    for label in labels:
+        r = all_results[label]
+        avg = sum(x["latency_ms"] for x in r) / n
+        row += f"{avg:>16.0f}"
+    print(row)
+
+    print(f"\n{'=' * 100}")
     print("PER-QUERY BREAKDOWN")
-    print(f"{'=' * 80}")
+    print(f"{'=' * 100}")
 
     for i, (_, expected, desc) in enumerate(QUERIES):
         print(f"\n  Q{i+1}: {desc} — expected: {expected}")
@@ -226,165 +243,182 @@ def print_comparison(all_results, labels):
             rank_str = "MISS" if r["mrr"] == 0 else f"rank {int(1/r['mrr'])}"
             marker = "+" if r["top3"] else ("-" if r["top10"] else "X")
             top3 = ", ".join(r["top3_files"])
-            print(f"    [{marker}] {label:<18} {rank_str:<8} [{top3}]")
+            print(f"    [{marker}] {label:<16} {rank_str:<8} [{top3}]")
+
+
+def try_load_graph(db: ProjectDB):
+    """Attempt to load PPR graph for project_id=1 (standalone default)."""
+    try:
+        graph = load_project_graph(db, 1)
+        print(f"    Graph loaded: {graph.n_symbols} symbols, {graph.edge_count} edges"
+              f"{' (SPARSE)' if graph.is_sparse_fallback() else ''}")
+        return graph
+    except (ValueError, Exception) as e:
+        print(f"    Graph load failed: {e}")
+        return None
 
 
 def main():
-    print("=" * 80)
+    parser = argparse.ArgumentParser(description="Popup Maker search benchmark")
+    parser.add_argument("--model", choices=["nomic", "qwen3", "both"], default="nomic",
+                        help="Embedding model to test")
+    parser.add_argument("--rerank", action="store_true", help="Enable reranking")
+    parser.add_argument("--all", action="store_true", help="Run all modes including PPR")
+    parser.add_argument("--quick", action="store_true", help="Only VEC+code and HYBRID+code")
+    args = parser.parse_args()
+
+    print("=" * 100)
     print("Popup Maker Real-World Benchmark (Core + Pro)")
-    print("=" * 80)
+    print("=" * 100)
 
     for path, label in [(PM_CORE, "Core"), (PM_PRO, "Pro")]:
         if not os.path.isdir(path):
             print(f"ERROR: {label} not found at {path}")
             return
 
-    base_dir = tempfile.mkdtemp(prefix="tessera_pm_bench_")
-    print(f"Working dir: {base_dir}")
+    # Determine which embedding models to test
+    if args.model == "both":
+        model_keys = ["nomic", "qwen3"]
+    else:
+        model_keys = [args.model]
 
-    client = EmbeddingClient(
-        endpoint="http://localhost:8800/v1/embeddings",
-        model="nomic-embed",
-    )
-
-    # Index both core and pro into same DB
-    all_results = {}
-    labels = []
-
-    for project_path, project_label in [(PM_CORE, "Core"), (PM_PRO, "Pro")]:
-        model_base = os.path.join(base_dir, project_label.lower())
-        os.makedirs(model_base, exist_ok=True)
-        ProjectDB.base_dir = model_base
-
-        pipeline = IndexerPipeline(
-            project_path=project_path, embedding_client=client
-        )
-        pipeline.register()
-
-        start = time.perf_counter()
-        stats = pipeline.index_project()
-        elapsed = time.perf_counter() - start
-
-        print(
-            f"\n  {project_label}: {stats.files_processed} files, "
-            f"{stats.chunks_created} chunks, {stats.chunks_embedded} embedded "
-            f"in {elapsed:.1f}s"
-        )
-
-    # Use core DB for queries (it has the core files)
-    # Actually, we need to search both. Let's index both into the same project.
-    print("\n--- Indexing combined (Core + Pro) ---")
-    combined_base = os.path.join(base_dir, "combined")
-    os.makedirs(combined_base, exist_ok=True)
-    ProjectDB.base_dir = combined_base
-
-    # Index core
-    pipeline_core = IndexerPipeline(
-        project_path=PM_CORE, embedding_client=client
-    )
-    pipeline_core.register()
-    stats_core = pipeline_core.index_project()
-
-    # Index pro into same DB location but different project
-    pipeline_pro = IndexerPipeline(
-        project_path=PM_PRO, embedding_client=client
-    )
-    pipeline_pro.register()
-    stats_pro = pipeline_pro.index_project()
-
-    total_files = stats_core.files_processed + stats_pro.files_processed
-    total_chunks = stats_core.chunks_created + stats_pro.chunks_created
-    total_embedded = stats_core.chunks_embedded + stats_pro.chunks_embedded
-    print(f"  Combined: {total_files} files, {total_chunks} chunks, {total_embedded} embedded")
-
-    # Open the core DB for searching (pro will be in its own DB)
-    # For a proper search we need to search each DB and merge...
-    # Actually the simpler approach: just search core DB and pro DB separately
-    # and report which finds the expected file.
-
-    # Search core
-    db_core = ProjectDB(PM_CORE)
-    # Search pro
-    db_pro = ProjectDB(PM_PRO)
-
-    modes = [
-        ("VEC-only", [SearchType.VEC], None),
-        ("LEX-only", [SearchType.LEX], None),
-        ("HYBRID", None, None),
-        ("VEC+code", [SearchType.VEC], ["code"]),
-        ("LEX+code", [SearchType.LEX], ["code"]),
-        ("HYBRID+code", None, ["code"]),
-    ]
-
-    for mode_label, search_types, src_filter in modes:
-        print(f"\n  Running {mode_label} queries...")
-        results = []
-        for query, expected_files, desc in QUERIES:
-            if search_types and SearchType.VEC in search_types:
-                raw = client.embed_query(query)
-                query_embedding = np.array(raw, dtype=np.float32)
-            elif search_types is None:
-                raw = client.embed_query(query)
-                query_embedding = np.array(raw, dtype=np.float32)
+    # Check reranker availability
+    reranker = None
+    if args.rerank or args.all:
+        reranker = HTTPReranker(endpoint="http://localhost:8800/v1/rerank", model="jina-reranker")
+        # Quick test
+        try:
+            test = reranker.rerank("test", ["test doc"], top_k=1)
+            if test and test[0][1] > 0:
+                print(f"Reranker: OK (jina-reranker via HTTP)")
             else:
-                query_embedding = None
+                print("Reranker: FALLBACK (endpoint returned zero scores, disabling)")
+                reranker = None
+        except Exception as e:
+            print(f"Reranker: UNAVAILABLE ({e}), disabling")
+            reranker = None
 
-            # Search both DBs
-            hits_core = hybrid_search(
-                query, query_embedding, db_core,
-                graph=None, limit=10,
-                source_type=src_filter, search_types=search_types,
-                advanced_fts=False, rrf_weights=None,
+    for model_key in model_keys:
+        model_name, model_label = EMBEDDING_MODELS[model_key]
+
+        print(f"\n{'#' * 100}")
+        print(f"# Embedding: {model_label} ({model_name})")
+        print(f"{'#' * 100}")
+
+        # Test embedding endpoint
+        client = EmbeddingClient(
+            endpoint="http://localhost:8800/v1/embeddings",
+            model=model_name,
+        )
+        try:
+            test_vec = client.embed_single("test")
+            dim = len(test_vec)
+            print(f"  Embedding: {model_label} — {dim}d vectors")
+        except Exception as e:
+            print(f"  ERROR: {model_label} not available ({e}), skipping")
+            client.close()
+            continue
+
+        base_dir = tempfile.mkdtemp(prefix=f"tessera_pm_{model_key}_")
+        print(f"  Working dir: {base_dir}")
+
+        # Index core
+        core_base = os.path.join(base_dir, "core")
+        os.makedirs(core_base, exist_ok=True)
+        ProjectDB.base_dir = core_base
+
+        pipeline_core = IndexerPipeline(project_path=PM_CORE, embedding_client=client)
+        pipeline_core.register()
+        t0 = time.perf_counter()
+        stats_core = pipeline_core.index_project()
+        core_time = time.perf_counter() - t0
+        print(f"  Core: {stats_core.files_processed} files, {stats_core.chunks_created} chunks, "
+              f"{stats_core.chunks_embedded} embedded in {core_time:.1f}s")
+
+        # Index pro
+        pro_base = os.path.join(base_dir, "pro")
+        os.makedirs(pro_base, exist_ok=True)
+        ProjectDB.base_dir = pro_base
+
+        pipeline_pro = IndexerPipeline(project_path=PM_PRO, embedding_client=client)
+        pipeline_pro.register()
+        t0 = time.perf_counter()
+        stats_pro = pipeline_pro.index_project()
+        pro_time = time.perf_counter() - t0
+        print(f"  Pro: {stats_pro.files_processed} files, {stats_pro.chunks_created} chunks, "
+              f"{stats_pro.chunks_embedded} embedded in {pro_time:.1f}s")
+
+        total = stats_core.files_processed + stats_pro.files_processed
+        print(f"  Total: {total} files indexed")
+
+        # Open DBs
+        ProjectDB.base_dir = core_base
+        db_core = ProjectDB(PM_CORE)
+        ProjectDB.base_dir = pro_base
+        db_pro = ProjectDB(PM_PRO)
+
+        # Load PPR graphs
+        graph_core = None
+        graph_pro = None
+        if args.all:
+            print("\n  Loading PPR graphs...")
+            ProjectDB.base_dir = core_base
+            graph_core = try_load_graph(db_core)
+            ProjectDB.base_dir = pro_base
+            graph_pro = try_load_graph(db_pro)
+
+        # Define modes
+        all_results = {}
+        labels = []
+
+        if args.quick:
+            modes = [
+                ("VEC+code", [SearchType.VEC], ["code"], None, None),
+                ("HYBRID+code", None, ["code"], None, None),
+            ]
+        elif args.all:
+            modes = [
+                ("VEC+code", [SearchType.VEC], ["code"], None, None),
+                ("HYBRID+code", None, ["code"], None, None),
+                ("VEC+PPR", [SearchType.VEC], ["code"], graph_core, graph_pro),
+                ("HYB+PPR", None, ["code"], graph_core, graph_pro),
+            ]
+            if reranker:
+                modes.extend([
+                    ("VEC+rerank", [SearchType.VEC], ["code"], None, None),
+                    ("HYB+rerank", None, ["code"], None, None),
+                    ("VEC+PPR+rr", [SearchType.VEC], ["code"], graph_core, graph_pro),
+                    ("FULL", None, ["code"], graph_core, graph_pro),
+                ])
+        else:
+            modes = [
+                ("VEC-only", [SearchType.VEC], None, None, None),
+                ("LEX-only", [SearchType.LEX], None, None, None),
+                ("HYBRID", None, None, None, None),
+                ("VEC+code", [SearchType.VEC], ["code"], None, None),
+                ("HYBRID+code", None, ["code"], None, None),
+            ]
+
+        print(f"\n  Running {len(modes)} search modes x {len(QUERIES)} queries...")
+
+        for mode_label, search_types, src_filter, gc, gp in modes:
+            rr = reranker if ("rerank" in mode_label or mode_label == "FULL") else None
+            results = run_mode(
+                mode_label, search_types, src_filter, client,
+                db_core, db_pro, gc, gp, rr,
             )
-            hits_pro = hybrid_search(
-                query, query_embedding, db_pro,
-                graph=None, limit=10,
-                source_type=src_filter, search_types=search_types,
-                advanced_fts=False, rrf_weights=None,
-            )
+            all_results[mode_label] = results
+            labels.append(mode_label)
 
-            # Merge and interleave by score
-            all_hits = []
-            for h in hits_core:
-                h["_source"] = "core"
-                all_hits.append(h)
-            for h in hits_pro:
-                h["_source"] = "pro"
-                all_hits.append(h)
-            all_hits.sort(
-                key=lambda x: x.get("rrf_score", x.get("score", 0)),
-                reverse=True,
-            )
+        print_comparison(all_results, labels)
 
-            hit_files = [os.path.basename(h.get("file_path", "")) for h in all_hits]
+        # Cleanup
+        db_core.close()
+        db_pro.close()
+        client.close()
+        ProjectDB.base_dir = None
+        shutil.rmtree(base_dir, ignore_errors=True)
 
-            top1 = any(exp in hit_files[0] for exp in expected_files) if hit_files else False
-            top3 = any(any(exp in f for exp in expected_files) for f in hit_files[:3])
-            top5 = any(any(exp in f for exp in expected_files) for f in hit_files[:5])
-            top10 = any(any(exp in f for exp in expected_files) for f in hit_files[:10])
-
-            mrr = 0.0
-            for rank, f in enumerate(hit_files, 1):
-                if any(exp in f for exp in expected_files):
-                    mrr = 1.0 / rank
-                    break
-
-            results.append({
-                "desc": desc, "top1": top1, "top3": top3, "top5": top5, "top10": top10,
-                "mrr": mrr, "top_file": hit_files[0] if hit_files else "—",
-                "top3_files": hit_files[:3],
-            })
-
-        all_results[mode_label] = results
-        labels.append(mode_label)
-
-    print_comparison(all_results, labels)
-
-    db_core.close()
-    db_pro.close()
-    client.close()
-    ProjectDB.base_dir = None
-    shutil.rmtree(base_dir, ignore_errors=True)
     print("\nDone.")
 
 
