@@ -39,13 +39,75 @@ Tessera exposes file *discovery* (search, symbols, file_context) but doesn't con
 
 **Open questions:** File-level vs directory-level vs pattern-based permissions. Read/write/execute granularity. Advisory locking for concurrent writes. How scope delegation interacts with permission bits. Whether Tessera should *enforce* or just *advise*. Needs a proper design session (/strategize).
 
-### Embedding model validation
+### ~~Embedding model validation~~ — v0.7.x
 
-Testing plan exists for Jina Code Embeddings 1.5B with Matryoshka truncation (1536 to 384d). Target: >95% quality retention, <100ms P95 latency, NDCG >75% with RRF fusion. 4-7 day validation timeline scoped but not started. Nomic 1.5 as fallback for on-device.
+Comprehensive benchmark completed. 12 local fastembed models, 4 rerankers, 4 OpenAI cloud models, 2 gateway models — all cross-tested on 20 ground-truth queries against Popup Maker (611 files, 2574 chunks). Results published in `docs/benchmarks.md`. Default stack: BGE-small (67MB) + Jina-tiny reranker (130MB) = 0.739 MRR at ~200MB. See benchmark scripts in `scripts/`.
 
-### Cross-encoder reranking (from QMD)
+### ~~Cross-encoder reranking~~ — v0.7.x
 
-Post-RRF reranking via cross-encoder model. QMD branch has `reranking.py` (172 lines) with a reranking client. Would improve precision on ambiguous queries. Depends on local model infrastructure.
+Implemented via fastembed's `TextCrossEncoder`. Post-RRF reranking is the single biggest quality lever (+0.13-0.16 MRR). Default: `jinaai/jina-reranker-v1-tiny-en` (130MB). Configurable via `--reranking-model`. Factory: `create_reranker()` in `embeddings.py`.
+
+### ~~PPR symbol-name gate~~ — v0.7.x
+
+PPR graph ranking now gated on symbol-name matching. Query tokens checked against `symbols` table — PPR only fires when query targets actual symbol names, preventing noise on conceptual queries. Improved VEC+PPR from 0.507 to 0.647 MRR.
+
+---
+
+## Search Quality Improvements
+
+Prioritized by expected MRR impact. Based on per-query failure analysis of the PM benchmark (see `scripts/benchmark_pm.py --provider fastembed --all`).
+
+### Chunk metadata enrichment (HIGH — estimated +0.05-0.10 MRR)
+
+Prepend file name, class name, and namespace to each chunk before embedding. Currently chunks are raw code with no context about where they live. Example: prepending `// File: Popups.php, Class: PUM_Popups, Namespace: PopupMaker` gives the embedding model semantic anchors.
+
+**Why:** Q1 (Frontend rendering → Popups.php) fails at rank 5-7 across all modes because the chunk text has no signal connecting "rendering" to "Popups.php". The file name and class name would provide that link.
+
+**Affects:** `src/tessera/indexer/_pipeline.py` — modify chunk text assembly before embedding.
+
+### Hybrid mode RRF weight retuning (MEDIUM — estimated +0.03-0.05 MRR)
+
+Current hybrid mode (keyword + semantic) underperforms VEC-only (0.535 vs 0.609 MRR) because FTS5 tokenization doesn't align with natural language queries against code. Options:
+- Lower keyword weight in hybrid mode (currently 1.0)
+- Use FTS5 only as a fallback when VEC returns weak results
+- Implement query-adaptive mode selection (detect keyword-style vs NL-style queries)
+
+**Why:** Q5 (Exit intent trigger) passes in HYBRID mode (rank 3) but MISS in VEC-only. Some queries benefit from keyword matching. The scoring blend needs work.
+
+### Query expansion / synonym injection (MEDIUM — estimated +0.02-0.05 MRR)
+
+"Exit intent mouse detection trigger" has zero semantic overlap with actual code. A lightweight query expansion step (e.g., mapping "exit intent" → "mouseout", "mouseleave", "ExitIntent") would bridge the vocabulary gap.
+
+**Why:** Q5 is a total MISS in VEC-only — the embedding can't connect natural language concepts to PHP function/class names.
+
+**Approach:** Static synonym map for common code concepts, or LLM-generated query expansion at search time.
+
+### Oversized chunk splitting (LOW-MEDIUM — improves indexing quality)
+
+69 of 2300 chunks exceed 8K chars (up to 60K). These are chunker failures — files that didn't split properly. All embedding models truncate to their context window (512 tokens for BGE, 8K for OpenAI), so most of the content is invisible. Fix the AST chunker to split large functions/classes.
+
+**Why:** Affects both local and cloud model accuracy. OpenAI benchmark may underperform partly due to this.
+
+**Affects:** `src/tessera/chunker.py` — max chunk size enforcement.
+
+### Persistent benchmark storage (LOW — developer experience)
+
+Current benchmark scripts create temp dirs, index, query, then delete everything. Re-running costs full re-indexing time. Store per-model indexes at `~/.tessera/benchmarks/{model-key}/` and skip re-indexing when source hasn't changed.
+
+**Why:** Full 12-model benchmark takes ~2 hours. Iterating on queries or adding models shouldn't require re-indexing existing models.
+
+### Default model upgrade path (LOW — user-facing)
+
+Document and wire upgrade tiers as CLI options:
+- `tessera index /path` — BGE-small + Jina-tiny (197MB, 0.739 MRR)
+- `tessera index /path --quality` — BGE-base + Jina-tiny (340MB, 0.766 MRR)
+- `tessera index /path --max-quality` — GTE-base + Jina-turbo (590MB, 0.825 MRR)
+
+**Affects:** `src/tessera/__main__.py` — add `--quality` / `--max-quality` preset flags.
+
+---
+
+## Other Backlog
 
 ### Content-addressable cache (from QMD)
 
@@ -57,7 +119,7 @@ QMD branch has `config.py` (246 lines) — structured configuration via YAML fil
 
 ### Local model scaffolding (from QMD)
 
-QMD branch has `local_models.py` (339 lines) — scaffolding for running local embedding/reranking models via llama-cpp-python. No actual model loading yet, just the interface.
+QMD branch has `local_models.py` (339 lines) — scaffolding for running local embedding/reranking models via llama-cpp-python. No actual model loading yet, just the interface. Mostly superseded by fastembed integration.
 
 ### Collection membership validation
 
@@ -70,6 +132,10 @@ Deferred from Phase 3. Extract cross-project references from string literals in 
 ### WebP dimension extraction
 
 Deferred from Phase 4.5. Complex VP8/VP8L bitstream parsing for image dimensions. Low priority — PNG, JPEG, GIF, BMP already supported.
+
+### CoIR/CodeSearchNet standard benchmark evaluation
+
+Evaluate Tessera against the CoIR (Code Information Retrieval) benchmark suite or CodeSearchNet to get industry-standard scores comparable to published model leaderboards. Would give us NDCG@10 numbers that mean something to researchers and potential adopters.
 
 ### Phase 6: Always-on file watcher
 
