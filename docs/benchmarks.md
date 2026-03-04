@@ -82,12 +82,24 @@ All 12 fastembed-compatible models tested with VEC+code mode (semantic search, c
 | Nomic-full | 520MB | 768d | 1011s | 0.401 | 30% | 40% | 65% | 0.468 | 35% | 55% | 70% |
 | Nomic-Q | 130MB | 768d | 790s | 0.346 | 25% | 40% | 50% | 0.399 | 30% | 45% | 60% |
 
-Gateway models (HTTP endpoint required):
+Self-hosted gateway models (HTTP endpoint required):
 
 | Model | Dim | VEC MRR | Top-1 | Top-3 | Top-10 | +Rerank MRR | Top-1 | Top-3 | Top-10 |
 |-------|-----|---------|-------|-------|--------|-------------|-------|-------|--------|
 | **Nomic-embed-text** | 768d | 0.696 | 55% | 75% | 100% | **0.854** | 75% | 95% | 100% |
 | Qwen3-embed | 1024d | 0.615 | 45% | 70% | 100% | 0.825 | 70% | 100% | 100% |
+
+Cloud API models (paid, per-token pricing):
+
+| Model | Dim | Cost | VEC MRR | Top-1 | Top-3 | Top-10 | +Rerank MRR | Top-1 | Top-3 | Top-10 |
+|-------|-----|------|---------|-------|-------|--------|-------------|-------|-------|--------|
+| OpenAI text-embedding-3-large | 1024d | $0.13/1M | 0.566 | 35% | 75% | 100% | 0.722 | 60% | 80% | 100% |
+| OpenAI text-embedding-3-large | 3072d | $0.13/1M | 0.571 | 35% | 75% | 100% | 0.687 | 55% | 80% | 100% |
+| OpenAI text-embedding-3-small | 1536d | $0.02/1M | 0.558 | 40% | 65% | 80% | 0.668 | 60% | 65% | 85% |
+| OpenAI text-embedding-3-small | 512d | $0.02/1M | 0.491 | 35% | 60% | 80% | 0.627 | 55% | 70% | 85% |
+
+!!! warning "OpenAI embeddings underperform on code search"
+    OpenAI's general-purpose embeddings score significantly below code-trained local models on this benchmark. Their best configuration (text-embedding-3-large at 1024d + local reranker, 0.722 MRR) loses to the free 67MB BGE-small (0.739 MRR). OpenAI's models are optimized for general text retrieval, not code search.
 
 ## Cross-Test: Embedder x Reranker Matrix
 
@@ -125,12 +137,14 @@ All rerankers tested with GTE-base (768d) embeddings.
 ## Key Findings
 
 - **Cross-encoder reranking is the single biggest quality lever.** +0.13-0.16 MRR over embedding-only search across all models.
+- **Free local models beat paid cloud APIs for code search.** BGE-small (67MB, free) scores 0.739 MRR vs OpenAI text-embedding-3-large ($0.13/1M) at 0.722. General-purpose cloud embeddings aren't trained for code retrieval.
 - **Bigger is NOT better for local ONNX models.** Nomic-full (520MB) and MxBAI-large (640MB) scored worse than BGE-small (67MB). ONNX quantization and model architecture matter more than parameter count.
 - **The 200MB default stack (BGE-small + Jina-tiny) is the sweet spot for zero-config.** 87% of the gateway's best score, zero server setup, fast indexing (64s).
 - **590MB gets you gateway-level quality locally.** GTE-base + Jina-turbo hits 0.825 MRR — matching the Qwen3 gateway setup.
-- **Higher dimensions don't guarantee better results.** BGE-small (384d) outperforms MxBAI-large (1024d). Model training quality dominates.
+- **Higher dimensions don't guarantee better results.** BGE-small (384d) outperforms MxBAI-large (1024d) and OpenAI's 3072d model. Model training quality dominates.
 - **Nomic ONNX quantized variants perform poorly.** The fastembed Nomic-Q (0.399 MRR) is dramatically worse than Nomic via HTTP gateway (0.854). The quantization destroys quality for this model.
 - **Reranker-embedder interaction is real.** Jina-tiny pairs best with BGE models; Jina-turbo pairs best with GTE. Always cross-test.
+- **OpenAI dimension reduction helps with reranking.** text-embedding-3-large at 1024d (0.722) outperforms full 3072d (0.687) when paired with a cross-encoder reranker — denser representations give the reranker more signal.
 
 ## Search Mode Comparison
 
@@ -175,16 +189,21 @@ uv run python scripts/benchmark_quick.py
 uv run python scripts/benchmark_pm.py --all              # gateway models (HTTP endpoint)
 uv run python scripts/benchmark_pm.py --provider fastembed --all  # local fastembed models
 
-# Batch benchmark — all 12 embedding models + 4 rerankers
+# Batch benchmark — all 12 local embedding models + 4 rerankers
 uv run python scripts/benchmark_all_models.py              # embedding models only
 uv run python scripts/benchmark_all_models.py --rerankers   # + reranker comparison
 
 # Cross-test matrix — top embedders × all rerankers
 uv run python scripts/benchmark_cross.py
+
+# Cloud API benchmark — OpenAI (requires OPENAI_API_KEY)
+uv run python scripts/benchmark_cloud.py                    # all OpenAI variants
+uv run python scripts/benchmark_cloud.py --voyage           # + Voyage (needs VOYAGE_API_KEY)
 ```
 
 ### Requirements
 
-- **Gateway benchmarks**: Requires an OpenAI-compatible embedding endpoint (e.g., LM Studio, vLLM) at `http://localhost:8800/v1/embeddings`
 - **Local benchmarks**: Requires `pip install tessera-idx[embed]` (installs fastembed). Models auto-download on first run.
+- **Gateway benchmarks**: Requires an OpenAI-compatible embedding endpoint (e.g., LM Studio, vLLM) at `http://localhost:8800/v1/embeddings`
+- **Cloud benchmarks**: Requires `OPENAI_API_KEY` env var. Optional `VOYAGE_API_KEY` for Voyage models. API costs are minimal (~$0.50 for all 4 OpenAI model variants).
 - **PM benchmark**: Requires Popup Maker core + Pro source code at `~/Projects/ProContent/ProductCode/popup-maker{,-pro}`
