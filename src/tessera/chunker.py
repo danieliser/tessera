@@ -36,7 +36,7 @@ def _get_parser(language: str) -> tuple[Parser | None, Language | None]:
             py_lang = Language(js_lang_capsule)
         elif language == "php":
             import tree_sitter_php
-            php_lang_capsule = tree_sitter_php.language()
+            php_lang_capsule = tree_sitter_php.language_php()
             py_lang = Language(php_lang_capsule)
         else:
             return None, None
@@ -54,6 +54,7 @@ def _is_definition_node(node_type: str) -> bool:
         "function_definition",
         "class_definition",
         "method_definition",
+        "method_declaration",
         "async_function_definition",
         "function_declaration",
         "class_declaration",

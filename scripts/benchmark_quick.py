@@ -114,7 +114,7 @@ def main():
     pipeline.register()
 
     start = time.perf_counter()
-    stats = pipeline.index_project()
+    stats = pipeline.index_project_sync()
     elapsed = time.perf_counter() - start
     print(f"\nIndexed: {stats.files_processed} files, {stats.chunks_created} chunks, "
           f"{stats.chunks_embedded} embedded in {elapsed:.1f}s")

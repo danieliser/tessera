@@ -97,7 +97,7 @@ class TestRealRepoIndexing:
             languages=languages,
         )
         pipeline.register(name)
-        stats = pipeline.index_project()
+        stats = pipeline.index_project_sync()
 
         return name, pipeline, stats, project_db, min_files
 
@@ -193,7 +193,7 @@ class TestRealRepoStats:
             languages=languages,
         )
         pipeline.register(name)
-        stats = pipeline.index_project()
+        stats = pipeline.index_project_sync()
         return name, stats, project_db, pipeline
 
     def test_print_summary(self, indexed_repo, capsys):

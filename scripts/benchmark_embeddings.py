@@ -133,7 +133,7 @@ def index_with_model(model_name: str, label: str, base_dir: str) -> tuple[Projec
     pipeline.register()
 
     start = time.perf_counter()
-    stats = pipeline.index_project()
+    stats = pipeline.index_project_sync()
     elapsed = time.perf_counter() - start
 
     print(f"  {label}: {stats.files_processed} files, {stats.chunks_created} chunks, "

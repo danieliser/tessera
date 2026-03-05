@@ -39,6 +39,18 @@ wheels = [
 ]
 
 [[package]]
+name = "async-hooks"
+version = "0.1.0"
+source = { directory = "../lib/async-hooks" }
+
+[package.metadata]
+requires-dist = [
+    { name = "pytest", marker = "extra == 'test'" },
+    { name = "pytest-asyncio", marker = "extra == 'test'" },
+]
+provides-extras = ["test"]
+
+[[package]]
 name = "attrs"
 version = "25.4.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1999,6 +2011,7 @@ name = "tessera-idx"
 version = "0.8.0"
 source = { editable = "." }
 dependencies = [
+    { name = "async-hooks" },
     { name = "faiss-cpu" },
     { name = "fastmcp" },
     { name = "httpx" },
@@ -2044,6 +2057,7 @@ embed = [
 
 [package.metadata]
 requires-dist = [
+    { name = "async-hooks", directory = "../lib/async-hooks" },
     { name = "faiss-cpu", specifier = ">=1.9" },
     { name = "fastembed", marker = "extra == 'embed'", specifier = ">=0.4" },
     { name = "fastmcp", specifier = ">=2.14,<3" },

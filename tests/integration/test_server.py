@@ -3,7 +3,7 @@
 import json
 import os
 import tempfile
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from fastmcp import Client
@@ -353,7 +353,8 @@ class TestReindexMode:
 
         with patch("tessera.server.tools._admin.IndexerPipeline") as MockPipeline:
             instance = MockPipeline.return_value
-            instance.index_project.return_value = fake_stats
+            instance.index_project = AsyncMock(return_value=fake_stats)
+            instance.index_changed = AsyncMock()
             instance.project_id = pid
 
             result = await srv.call_tool("reindex", {"project_id": pid, "mode": "full"})
@@ -370,7 +371,8 @@ class TestReindexMode:
 
         with patch("tessera.server.tools._admin.IndexerPipeline") as MockPipeline:
             instance = MockPipeline.return_value
-            instance.index_project.return_value = fake_stats
+            instance.index_project = AsyncMock(return_value=fake_stats)
+            instance.index_changed = AsyncMock()
             instance.project_id = pid
 
             result = await srv.call_tool("reindex", {"project_id": pid})
@@ -387,7 +389,8 @@ class TestReindexMode:
 
         with patch("tessera.server.tools._admin.IndexerPipeline") as MockPipeline:
             instance = MockPipeline.return_value
-            instance.index_changed.return_value = fake_stats
+            instance.index_changed = AsyncMock(return_value=fake_stats)
+            instance.index_project = AsyncMock()
             instance.project_id = pid
 
             result = await srv.call_tool("reindex", {"project_id": pid, "mode": "incremental"})

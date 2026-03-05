@@ -46,10 +46,10 @@ def _run_index(args) -> int:
 
     if args.incremental:
         print(f"Incremental index: {project_path}")
-        stats = pipeline.index_changed()
+        stats = pipeline.index_changed_sync()
     else:
         print(f"Full index: {project_path}")
-        stats = pipeline.index_project()
+        stats = pipeline.index_project_sync()
 
     elapsed = time.perf_counter() - start
 

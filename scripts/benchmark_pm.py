@@ -442,7 +442,7 @@ def main():
         pipeline_core = IndexerPipeline(project_path=PM_CORE, embedding_client=client)
         pipeline_core.register()
         t0 = time.perf_counter()
-        stats_core = pipeline_core.index_project()
+        stats_core = pipeline_core.index_project_sync()
         core_time = time.perf_counter() - t0
         _mark_indexed(core_base, PM_CORE)
         print(f"  Core: {stats_core.files_processed} files, {stats_core.chunks_created} chunks, "
@@ -461,7 +461,7 @@ def main():
         pipeline_pro = IndexerPipeline(project_path=PM_PRO, embedding_client=client)
         pipeline_pro.register()
         t0 = time.perf_counter()
-        stats_pro = pipeline_pro.index_project()
+        stats_pro = pipeline_pro.index_project_sync()
         pro_time = time.perf_counter() - t0
         _mark_indexed(pro_base, PM_PRO)
         print(f"  Pro: {stats_pro.files_processed} files, {stats_pro.chunks_created} chunks, "
