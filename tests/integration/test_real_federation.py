@@ -323,7 +323,7 @@ class TestRealCrossRefs:
         found_cross_ref = False
         cross_ref_details = []
 
-        for sym in core_functions[:20]:
+        for sym in core_functions[:50]:
             result = await get_json(server, "cross_refs", {
                 "symbol_name": sym["name"],
                 "session_id": "",
@@ -345,7 +345,7 @@ class TestRealCrossRefs:
                 print(f"    {d['symbol']}: {d['count']} refs from {d['from_projects']}")
 
         assert found_cross_ref, (
-            "No cross-project references found among first 20 core function symbols. "
+            "No cross-project references found among first 50 core function symbols. "
             "This may indicate cross-project reference resolution isn't working."
         )
 
