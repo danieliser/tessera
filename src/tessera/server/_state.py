@@ -14,6 +14,7 @@ from ..embeddings import EmbeddingClient, FastembedClient, HTTPReranker, Fastemb
 from ..graph import MAX_CACHED_GRAPHS, evict_lru_graph, load_project_graph
 from ..indexer import IndexerPipeline
 from ..indexer._helpers import compute_parser_digest
+from ..model_profiles import ModelProfile, resolve_profile
 
 # Scope level hierarchy for comparison
 _SCOPE_LEVELS = {"project": 0, "collection": 1, "global": 2}
@@ -29,6 +30,7 @@ _global_db: GlobalDB | None = None
 _drift_adapter: DriftAdapter | None = None
 _embedding_client: EmbeddingClient | FastembedClient | None = None
 _reranker: HTTPReranker | FastembedReranker | None = None
+_model_profile: ModelProfile | None = None
 _project_graphs: dict = {}  # project_id → ProjectGraph
 _graph_stats: dict[int, dict] = {}  # project_id → metadata
 _graph_lock = threading.Lock()  # Explicit lock for graph swap (don't rely on GIL)
@@ -187,7 +189,7 @@ def _init_essential(
     no_reranking: bool = False,
 ) -> None:
     """Fast init: DB connections, embedding client, project lock. No heavy I/O."""
-    global _db_cache, _locked_project, _global_db, _drift_adapter, _embedding_client, _reranker, _project_graphs, _graph_stats, _stale_projects
+    global _db_cache, _locked_project, _global_db, _drift_adapter, _embedding_client, _reranker, _model_profile, _project_graphs, _graph_stats, _stale_projects
 
     # Reset state
     _db_cache = {}
@@ -205,6 +207,13 @@ def _init_essential(
         embedding_endpoint=embedding_endpoint,
         embedding_model=embedding_model,
     )
+
+    # Resolve model profile from embedding client
+    model_name = getattr(_embedding_client, 'model_name', None) or getattr(_embedding_client, 'model', None)
+    _model_profile = resolve_profile(model_id=model_name) if model_name else None
+    if _model_profile:
+        logger.info("Model profile: %s (keyword_weight=%.1f, scope_prefix=%s)",
+                     _model_profile.display_name, _model_profile.hybrid_keyword_weight, _model_profile.scope_prefix)
 
     # Initialize reranker (HTTP endpoint or fastembed, auto-skip if neither available)
     _reranker = create_reranker(

@@ -120,7 +120,7 @@ async def indexed_server():
         # Index
         global_db_path = os.path.join(tmpdir, "global.db")
         pipeline = IndexerPipeline(tmpdir)
-        pipeline.index_project_sync()
+        await pipeline.index_project()
 
         # Create server pointing at indexed data
         server = create_server(tmpdir, global_db_path)
@@ -422,7 +422,7 @@ class TestReindexMode:
 
             global_db_path = os.path.join(tmpdir, "global.db")
             pipeline = IndexerPipeline(tmpdir)
-            pipeline.index_project_sync()
+            await pipeline.index_project()
 
             server = create_server(tmpdir, global_db_path)
 

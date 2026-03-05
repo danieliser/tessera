@@ -139,6 +139,7 @@ def search_both_dbs(
     search_types=None,
     src_filter=None,
     reranker=None,
+    keyword_weight: float | None = None,
 ) -> list[dict]:
     """Search both core and pro DBs, merge by score, optionally rerank."""
     hits_core = hybrid_search(
@@ -146,12 +147,14 @@ def search_both_dbs(
         graph=graph_core, limit=10,
         source_type=src_filter, search_types=search_types,
         advanced_fts=False, rrf_weights=None,
+        keyword_weight=keyword_weight,
     )
     hits_pro = hybrid_search(
         query, query_embedding, db_pro,
         graph=graph_pro, limit=10,
         source_type=src_filter, search_types=search_types,
         advanced_fts=False, rrf_weights=None,
+        keyword_weight=keyword_weight,
     )
 
     all_hits = []
@@ -192,6 +195,7 @@ def run_mode(
     graph_core=None,
     graph_pro=None,
     reranker=None,
+    keyword_weight: float | None = None,
 ) -> list[dict]:
     """Run all queries for a single mode, return results with timing."""
     results = []
@@ -211,6 +215,7 @@ def run_mode(
         all_hits = search_both_dbs(
             query, query_embedding, db_core, db_pro,
             graph_core, graph_pro, search_types, src_filter, reranker,
+            keyword_weight=keyword_weight,
         )
         elapsed_ms = (time.perf_counter() - t0) * 1000
         total_ms += elapsed_ms
@@ -363,6 +368,8 @@ def main():
     parser.add_argument("--all", action="store_true", help="Run all modes including PPR")
     parser.add_argument("--quick", action="store_true", help="Only VEC+code and HYBRID+code")
     parser.add_argument("--reindex", action="store_true", help="Force re-index even if cached")
+    parser.add_argument("--keyword-weight", type=float, default=None,
+                        help="Override RRF keyword weight (default: 1.0)")
     args = parser.parse_args()
 
     print("=" * 100)
@@ -525,11 +532,16 @@ def main():
 
     print(f"\n  Running {len(modes)} search modes x {len(QUERIES)} queries...")
 
+    kw_weight = getattr(args, 'keyword_weight', None)
+    if kw_weight is not None:
+        print(f"  Keyword weight override: {kw_weight}")
+
     for mode_label, search_types, src_filter, gc, gp in modes:
         rr = reranker if ("rerank" in mode_label or mode_label == "FULL") else None
         results = run_mode(
             mode_label, search_types, src_filter, client,
             db_core, db_pro, gc, gp, rr,
+            keyword_weight=kw_weight,
         )
         all_results[mode_label] = results
         labels.append(mode_label)

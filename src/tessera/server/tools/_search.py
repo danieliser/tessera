@@ -18,6 +18,7 @@ from .._state import (
     _check_session,
     _get_project_dbs,
     _log_audit,
+    _model_profile,
     _stale_index_warning,
 )
 
@@ -143,11 +144,15 @@ def register_search_tools(mcp: FastMCP) -> None:
                     ppr_used = True
                     logger.debug("Search on project %d using graph version %.1f", pid, g.loaded_at)
 
+            # Use model profile's keyword weight unless explicit rrf_weights provided
+            profile_kw_weight = _model_profile.hybrid_keyword_weight if _model_profile and not rrf_weights else None
+
             tasks = [
                 asyncio.to_thread(
                     hybrid_search, query, query_embedding, db,
                     _project_graphs.get(pid), limit, source_type_filter,
                     search_types, advanced_fts, rrf_weights,
+                    keyword_weight=profile_kw_weight,
                 )
                 for pid, pname, db in dbs
             ]

@@ -130,10 +130,11 @@ _register(
         display_name="Nomic-768d (gateway)",
         dimensions=768, max_tokens=8192, size_mb=0,
         architecture="rope", provider="http",
-        scope_prefix=True,
+        scope_prefix=True,    # EXP-006: +0.071 VEC+PPR. 8K window absorbs prefix easily.
         recommended_reranker=RERANKER_JINA_TURBO,
-        baseline_mrr=0.854, best_mrr=0.854,
-        notes="Best overall. Full-precision via HTTP gateway.",
+        hybrid_keyword_weight=0.0,  # FTS5 returns 0 for NL queries against code
+        baseline_mrr=0.547, best_mrr=0.662,
+        notes="Best overall. Full-precision via HTTP gateway. PM20 benchmark.",
     ),
     ModelProfile(
         key="qwen3-http",

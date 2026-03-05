@@ -629,6 +629,7 @@ def hybrid_search(
     search_types: list[SearchType] | None = None,
     advanced_fts: bool = False,
     rrf_weights: dict[str, float] | None = None,
+    keyword_weight: float | None = None,
 ) -> list[dict]:
     """
     Hybrid search combining keyword (FTS5) and semantic (vector) results.
@@ -660,7 +661,9 @@ def hybrid_search(
     if search_types is None:
         query, search_types = parse_structured_query(query)
 
-    effective_weights = rrf_weights if rrf_weights else DEFAULT_RRF_WEIGHTS
+    effective_weights = dict(rrf_weights if rrf_weights else DEFAULT_RRF_WEIGHTS)
+    if keyword_weight is not None and not rrf_weights:
+        effective_weights["keyword"] = keyword_weight
     run_keyword = SearchType.LEX in search_types
     run_semantic = SearchType.VEC in search_types or SearchType.HYDE in search_types
 

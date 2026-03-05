@@ -796,7 +796,7 @@ class IndexerPipeline:
                 'symbol_ids': overlapping_ids,
                 'ast_type': chunk.ast_type,
                 'chunk_type': 'code',
-                'content': texts[i] if i < len(texts) else chunk.content,
+                'content': chunk.content,
                 'file_path': rel_path,
             }
 
