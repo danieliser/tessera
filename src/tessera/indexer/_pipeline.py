@@ -26,7 +26,9 @@ from ..document import (
 )
 from ..markdown_chunker import chunk_markdown_breakpoint
 from ..embeddings import EmbeddingClient, EmbeddingUnavailableError, FastembedClient
+from ..hooks import get_hooks, setup_model_hooks
 from ..ignore import IgnoreFilter
+from ..model_profiles import ModelProfile, resolve_profile
 from ..parser import detect_language, parse_and_extract
 from ..search import hybrid_search
 from ._helpers import (
@@ -50,6 +52,7 @@ class IndexerPipeline:
         global_db: GlobalDB | None = None,
         embedding_client: EmbeddingClient | FastembedClient | None = None,
         languages: list[str] | None = None,
+        model_profile: ModelProfile | None = None,
     ):
         """
         Initialize the indexer pipeline.
@@ -60,6 +63,7 @@ class IndexerPipeline:
             global_db: Optional GlobalDB for multi-project management
             embedding_client: Optional EmbeddingClient for semantic indexing
             languages: List of supported languages (default: PHP, TypeScript, Python, JavaScript)
+            model_profile: Optional model profile for optimization flags
         """
         self.project_path = os.path.abspath(project_path)
         self.project_db = project_db or ProjectDB(project_path)
@@ -69,6 +73,15 @@ class IndexerPipeline:
         self.project_id = None  # set during register
         self._package_cache: dict[str, str] = {}  # dir → package name
         self.ignore_filter = IgnoreFilter(self.project_path)
+        self.hooks = get_hooks()
+
+        # Resolve model profile and register hooks
+        if model_profile is None and embedding_client is not None:
+            model_name = getattr(embedding_client, 'model_name', None) or getattr(embedding_client, 'model', None)
+            if model_name:
+                model_profile = resolve_profile(model_id=model_name)
+        self.model_profile = model_profile
+        setup_model_hooks(model_profile)
 
     def _track_embedding_dim(self, dim: int) -> None:
         """Store embedding dimension on first call, warn on mismatch."""

@@ -35,6 +35,7 @@ dependencies = [
     "scipy>=1.10",
     "fastmcp>=2.14,<3",
     "mcp-hmr>=0.0.3.2",
+    "async-hooks",
 ]
 
 [project.optional-dependencies]
@@ -64,6 +65,9 @@ Changelog = "https://github.com/danieliser/tessera/blob/main/CHANGELOG.md"
 
 [project.scripts]
 tessera = "tessera.__main__:main"
+
+[tool.uv.sources]
+async-hooks = { path = "../lib/async-hooks" }
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
