@@ -15,6 +15,7 @@ Test architecture:
 """
 
 import random
+import sqlite3
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -153,6 +154,16 @@ class MockProjectDB:
                 if sym_id not in self._symbol_to_chunks:
                     self._symbol_to_chunks[sym_id] = []
                 self._symbol_to_chunks[sym_id].append(chunk_id)
+
+        # In-memory symbols table so PPR gate query works
+        self.conn = sqlite3.connect(":memory:", check_same_thread=False)
+        self.conn.execute("CREATE TABLE symbols (id INTEGER PRIMARY KEY, name TEXT)")
+        for sym_id in range(100):
+            self.conn.execute(
+                "INSERT INTO symbols (id, name) VALUES (?, ?)",
+                (sym_id, f"func_{sym_id}"),
+            )
+        self.conn.commit()
 
     def keyword_search(
         self, query: str, limit: int = 10, source_type: list[str] = None,
@@ -310,7 +321,8 @@ class TestConcurrentPPR:
             Args:
                 cycle_id: Cycle ID for logging
             """
-            time.sleep(random.uniform(0.01, 0.05))  # Random offset
+            # Stagger reindex cycles so some searches run before, during, and after
+            time.sleep(cycle_id * 0.05)
             reindex_count[0] += 1
 
             try:
@@ -321,25 +333,44 @@ class TestConcurrentPPR:
                 with graph_lock:
                     graph_state["graph"] = new_graph
 
+                # Hold reindex state long enough for search workers to observe it
+                time.sleep(0.05)
             finally:
                 reindex_count[0] -= 1
 
-        # Launch: 10 search workers + 3 reindex cycles
+        # Phase 1: Run baseline searches (no reindex active)
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            baseline_futures = []
+            for worker_id in range(5):
+                future = executor.submit(run_search_worker, worker_id, test_queries[:2])
+                baseline_futures.append(future)
+            for f in baseline_futures:
+                f.result(timeout=10)
+
+        # Phase 2: Run searches concurrent with reindex cycles
+        reindex_started = threading.Event()
+
+        original_reindex = reindex_cycle
+        def signaling_reindex(cycle_id):
+            reindex_started.set()
+            return original_reindex(cycle_id)
+
         with ThreadPoolExecutor(max_workers=13) as executor:
             futures = []
 
-            # Submit 10 search workers
+            # Start reindex cycles
+            for cycle_id in range(3):
+                future = executor.submit(signaling_reindex, cycle_id)
+                futures.append(("reindex", cycle_id, future))
+
+            # Wait for at least one reindex to be active
+            reindex_started.wait(timeout=5)
+
+            # Now submit search workers that will overlap with reindex
             for worker_id in range(10):
-                query_subset = test_queries * (worker_id % 2 + 1)  # 5 or 10 queries each
+                query_subset = test_queries * (worker_id % 2 + 1)
                 future = executor.submit(run_search_worker, worker_id, query_subset)
                 futures.append(("search", worker_id, future))
-
-            # Submit reindex cycles with slight delay
-            time.sleep(0.01)
-            for cycle_id in range(3):
-                time.sleep(random.uniform(0.005, 0.02))
-                future = executor.submit(reindex_cycle, cycle_id)
-                futures.append(("reindex", cycle_id, future))
 
             # Collect results
             exceptions = []
@@ -446,7 +477,7 @@ class TestConcurrentPPR:
         query_embedding = np.random.randn(768).astype(np.float32)
 
         results = hybrid_search(
-            query="function definition",
+            query="func_0 definition",
             query_embedding=query_embedding,
             db=db,
             graph=graph,

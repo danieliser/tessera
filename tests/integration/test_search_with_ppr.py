@@ -1,6 +1,7 @@
 """Tests for search.py with PPR graph integration."""
 
 import json
+import sqlite3
 import time
 
 import numpy as np
@@ -76,6 +77,21 @@ class MockDB:
         self.semantic_results = semantic_results or []
         self.chunks = chunks or {}
         self.embeddings_data = None
+        # In-memory symbols table so PPR gate query works
+        self.conn = sqlite3.connect(":memory:")
+        self.conn.execute("CREATE TABLE symbols (id INTEGER PRIMARY KEY, name TEXT)")
+        # Populate with symbol names matching the func_N pattern
+        for chunk in (chunks or {}).values():
+            if chunk.get("symbol_ids"):
+                try:
+                    for sid in json.loads(chunk["symbol_ids"]):
+                        self.conn.execute(
+                            "INSERT OR IGNORE INTO symbols (id, name) VALUES (?, ?)",
+                            (sid, f"func_{sid - 100}"),
+                        )
+                except (json.JSONDecodeError, TypeError):
+                    pass
+        self.conn.commit()
 
     def keyword_search(self, query, limit=10, source_type=None, advanced_fts=False):
         results = self.keyword_results[:limit]
@@ -119,7 +135,8 @@ class TestHybridSearchWithGraph:
         db = _make_mock_chunks_and_db([[100], [101], [102]])
 
         query_embedding = np.random.randn(768).astype(np.float32)
-        results = hybrid_search("test query", query_embedding, db, graph=graph, limit=10)
+        # Query must contain a token matching a symbol name so PPR gate passes
+        results = hybrid_search("func_0 usage", query_embedding, db, graph=graph, limit=10)
 
         assert len(results) > 0
         assert any("graph" in r.get("rank_sources", []) for r in results)

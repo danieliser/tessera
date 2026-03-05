@@ -286,14 +286,25 @@ def chunk_yaml(
     """
     try:
         with open(yaml_path) as f:
-            data = yaml.safe_load(f)
+            content = f.read()
+        try:
+            data = yaml.safe_load(content)
+        except yaml.constructor.ConstructorError:
+            # Fall back to raw text chunking for YAML with custom tags (e.g., mkdocs.yml)
+            lines = content.split("\n")
+            return [DocumentChunk(
+                content=content,
+                source_type="yaml",
+                start_line=0,
+                end_line=len(lines) - 1,
+            )]
+        except yaml.YAMLError as e:
+            raise DocumentExtractionError(
+                f"Failed to parse YAML file {yaml_path}: {e}"
+            ) from e
     except FileNotFoundError as e:
         raise DocumentExtractionError(
             f"YAML file not found: {yaml_path}"
-        ) from e
-    except yaml.YAMLError as e:
-        raise DocumentExtractionError(
-            f"Failed to parse YAML file {yaml_path}: {e}"
         ) from e
     except Exception as e:
         raise DocumentExtractionError(
@@ -409,6 +420,17 @@ def _chunk_yaml_nested(
     return chunks
 
 
+def _strip_jsonc(text: str) -> str:
+    """Strip JSONC extensions (comments, trailing commas) for json.loads compatibility."""
+    # Remove block comments (/* ... */)
+    text = re.sub(r'/\*.*?\*/', '', text, flags=re.DOTALL)
+    # Remove single-line comments (// ...)
+    text = re.sub(r'//.*$', '', text, flags=re.MULTILINE)
+    # Remove trailing commas before } or ]
+    text = re.sub(r',\s*([}\]])', r'\1', text)
+    return text
+
+
 def chunk_json(
     json_path: str, max_chunk_size: int = 2048
 ) -> list[DocumentChunk]:
@@ -430,7 +452,12 @@ def chunk_json(
     """
     try:
         with open(json_path) as f:
-            data = json.load(f)
+            content = f.read()
+        try:
+            data = json.loads(content)
+        except json.JSONDecodeError:
+            # Retry with JSONC tolerance (strip comments and trailing commas)
+            data = json.loads(_strip_jsonc(content))
     except FileNotFoundError as e:
         raise DocumentExtractionError(
             f"JSON file not found: {json_path}"
