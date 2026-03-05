@@ -30,7 +30,7 @@ def _index_fixtures(tmpdir: str, fixture_files: list[str]) -> IndexerPipeline:
         shutil.copy2(src, dst)
 
     pipeline = IndexerPipeline(tmpdir)
-    pipeline.index_project()
+    pipeline.index_project_sync()
     return pipeline
 
 

@@ -115,7 +115,7 @@ def pm_ecosystem(tmp_path_factory):
             languages=languages,
         )
         pid = pipeline.register(name)
-        stats = pipeline.index_project()
+        stats = pipeline.index_project_sync()
 
         project_ids[name] = pid
         project_dbs[name] = project_db

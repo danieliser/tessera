@@ -1,5 +1,6 @@
 """IndexerPipeline: orchestrates parsing, chunking, embedding, and storage."""
 
+import asyncio
 import hashlib
 import logging
 import os
@@ -26,7 +27,7 @@ from ..document import (
 )
 from ..markdown_chunker import chunk_markdown_breakpoint
 from ..embeddings import EmbeddingClient, EmbeddingUnavailableError, FastembedClient
-from ..hooks import get_hooks, setup_model_hooks
+from ..hooks import AFTER_INDEX_FILE, BEFORE_INDEX_FILE, EMBEDDING_TEXTS, get_hooks, setup_model_hooks
 from ..ignore import IgnoreFilter
 from ..model_profiles import ModelProfile, resolve_profile
 from ..parser import detect_language, parse_and_extract
@@ -233,7 +234,7 @@ class IndexerPipeline:
             pass
         return []
 
-    def index_changed(self, since_commit: str | None = None) -> IndexStats:
+    async def index_changed(self, since_commit: str | None = None) -> IndexStats:
         """Incremental reindex using git diff.
 
         If since_commit is provided, uses git diff to find changed files.
@@ -256,7 +257,7 @@ class IndexerPipeline:
 
         # If still no commit, fall back to full index
         if since_commit is None:
-            return self.index_project()
+            return await self.index_project()
 
         start = time.perf_counter()
         stats = IndexStats()
@@ -269,7 +270,7 @@ class IndexerPipeline:
         # Handle changed/added files
         changed_files = self._get_changed_files(since_commit)
         for file_path in changed_files:
-            result = self.index_file(file_path)
+            result = await self.index_file(file_path)
             if result['status'] == 'indexed':
                 stats.files_processed += 1
                 stats.symbols_extracted += result.get('symbols', 0)
@@ -301,7 +302,7 @@ class IndexerPipeline:
         """Check if file is a document (not code)."""
         return any(file_path.endswith(ext) for ext in ALL_DOCUMENT_EXTENSIONS)
 
-    def _index_document_file(self, file_path: str) -> dict[str, Any]:
+    async def _index_document_file(self, file_path: str) -> dict[str, Any]:
         """Index a single document file with error isolation."""
         rel_path = os.path.relpath(file_path, self.project_path)
 
@@ -390,7 +391,7 @@ class IndexerPipeline:
             if self.embedding_client:
                 try:
                     texts = [c['content'] for c in chunk_dicts]
-                    embeddings = self.embedding_client.embed(texts) if texts else []
+                    embeddings = await asyncio.to_thread(self.embedding_client.embed, texts) if texts else []
                     if embeddings:
                         self._track_embedding_dim(len(embeddings[0]))
                 except EmbeddingUnavailableError:
@@ -585,7 +586,7 @@ class IndexerPipeline:
         except Exception as e:
             logger.warning("Failed to append asset chunk for SVG %s: %s", file_path, e)
 
-    def index_file(self, file_path: str, *, force: bool = False) -> dict[str, Any]:
+    async def index_file(self, file_path: str, *, force: bool = False) -> dict[str, Any]:
         """
         Index a single file: parse, chunk, embed, store.
 
@@ -596,6 +597,8 @@ class IndexerPipeline:
         Returns:
             Status dict with 'status' and optional 'reason' or metrics
         """
+        await self.hooks.do_action(BEFORE_INDEX_FILE, file_path)
+
         # Route asset files BEFORE document check (some assets like .svg are also documents)
         is_svg = file_path.lower().endswith('.svg')
         if is_asset_file(file_path) and not is_svg:
@@ -603,7 +606,7 @@ class IndexerPipeline:
 
         # Route document files to document indexer
         if self._is_document_file(file_path):
-            doc_result = self._index_document_file(file_path)
+            doc_result = await self._index_document_file(file_path)
             # SVG dual-indexing: append asset chunk after document indexing
             if is_svg and doc_result.get('status') == 'indexed':
                 self._append_asset_chunk(file_path)
@@ -756,12 +759,19 @@ class IndexerPipeline:
         # Chunk
         chunks = chunk_with_cast(source_code, language)
 
+        # Build embedding texts and apply hook filters
+        texts = [c.content for c in chunks]
+        if texts:
+            texts = await self.hooks.apply_filters(
+                EMBEDDING_TEXTS, texts,
+                chunks=chunks, symbols=symbols, rel_path=rel_path,
+            )
+
         # Embed chunks (if client available)
         embeddings = None
-        if self.embedding_client:
+        if self.embedding_client and texts:
             try:
-                texts = [c.content for c in chunks]
-                embeddings = self.embedding_client.embed(texts) if texts else []
+                embeddings = await asyncio.to_thread(self.embedding_client.embed, texts)
                 if embeddings:
                     self._track_embedding_dim(len(embeddings[0]))
             except EmbeddingUnavailableError:
@@ -786,7 +796,7 @@ class IndexerPipeline:
                 'symbol_ids': overlapping_ids,
                 'ast_type': chunk.ast_type,
                 'chunk_type': 'code',
-                'content': chunk.content,
+                'content': texts[i] if i < len(texts) else chunk.content,
                 'file_path': rel_path,
             }
 
@@ -801,7 +811,7 @@ class IndexerPipeline:
         # Mark file indexed
         self.project_db.update_file_status(file_id, 'indexed')
 
-        return {
+        result = {
             'status': 'indexed',
             'symbols': len(symbols),
             'refs': len(references),
@@ -809,8 +819,10 @@ class IndexerPipeline:
             'chunks': len(chunks),
             'embedded': len(embeddings) if embeddings else 0
         }
+        await self.hooks.do_action(AFTER_INDEX_FILE, file_path, result)
+        return result
 
-    def index_project(self, *, force: bool = False) -> IndexStats:
+    async def index_project(self, *, force: bool = False) -> IndexStats:
         """
         Index entire project. Creates a job record in GlobalDB for tracking.
 
@@ -836,7 +848,7 @@ class IndexerPipeline:
             stats = IndexStats()
 
             for file_path in files:
-                result = self.index_file(file_path, force=force)
+                result = await self.index_file(file_path, force=force)
 
                 if result['status'] == 'indexed':
                     stats.files_processed += 1
@@ -886,6 +898,22 @@ class IndexerPipeline:
             if job_id and self.global_db:
                 self.global_db.fail_job(job_id, str(e))
             raise
+
+    # ------------------------------------------------------------------
+    # Sync wrappers for backward compatibility (CLI, benchmarks, tests)
+    # ------------------------------------------------------------------
+
+    def index_project_sync(self, **kwargs) -> IndexStats:
+        """Synchronous wrapper around index_project()."""
+        return asyncio.run(self.index_project(**kwargs))
+
+    def index_changed_sync(self, **kwargs) -> IndexStats:
+        """Synchronous wrapper around index_changed()."""
+        return asyncio.run(self.index_changed(**kwargs))
+
+    def index_file_sync(self, file_path: str, **kwargs) -> dict[str, Any]:
+        """Synchronous wrapper around index_file()."""
+        return asyncio.run(self.index_file(file_path, **kwargs))
 
     @staticmethod
     def _file_proximity(path_a: str, path_b: str) -> int:

@@ -65,7 +65,7 @@ class TestPPRGraphMetrics:
             indexer.project_id = 1
 
             start = time.perf_counter()
-            stats = indexer.index_project()
+            stats = indexer.index_project_sync()
             index_time = time.perf_counter() - start
 
             # Extract graph data
@@ -134,7 +134,7 @@ class TestPPRGraphMetrics:
                 languages=["python"]
             )
             indexer.project_id = 1
-            indexer.index_project()
+            indexer.index_project_sync()
 
             # Get all symbols and edges
             symbols_rows = project_db.conn.execute(
@@ -1324,7 +1324,7 @@ class TestSyntheticMultiProjectNDCG:
 
                     # Index and collect statistics
                     start = time.perf_counter()
-                    stats = indexer.index_project()
+                    stats = indexer.index_project_sync()
                     index_time = time.perf_counter() - start
 
                     # Get graph metrics

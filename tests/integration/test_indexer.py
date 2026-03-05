@@ -345,7 +345,7 @@ class TestIndexFile:
         )
         pipeline.project_id = 1
 
-        result = pipeline.index_file(str(filepath))
+        result = pipeline.index_file_sync(str(filepath))
 
         assert result['status'] == 'indexed'
         assert result['symbols'] == 1
@@ -378,7 +378,7 @@ class TestIndexFile:
         )
         pipeline.project_id = 1
 
-        result = pipeline.index_file(str(filepath))
+        result = pipeline.index_file_sync(str(filepath))
 
         assert result['status'] == 'indexed'
         assert result['symbols'] == 1
@@ -405,11 +405,11 @@ class TestIndexFile:
         pipeline.project_id = 1
 
         # First index
-        result1 = pipeline.index_file(str(filepath))
+        result1 = pipeline.index_file_sync(str(filepath))
         assert result1['status'] == 'indexed'
 
         # Second index with same content
-        result2 = pipeline.index_file(str(filepath))
+        result2 = pipeline.index_file_sync(str(filepath))
         assert result2['status'] == 'skipped'
         assert result2['reason'] == 'unchanged'
 
@@ -439,14 +439,14 @@ class TestIndexFile:
         pipeline.project_id = 1
 
         # First index
-        result1 = pipeline.index_file(str(filepath))
+        result1 = pipeline.index_file_sync(str(filepath))
         assert result1['status'] == 'indexed'
 
         # Modify file
         filepath.write_text("x = 2")
 
         # Re-index
-        result2 = pipeline.index_file(str(filepath))
+        result2 = pipeline.index_file_sync(str(filepath))
         assert result2['status'] == 'indexed'
 
     @patch('tessera.indexer._pipeline.detect_language')
@@ -460,7 +460,7 @@ class TestIndexFile:
         pipeline = IndexerPipeline(str(temp_project_dir), project_db=mock_project_db)
         pipeline.project_id = 1
 
-        result = pipeline.index_file(str(filepath))
+        result = pipeline.index_file_sync(str(filepath))
 
         assert result['status'] == 'skipped'
         assert result['reason'] == 'unsupported language'
@@ -476,7 +476,7 @@ class TestIndexFile:
         pipeline = IndexerPipeline(str(temp_project_dir), project_db=mock_project_db)
         pipeline.project_id = 1
 
-        result = pipeline.index_file(str(filepath))
+        result = pipeline.index_file_sync(str(filepath))
 
         assert result['status'] == 'failed'
 
@@ -511,7 +511,7 @@ class TestIndexProject:
             languages=['python']
         )
 
-        stats = pipeline.index_project()
+        stats = pipeline.index_project_sync()
 
         assert stats.files_processed == 3
         assert stats.symbols_extracted == 2
@@ -544,7 +544,7 @@ class TestIndexProject:
             languages=['python']
         )
 
-        stats = pipeline.index_project()
+        stats = pipeline.index_project_sync()
 
         assert stats.files_processed == 1
         assert stats.chunks_embedded == 1
@@ -642,7 +642,7 @@ class TestParseFailurePreservesData:
         pipeline.register()
 
         # First index: should succeed
-        result = pipeline.index_file(str(test_file))
+        result = pipeline.index_file_sync(str(test_file))
         assert result["status"] == "indexed"
         assert result["symbols"] > 0
 
@@ -655,7 +655,7 @@ class TestParseFailurePreservesData:
 
         # Mock parse_and_extract to raise on the second call
         with patch('tessera.indexer._pipeline.parse_and_extract', side_effect=RuntimeError("parse crash")):
-            result = pipeline.index_file(str(test_file))
+            result = pipeline.index_file_sync(str(test_file))
             assert result["status"] == "failed"
 
         # Old symbols should still exist (not cleared before failed parse)

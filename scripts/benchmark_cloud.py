@@ -335,14 +335,14 @@ def main():
         pipeline_core = IndexerPipeline(project_path=PM_CORE, embedding_client=client)
         pipeline_core.register()
         t0 = time.perf_counter()
-        stats_core = pipeline_core.index_project()
+        stats_core = pipeline_core.index_project_sync()
 
         pro_base = os.path.join(base_dir, "pro")
         os.makedirs(pro_base, exist_ok=True)
         ProjectDB.base_dir = pro_base
         pipeline_pro = IndexerPipeline(project_path=PM_PRO, embedding_client=client)
         pipeline_pro.register()
-        stats_pro = pipeline_pro.index_project()
+        stats_pro = pipeline_pro.index_project_sync()
         index_time = time.perf_counter() - t0
         total_chunks = stats_core.chunks_embedded + stats_pro.chunks_embedded
         print(f"  Indexed: {total_chunks} chunks in {index_time:.0f}s")

@@ -264,7 +264,7 @@ def _init_background(project_path: str | None = None) -> None:
         try:
             pipeline = IndexerPipeline(project["path"], global_db=_global_db)
             pipeline.project_id = project_id
-            pipeline.index_project()
+            pipeline.index_project_sync()
             _global_db.complete_job(job_id)
             logger.info("Crash recovery: job %d completed", job_id)
         except Exception as e:

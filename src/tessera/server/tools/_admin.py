@@ -90,9 +90,9 @@ def register_admin_tools(mcp: FastMCP) -> None:
             pipeline.project_id = project_id
 
             if mode == "incremental":
-                stats = await asyncio.to_thread(pipeline.index_changed)
+                stats = await pipeline.index_changed()
             else:
-                stats = await asyncio.to_thread(pipeline.index_project, force=force)
+                stats = await pipeline.index_project(force=force)
 
             # Invalidate cache and clear stale status
             _db_cache.pop(project_id, None)

@@ -103,7 +103,7 @@ class TestAssetIndexing:
 
     def test_index_project_includes_assets(self, pipeline, project_dir):
         """Full project index includes asset files."""
-        stats = pipeline.index_project()
+        stats = pipeline.index_project_sync()
 
         # Should process: main.py, logo.png, icon.gif, demo.mp4, bundle.zip, README.md
         assert stats.files_processed >= 5  # at least code + assets
@@ -130,7 +130,7 @@ class TestAssetSearchFiltering:
 
     def test_search_returns_assets(self, pipeline, project_dir):
         """Default search returns asset results."""
-        pipeline.index_project()
+        pipeline.index_project_sync()
         results = pipeline.project_db.keyword_search("logo", limit=10)
         assert any(
             pipeline.project_db.get_chunk(r['id']).get('source_type') == 'asset'
@@ -139,7 +139,7 @@ class TestAssetSearchFiltering:
 
     def test_search_filter_asset_only(self, pipeline, project_dir):
         """source_type='asset' returns only asset results."""
-        pipeline.index_project()
+        pipeline.index_project_sync()
         results = pipeline.project_db.keyword_search("logo", limit=10, source_type=['asset'])
         for r in results:
             chunk = pipeline.project_db.get_chunk(r['id'])
@@ -147,7 +147,7 @@ class TestAssetSearchFiltering:
 
     def test_search_filter_code_excludes_assets(self, pipeline, project_dir):
         """source_type='code' excludes asset results."""
-        pipeline.index_project()
+        pipeline.index_project_sync()
         results = pipeline.project_db.keyword_search("hello", limit=10, source_type=['code'])
         for r in results:
             chunk = pipeline.project_db.get_chunk(r['id'])
@@ -179,25 +179,25 @@ class TestChangeDetection:
         """Re-indexing the same asset succeeds (change detection is hash-based in production)."""
         png_path = str(project_dir / "assets" / "images" / "logo.png")
 
-        result1 = pipeline.index_file(png_path)
+        result1 = pipeline.index_file_sync(png_path)
         assert result1['status'] == 'indexed'
 
         # Second index still succeeds — ProjectDB.get_old_hash() would enable
         # skip-unchanged in production, but it's not implemented in all DB layers.
-        result2 = pipeline.index_file(png_path)
+        result2 = pipeline.index_file_sync(png_path)
         assert result2['status'] in ('indexed', 'skipped')
 
     def test_reindex_changed_asset(self, pipeline, project_dir):
         """Modified assets are re-indexed."""
         png_path = project_dir / "assets" / "images" / "logo.png"
 
-        result1 = pipeline.index_file(str(png_path))
+        result1 = pipeline.index_file_sync(str(png_path))
         assert result1['status'] == 'indexed'
 
         # Modify the file
         png_path.write_bytes(_make_png(800, 600))
 
-        result2 = pipeline.index_file(str(png_path))
+        result2 = pipeline.index_file_sync(str(png_path))
         assert result2['status'] == 'indexed'
         assert result2['dimensions'] == {'width': 800, 'height': 600}
 
@@ -229,7 +229,7 @@ class TestSVGDualIndexing:
         svg_path = project_dir / "icon.svg"
         svg_path.write_text('<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><circle r="10"/></svg>')
 
-        result = pipeline.index_file(str(svg_path))
+        result = pipeline.index_file_sync(str(svg_path))
         # index_file returns the document result for SVG (asset is done first, then falls through)
         assert result['status'] == 'indexed'
 
@@ -258,7 +258,7 @@ class TestUnrecognizedBinaryLogging:
         # The file won't be discovered (not in any extension set),
         # but if we call index_file directly, it should log
         with caplog.at_level(logging.DEBUG, logger='tessera.indexer'):
-            result = pipeline.index_file(str(unknown))
+            result = pipeline.index_file_sync(str(unknown))
 
         assert result['status'] == 'skipped'
         assert any("unrecognized binary" in r.message.lower() or "unsupported language" in r.message.lower()
