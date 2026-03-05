@@ -16,11 +16,13 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import csv
 import logging
 import os
 import subprocess
 import sys
 import time
+from datetime import datetime
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
@@ -35,6 +37,7 @@ from tessera.embeddings import (
 )
 from tessera.graph import load_project_graph
 from tessera.indexer import IndexerPipeline
+from tessera.model_profiles import ModelProfile
 from tessera.search import SearchType, hybrid_search
 
 logger = logging.getLogger(__name__)
@@ -140,20 +143,21 @@ def search_both_dbs(
     src_filter=None,
     reranker=None,
     keyword_weight: float | None = None,
+    rrf_weights: dict[str, float] | None = None,
 ) -> list[dict]:
     """Search both core and pro DBs, merge by score, optionally rerank."""
     hits_core = hybrid_search(
         query, query_embedding, db_core,
         graph=graph_core, limit=10,
         source_type=src_filter, search_types=search_types,
-        advanced_fts=False, rrf_weights=None,
+        advanced_fts=False, rrf_weights=rrf_weights,
         keyword_weight=keyword_weight,
     )
     hits_pro = hybrid_search(
         query, query_embedding, db_pro,
         graph=graph_pro, limit=10,
         source_type=src_filter, search_types=search_types,
-        advanced_fts=False, rrf_weights=None,
+        advanced_fts=False, rrf_weights=rrf_weights,
         keyword_weight=keyword_weight,
     )
 
@@ -196,6 +200,8 @@ def run_mode(
     graph_pro=None,
     reranker=None,
     keyword_weight: float | None = None,
+    rrf_weights: dict[str, float] | None = None,
+    use_hyde: bool = False,
 ) -> list[dict]:
     """Run all queries for a single mode, return results with timing."""
     results = []
@@ -208,7 +214,8 @@ def run_mode(
         )
         query_embedding = None
         if needs_embedding:
-            raw = client.embed_query(query)
+            # HyDE: embed_single (no retrieval prefix) vs embed_query (with prefix)
+            raw = client.embed_single(query) if use_hyde else client.embed_query(query)
             query_embedding = np.array(raw, dtype=np.float32)
 
         t0 = time.perf_counter()
@@ -216,6 +223,7 @@ def run_mode(
             query, query_embedding, db_core, db_pro,
             graph_core, graph_pro, search_types, src_filter, reranker,
             keyword_weight=keyword_weight,
+            rrf_weights=rrf_weights,
         )
         elapsed_ms = (time.perf_counter() - t0) * 1000
         total_ms += elapsed_ms
@@ -370,6 +378,13 @@ def main():
     parser.add_argument("--reindex", action="store_true", help="Force re-index even if cached")
     parser.add_argument("--keyword-weight", type=float, default=None,
                         help="Override RRF keyword weight (default: 1.0)")
+    parser.add_argument("--semantic-weight", type=float, default=None,
+                        help="Override RRF semantic weight (default: 1.2)")
+    parser.add_argument("--graph-weight", type=float, default=None,
+                        help="Override RRF graph weight (default: 0.8)")
+    parser.add_argument("--chunk-budget", type=int, default=None,
+                        help="Override chunk budget for indexing (requires --reindex)")
+    parser.add_argument("--csv", action="store_true", help="Export results to CSV")
     args = parser.parse_args()
 
     print("=" * 100)
@@ -398,8 +413,14 @@ def main():
 
     # Persistent benchmark storage: ~/.tessera/benchmarks/{model-key}/{core,pro}/
     # Re-indexes only when source files or tessera code changed.
-    bench_root = os.path.expanduser(f"~/.tessera/benchmarks/{model_key}")
+    # Chunk budget gets its own index directory to avoid clobbering
+    chunk_budget = args.chunk_budget or 512
+    budget_suffix = f"_cb{chunk_budget}" if args.chunk_budget else ""
+    bench_root = os.path.expanduser(f"~/.tessera/benchmarks/{model_key}{budget_suffix}")
     force_reindex = args.reindex if hasattr(args, 'reindex') else False
+    if args.chunk_budget:
+        print(f"  Chunk budget: {chunk_budget} (custom)")
+        force_reindex = True  # chunk budget change requires reindex
 
     core_base = os.path.join(bench_root, "core")
     pro_base = os.path.join(bench_root, "pro")
@@ -438,6 +459,23 @@ def main():
         except Exception:
             pass
 
+    # Build model profile with chunk budget override if specified
+    profile_override = None
+    if args.chunk_budget:
+        from dataclasses import replace as dc_replace
+        from tessera.model_profiles import resolve_profile
+        model_name = getattr(client, 'model_name', None) or getattr(client, 'model', None)
+        base_profile = resolve_profile(model_id=model_name) if model_name else None
+        if base_profile:
+            profile_override = dc_replace(base_profile, max_chunk_size=args.chunk_budget)
+        else:
+            profile_override = ModelProfile(
+                key="benchmark", model_id="benchmark", display_name="Benchmark",
+                dimensions=0, max_tokens=0, size_mb=0,
+                architecture="unknown", provider="unknown",
+                max_chunk_size=args.chunk_budget,
+            )
+
     # Index core
     if _needs_reindex(core_base, PM_CORE):
         # Clear old data for clean re-index
@@ -446,7 +484,10 @@ def main():
             if os.path.isfile(fp):
                 os.remove(fp)
         ProjectDB.base_dir = core_base
-        pipeline_core = IndexerPipeline(project_path=PM_CORE, embedding_client=client)
+        pipeline_core = IndexerPipeline(
+            project_path=PM_CORE, embedding_client=client,
+            model_profile=profile_override,
+        )
         pipeline_core.register()
         t0 = time.perf_counter()
         stats_core = pipeline_core.index_project_sync()
@@ -465,7 +506,10 @@ def main():
             if os.path.isfile(fp):
                 os.remove(fp)
         ProjectDB.base_dir = pro_base
-        pipeline_pro = IndexerPipeline(project_path=PM_PRO, embedding_client=client)
+        pipeline_pro = IndexerPipeline(
+            project_path=PM_PRO, embedding_client=client,
+            model_profile=profile_override,
+        )
         pipeline_pro.register()
         t0 = time.perf_counter()
         stats_pro = pipeline_pro.index_project_sync()
@@ -498,55 +542,108 @@ def main():
         ProjectDB.base_dir = pro_base
         graph_pro = try_load_graph(db_pro)
 
-    # Define modes
+    # Define modes: (label, search_types, src_filter, graph_core, graph_pro, use_hyde)
     all_results = {}
     labels = []
 
     if args.quick:
         modes = [
-            ("VEC+code", [SearchType.VEC], ["code"], None, None),
-            ("HYBRID+code", None, ["code"], None, None),
+            ("VEC+code", [SearchType.VEC], ["code"], None, None, False),
+            ("HYBRID+code", None, ["code"], None, None, False),
         ]
     elif args.all:
         modes = [
-            ("VEC+code", [SearchType.VEC], ["code"], None, None),
-            ("HYBRID+code", None, ["code"], None, None),
-            ("VEC+PPR", [SearchType.VEC], ["code"], graph_core, graph_pro),
-            ("HYB+PPR", None, ["code"], graph_core, graph_pro),
+            ("VEC+code", [SearchType.VEC], ["code"], None, None, False),
+            ("HYDE+code", [SearchType.VEC], ["code"], None, None, True),
+            ("HYBRID+code", None, ["code"], None, None, False),
+            ("VEC+PPR", [SearchType.VEC], ["code"], graph_core, graph_pro, False),
+            ("HYB+PPR", None, ["code"], graph_core, graph_pro, False),
         ]
         if reranker:
             modes.extend([
-                ("VEC+rerank", [SearchType.VEC], ["code"], None, None),
-                ("HYB+rerank", None, ["code"], None, None),
-                ("VEC+PPR+rr", [SearchType.VEC], ["code"], graph_core, graph_pro),
-                ("FULL", None, ["code"], graph_core, graph_pro),
+                ("VEC+rerank", [SearchType.VEC], ["code"], None, None, False),
+                ("HYDE+rerank", [SearchType.VEC], ["code"], None, None, True),
+                ("HYB+rerank", None, ["code"], None, None, False),
+                ("VEC+PPR+rr", [SearchType.VEC], ["code"], graph_core, graph_pro, False),
+                ("FULL", None, ["code"], graph_core, graph_pro, False),
             ])
     else:
         modes = [
-            ("VEC-only", [SearchType.VEC], None, None, None),
-            ("LEX-only", [SearchType.LEX], None, None, None),
-            ("HYBRID", None, None, None, None),
-            ("VEC+code", [SearchType.VEC], ["code"], None, None),
-            ("HYBRID+code", None, ["code"], None, None),
+            ("VEC-only", [SearchType.VEC], None, None, None, False),
+            ("LEX-only", [SearchType.LEX], None, None, None, False),
+            ("HYBRID", None, None, None, None, False),
+            ("VEC+code", [SearchType.VEC], ["code"], None, None, False),
+            ("HYBRID+code", None, ["code"], None, None, False),
         ]
 
     print(f"\n  Running {len(modes)} search modes x {len(QUERIES)} queries...")
 
+    # Build RRF weight overrides
     kw_weight = getattr(args, 'keyword_weight', None)
-    if kw_weight is not None:
+    rrf_weights = None
+    if args.semantic_weight is not None or args.graph_weight is not None:
+        rrf_weights = {
+            "keyword": kw_weight if kw_weight is not None else 0.0,
+            "semantic": args.semantic_weight if args.semantic_weight is not None else 1.2,
+            "graph": args.graph_weight if args.graph_weight is not None else 0.8,
+        }
+        print(f"  RRF weights: {rrf_weights}")
+    elif kw_weight is not None:
         print(f"  Keyword weight override: {kw_weight}")
 
-    for mode_label, search_types, src_filter, gc, gp in modes:
+    for mode_label, search_types, src_filter, gc, gp, hyde in modes:
         rr = reranker if ("rerank" in mode_label or mode_label == "FULL") else None
         results = run_mode(
             mode_label, search_types, src_filter, client,
             db_core, db_pro, gc, gp, rr,
             keyword_weight=kw_weight,
+            rrf_weights=rrf_weights,
+            use_hyde=hyde,
         )
         all_results[mode_label] = results
         labels.append(mode_label)
 
     print_comparison(all_results, labels)
+
+    # CSV export
+    if args.csv:
+        os.makedirs("benchmarks", exist_ok=True)
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        csv_path = f"benchmarks/{model_key}_{ts}.csv"
+        fieldnames = [
+            "model", "mode", "query_id", "query_desc", "expected", "top_file",
+            "mrr", "top1", "top3", "top5", "top10", "latency_ms",
+            "keyword_weight", "semantic_weight", "graph_weight",
+            "chunk_budget", "reranker",
+        ]
+        eff_kw = rrf_weights["keyword"] if rrf_weights else (kw_weight if kw_weight is not None else 1.0)
+        eff_sem = rrf_weights["semantic"] if rrf_weights else 1.2
+        eff_graph = rrf_weights["graph"] if rrf_weights else 0.8
+        with open(csv_path, "w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            for label in labels:
+                for i, r in enumerate(all_results[label]):
+                    writer.writerow({
+                        "model": model_key,
+                        "mode": label,
+                        "query_id": i,
+                        "query_desc": r["desc"],
+                        "expected": QUERIES[i][1][0] if QUERIES[i][1] else "",
+                        "top_file": r["top_file"],
+                        "mrr": f"{r['mrr']:.4f}",
+                        "top1": int(r["top1"]),
+                        "top3": int(r["top3"]),
+                        "top5": int(r["top5"]),
+                        "top10": int(r["top10"]),
+                        "latency_ms": f"{r['latency_ms']:.1f}",
+                        "keyword_weight": eff_kw,
+                        "semantic_weight": eff_sem,
+                        "graph_weight": eff_graph,
+                        "chunk_budget": args.chunk_budget or 512,
+                        "reranker": "yes" if reranker else "no",
+                    })
+        print(f"\n  CSV exported: {csv_path}")
 
     # Cleanup (keep persistent indexes, just close handles)
     db_core.close()

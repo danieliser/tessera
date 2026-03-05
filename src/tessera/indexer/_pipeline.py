@@ -756,8 +756,9 @@ class IndexerPipeline:
             if edge_dicts:
                 self.project_db.insert_edges(edge_dicts)
 
-        # Chunk
-        chunks = chunk_with_cast(source_code, language)
+        # Chunk (use model profile's max_chunk_size if available)
+        budget = self.model_profile.max_chunk_size if self.model_profile else 512
+        chunks = chunk_with_cast(source_code, language, budget=budget)
 
         # Build embedding texts and apply hook filters
         texts = [c.content for c in chunks]
