@@ -57,13 +57,11 @@ PPR graph ranking now gated on symbol-name matching. Query tokens checked agains
 
 Prioritized by expected MRR impact. Based on per-query failure analysis of the PM benchmark (see `scripts/benchmark_pm.py --provider fastembed --all`).
 
-### Chunk metadata enrichment (HIGH — estimated +0.05-0.10 MRR)
+### ~~Chunk metadata enrichment~~ — REJECTED
 
-Prepend file name, class name, and namespace to each chunk before embedding. Currently chunks are raw code with no context about where they live. Example: prepending `// File: Popups.php, Class: PUM_Popups, Namespace: PopupMaker` gives the embedding model semantic anchors.
+Tested prepending `// File: Popups.php, Class: PUM_Popups, Package: popup-maker` to chunk text before embedding. **Result: net negative.** VEC-only MRR dropped from 0.609 to 0.536 (-12%), VEC+rerank dropped from 0.739 to 0.735 (-0.5%). The comment-style prefix consumes tokens in BGE-small's 512-token window without creating useful semantic associations. The embedding model treats the structured prefix as noise.
 
-**Why:** Q1 (Frontend rendering → Popups.php) fails at rank 5-7 across all modes because the chunk text has no signal connecting "rendering" to "Popups.php". The file name and class name would provide that link.
-
-**Affects:** `src/tessera/indexer/_pipeline.py` — modify chunk text assembly before embedding.
+**Alternative approaches not yet tested:** natural language summary prefix, separate metadata embedding field, or late-interaction models that handle metadata differently.
 
 ### Hybrid mode RRF weight retuning (MEDIUM — estimated +0.03-0.05 MRR)
 
@@ -90,11 +88,9 @@ Current hybrid mode (keyword + semantic) underperforms VEC-only (0.535 vs 0.609 
 
 **Affects:** `src/tessera/chunker.py` — max chunk size enforcement.
 
-### Persistent benchmark storage (LOW — developer experience)
+### ~~Persistent benchmark storage~~ — v0.7.x
 
-Current benchmark scripts create temp dirs, index, query, then delete everything. Re-running costs full re-indexing time. Store per-model indexes at `~/.tessera/benchmarks/{model-key}/` and skip re-indexing when source hasn't changed.
-
-**Why:** Full 12-model benchmark takes ~2 hours. Iterating on queries or adding models shouldn't require re-indexing existing models.
+`benchmark_pm.py` now stores indexes at `~/.tessera/benchmarks/{model-key}/{core,pro}/`. Skips re-indexing when git HEAD unchanged. `--reindex` flag forces rebuild.
 
 ### Default model upgrade path (LOW — user-facing)
 

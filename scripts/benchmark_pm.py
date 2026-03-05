@@ -18,9 +18,8 @@ from __future__ import annotations
 import argparse
 import logging
 import os
-import shutil
+import subprocess
 import sys
-import tempfile
 import time
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
@@ -363,6 +362,7 @@ def main():
     parser.add_argument("--rerank", action="store_true", help="Enable reranking")
     parser.add_argument("--all", action="store_true", help="Run all modes including PPR")
     parser.add_argument("--quick", action="store_true", help="Only VEC+code and HYBRID+code")
+    parser.add_argument("--reindex", action="store_true", help="Force re-index even if cached")
     args = parser.parse_args()
 
     print("=" * 100)
@@ -389,37 +389,91 @@ def main():
         client.close()
         return
 
-    base_dir = tempfile.mkdtemp(prefix=f"tessera_pm_{model_key}_")
-    print(f"  Working dir: {base_dir}")
+    # Persistent benchmark storage: ~/.tessera/benchmarks/{model-key}/{core,pro}/
+    # Re-indexes only when source files or tessera code changed.
+    bench_root = os.path.expanduser(f"~/.tessera/benchmarks/{model_key}")
+    force_reindex = args.reindex if hasattr(args, 'reindex') else False
+
+    core_base = os.path.join(bench_root, "core")
+    pro_base = os.path.join(bench_root, "pro")
+    os.makedirs(core_base, exist_ok=True)
+    os.makedirs(pro_base, exist_ok=True)
+    print(f"  Index dir: {bench_root}")
+
+    def _needs_reindex(db_base: str, project_path: str) -> bool:
+        """Check if we need to re-index by comparing git HEAD."""
+        if force_reindex:
+            return True
+        marker = os.path.join(db_base, ".indexed_commit")
+        if not os.path.exists(marker):
+            return True
+        try:
+            result = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=project_path, capture_output=True, text=True, timeout=5,
+            )
+            head = result.stdout.strip() if result.returncode == 0 else ""
+            with open(marker) as f:
+                return f.read().strip() != head
+        except Exception:
+            return True
+
+    def _mark_indexed(db_base: str, project_path: str) -> None:
+        """Write git HEAD to marker file after successful indexing."""
+        try:
+            result = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=project_path, capture_output=True, text=True, timeout=5,
+            )
+            if result.returncode == 0:
+                with open(os.path.join(db_base, ".indexed_commit"), "w") as f:
+                    f.write(result.stdout.strip())
+        except Exception:
+            pass
 
     # Index core
-    core_base = os.path.join(base_dir, "core")
-    os.makedirs(core_base, exist_ok=True)
-    ProjectDB.base_dir = core_base
-
-    pipeline_core = IndexerPipeline(project_path=PM_CORE, embedding_client=client)
-    pipeline_core.register()
-    t0 = time.perf_counter()
-    stats_core = pipeline_core.index_project()
-    core_time = time.perf_counter() - t0
-    print(f"  Core: {stats_core.files_processed} files, {stats_core.chunks_created} chunks, "
-          f"{stats_core.chunks_embedded} embedded in {core_time:.1f}s")
+    if _needs_reindex(core_base, PM_CORE):
+        # Clear old data for clean re-index
+        for f in os.listdir(core_base):
+            fp = os.path.join(core_base, f)
+            if os.path.isfile(fp):
+                os.remove(fp)
+        ProjectDB.base_dir = core_base
+        pipeline_core = IndexerPipeline(project_path=PM_CORE, embedding_client=client)
+        pipeline_core.register()
+        t0 = time.perf_counter()
+        stats_core = pipeline_core.index_project()
+        core_time = time.perf_counter() - t0
+        _mark_indexed(core_base, PM_CORE)
+        print(f"  Core: {stats_core.files_processed} files, {stats_core.chunks_created} chunks, "
+              f"{stats_core.chunks_embedded} embedded in {core_time:.1f}s")
+    else:
+        core_time = 0.0
+        print(f"  Core: cached (unchanged)")
 
     # Index pro
-    pro_base = os.path.join(base_dir, "pro")
-    os.makedirs(pro_base, exist_ok=True)
-    ProjectDB.base_dir = pro_base
+    if _needs_reindex(pro_base, PM_PRO):
+        for f in os.listdir(pro_base):
+            fp = os.path.join(pro_base, f)
+            if os.path.isfile(fp):
+                os.remove(fp)
+        ProjectDB.base_dir = pro_base
+        pipeline_pro = IndexerPipeline(project_path=PM_PRO, embedding_client=client)
+        pipeline_pro.register()
+        t0 = time.perf_counter()
+        stats_pro = pipeline_pro.index_project()
+        pro_time = time.perf_counter() - t0
+        _mark_indexed(pro_base, PM_PRO)
+        print(f"  Pro: {stats_pro.files_processed} files, {stats_pro.chunks_created} chunks, "
+              f"{stats_pro.chunks_embedded} embedded in {pro_time:.1f}s")
+    else:
+        pro_time = 0.0
+        print(f"  Pro: cached (unchanged)")
 
-    pipeline_pro = IndexerPipeline(project_path=PM_PRO, embedding_client=client)
-    pipeline_pro.register()
-    t0 = time.perf_counter()
-    stats_pro = pipeline_pro.index_project()
-    pro_time = time.perf_counter() - t0
-    print(f"  Pro: {stats_pro.files_processed} files, {stats_pro.chunks_created} chunks, "
-          f"{stats_pro.chunks_embedded} embedded in {pro_time:.1f}s")
-
-    total = stats_core.files_processed + stats_pro.files_processed
-    print(f"  Total: {total} files indexed in {core_time + pro_time:.1f}s")
+    if core_time + pro_time > 0:
+        print(f"  Index time: {core_time + pro_time:.1f}s")
+    else:
+        print(f"  Indexes loaded from cache")
 
     # Open DBs
     ProjectDB.base_dir = core_base
@@ -482,12 +536,11 @@ def main():
 
     print_comparison(all_results, labels)
 
-    # Cleanup
+    # Cleanup (keep persistent indexes, just close handles)
     db_core.close()
     db_pro.close()
     client.close()
     ProjectDB.base_dir = None
-    shutil.rmtree(base_dir, ignore_errors=True)
 
     print("\nDone.")
 
