@@ -53,6 +53,8 @@ PM_PRO = os.path.expanduser(
 HTTP_MODELS = {
     "nomic": ("nomic-embed", "Nomic-768d"),
     "qwen3": ("qwen3-embed", "Qwen3-1024d"),
+    "nomic-code": ("nomic-embed-code", "Nomic-Code-7B"),
+    "coderank": ("code-rank-embed", "CodeRankEmbed-137M"),
 }
 
 # Local fastembed models — ordered by size tier
@@ -339,21 +341,24 @@ def create_client_and_reranker(args):
             return None, None, None, None
 
         model_name, model_label = HTTP_MODELS[model_key]
+        embed_endpoint = args.embed_endpoint or "http://localhost:8800/v1/embeddings"
         client = EmbeddingClient(
-            endpoint="http://localhost:8800/v1/embeddings",
+            endpoint=embed_endpoint,
             model=model_name,
         )
 
         reranker = None
         if args.rerank or args.all:
+            rr_endpoint = args.reranker_endpoint or "http://localhost:8800/v1/rerank"
+            rr_model = args.reranker_model or "jina-reranker"
             reranker = HTTPReranker(
-                endpoint="http://localhost:8800/v1/rerank",
-                model="jina-reranker",
+                endpoint=rr_endpoint,
+                model=rr_model,
             )
             try:
                 test = reranker.rerank("test", ["test doc"], top_k=1)
                 if test and test[0][1] > 0:
-                    print(f"  Reranker: OK (jina-reranker via HTTP)")
+                    print(f"  Reranker: OK ({rr_model} via {rr_endpoint})")
                 else:
                     print("  Reranker: FALLBACK (zero scores, disabling)")
                     reranker = None
@@ -372,6 +377,12 @@ def main():
                         help="Model key (http: nomic/qwen3, fastembed: bge-small/arctic)")
     parser.add_argument("--reranker", default=None,
                         help="Reranker key for fastembed (jina-tiny/ms-marco)")
+    parser.add_argument("--reranker-endpoint", default=None,
+                        help="HTTP reranker endpoint (e.g. http://localhost:8802/v1/rerank)")
+    parser.add_argument("--reranker-model", default=None,
+                        help="HTTP reranker model name (e.g. jina-reranker-v3)")
+    parser.add_argument("--embed-endpoint", default=None,
+                        help="Override embedding endpoint (default: http://localhost:8800/v1/embeddings)")
     parser.add_argument("--rerank", action="store_true", help="Enable reranking")
     parser.add_argument("--all", action="store_true", help="Run all modes including PPR")
     parser.add_argument("--quick", action="store_true", help="Only VEC+code and HYBRID+code")

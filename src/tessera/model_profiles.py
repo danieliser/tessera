@@ -12,6 +12,7 @@ from dataclasses import dataclass
 
 RERANKER_JINA_TINY = "jinaai/jina-reranker-v1-tiny-en"
 RERANKER_JINA_TURBO = "jinaai/jina-reranker-v1-turbo-en"
+RERANKER_JINA_V3 = "jinaai/jina-reranker-v3"
 
 
 @dataclass(frozen=True)
@@ -121,6 +122,21 @@ _register(
     ),
 )
 
+# ---- Code-specialized models ----
+
+_register(
+    ModelProfile(
+        key="coderank",
+        model_id="nomic-ai/CodeRankEmbed",
+        display_name="CodeRankEmbed-137M",
+        dimensions=768, max_tokens=8192, size_mb=270,
+        architecture="bert", provider="fastembed",
+        scope_prefix=True,    # Uses "Represent this query for searching relevant code:" prefix
+        recommended_reranker=RERANKER_JINA_TURBO,
+        notes="Code-specific 137M bi-encoder. SOTA at size on CSN (77.9 MRR). MIT license.",
+    ),
+)
+
 # ---- HTTP gateway models ----
 
 _register(
@@ -145,6 +161,28 @@ _register(
         scope_prefix=True,
         recommended_reranker=RERANKER_JINA_TURBO,
         baseline_mrr=0.825,
+    ),
+    ModelProfile(
+        key="nomic-code-http",
+        model_id="nomic-embed-code",
+        display_name="Nomic-Code-7B (gateway)",
+        dimensions=768, max_tokens=8192, size_mb=0,
+        architecture="rope", provider="http",
+        scope_prefix=True,    # Uses "Represent this query for searching relevant code:"
+        recommended_reranker=RERANKER_JINA_V3,
+        hybrid_keyword_weight=0.0,
+        notes="7B code-specific embedder via gateway. CSN: 72.3 PHP.",
+    ),
+    ModelProfile(
+        key="coderank-http",
+        model_id="code-rank-embed",
+        display_name="CodeRankEmbed-137M (gateway)",
+        dimensions=768, max_tokens=8192, size_mb=0,
+        architecture="bert", provider="http",
+        scope_prefix=True,
+        recommended_reranker=RERANKER_JINA_V3,
+        hybrid_keyword_weight=0.0,
+        notes="137M code bi-encoder via gateway. SOTA at size on CSN (77.9).",
     ),
 )
 
