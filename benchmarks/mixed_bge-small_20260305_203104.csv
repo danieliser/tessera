@@ -1,0 +1,301 @@
+model,mode,query_id,query_desc,category,expected,top_file,mrr,top1,top3,top5,top10,latency_ms,reranker
+bge-small,VEC,0,Frontend rendering,code,Popups.php,single-popup.php,0.1000,0,0,0,1,75.0,yes
+bge-small,VEC,1,Post type registration,code,PostTypes.php,Themes.php,0.1429,0,0,0,1,65.8,yes
+bge-small,VEC,2,Exit intent trigger,code,Triggers.php,readme.txt,0.1250,0,0,0,1,69.7,yes
+bge-small,VEC,3,Condition callbacks,code,ConditionCallbacks.php,ConditionCallbacks.php,1.0000,1,1,1,1,59.0,yes
+bge-small,VEC,4,Cookie system,code,Cookies.php,PopupCookie.php,1.0000,1,1,1,1,60.8,yes
+bge-small,VEC,5,Newsletter AJAX,code,Newsletters.php,Subscribe.php,1.0000,1,1,1,1,59.2,yes
+bge-small,VEC,6,Trigger shortcode,code,PopupTrigger.php,PopupTrigger.php,1.0000,1,1,1,1,61.9,yes
+bge-small,VEC,7,License REST API,code,RestAPI.php,License.php,1.0000,1,1,1,1,62.8,yes
+bge-small,VEC,8,DI container,code,Container.php,PimpleServiceProvider.php,0.1000,0,0,0,1,64.4,yes
+bge-small,VEC,9,Scheduling,code,scheduling.php,Cron.php,0.5000,0,1,1,1,60.0,yes
+bge-small,VEC,10,Geotargeting setup,doc,setting-up-geotargeting,input-options.php,0.3333,0,1,1,1,58.3,yes
+bge-small,VEC,11,Mobile disable,doc,can-popups-be-disabled-on-mobile-devices,readme.txt,0.0833,0,0,0,0,59.2,yes
+bge-small,VEC,12,Close on link click,doc,close-a-popup-when-a-link-inside-the-popup-is-clicked,functions-deprecated.php,0.3333,0,1,1,1,58.4,yes
+bge-small,VEC,13,Exit intent opt-in guide,doc,exit-intent-opt-in-popup-using-gravity-forms,readme.txt,0.3333,0,1,1,1,62.1,yes
+bge-small,VEC,14,Cart abandonment guide,doc,woocommerce-cart-abandonment-popup,readme.txt,0.3333,0,1,1,1,64.8,yes
+bge-small,VEC,15,Add trigger doc,doc,add-a-popup-trigger,readme.txt,0.3333,0,1,1,1,57.4,yes
+bge-small,VEC,16,GDPR compliance,doc,use-popup-maker-and-meet-the-gdpr-data-privacy-requirements,readme.txt,0.3333,0,1,1,1,57.7,yes
+bge-small,VEC,17,Beaver Builder tutorial,doc,create-beaver-builder-popups,Popups.php,0.1667,0,0,0,1,59.7,yes
+bge-small,VEC,18,Form integration API,doc,popup-maker-form-integration-api,readme.txt,0.3333,0,1,1,1,58.6,yes
+bge-small,VEC,19,Export/import doc,doc,export-and-import-popups-between-sites,installed.php,0.3333,0,1,1,1,59.5,yes
+bge-small,VEC,20,Ninja Forms integration,cross,GravityForms.php,NinjaForms.php,1.0000,1,1,1,1,65.2,yes
+bge-small,VEC,21,Trigger system overview,cross,Triggers.php,readme.txt,0.1111,0,0,0,1,57.8,yes
+bge-small,VEC,22,Analytics & conversions,cross,Analytics.php,readme.txt,0.3333,0,1,1,1,60.1,yes
+bge-small,VEC,23,Cookie frequency control,cross,Cookies.php,readme.txt,0.1667,0,0,0,1,58.5,yes
+bge-small,VEC,24,Theme & CSS styling,cross,find-the-popup-maker-core-and-popup-theme-css,deprecated.php,0.3333,0,1,1,1,58.8,yes
+bge-small,VEC,25,FluentCRM integration,cross,FluentCRM.php,readme.txt,0.2000,0,0,1,1,62.0,yes
+bge-small,VEC,26,Elementor trigger,cross,how-to-use-an-elementor-button-to-trigger-a-popup,google-fonts.json,0.3333,0,1,1,1,67.0,yes
+bge-small,VEC,27,Scheduling (code + doc),cross,scheduling.php,readme.txt,0.5000,0,1,1,1,59.4,yes
+bge-small,VEC,28,Subscribe-to-download,cross,Subscribe.php,NinjaForms.php,0.3333,0,1,1,1,57.5,yes
+bge-small,VEC,29,Glossary,cross,popup-maker-glossary-of-terms,readme.txt,0.3333,0,1,1,1,60.6,yes
+bge-small,HYDE,0,Frontend rendering,code,Popups.php,single-popup.php,0.0526,0,0,0,0,58.3,yes
+bge-small,HYDE,1,Post type registration,code,PostTypes.php,PostTypes.php,1.0000,1,1,1,1,63.2,yes
+bge-small,HYDE,2,Exit intent trigger,code,Triggers.php,readme.txt,0.5000,0,1,1,1,67.3,yes
+bge-small,HYDE,3,Condition callbacks,code,ConditionCallbacks.php,ConditionCallbacks.php,1.0000,1,1,1,1,60.3,yes
+bge-small,HYDE,4,Cookie system,code,Cookies.php,PopupCookie.php,1.0000,1,1,1,1,59.0,yes
+bge-small,HYDE,5,Newsletter AJAX,code,Newsletters.php,Subscribe.php,1.0000,1,1,1,1,60.1,yes
+bge-small,HYDE,6,Trigger shortcode,code,PopupTrigger.php,PopupTrigger.php,1.0000,1,1,1,1,59.3,yes
+bge-small,HYDE,7,License REST API,code,RestAPI.php,License.php,1.0000,1,1,1,1,60.9,yes
+bge-small,HYDE,8,DI container,code,Container.php,ServiceProviderInterface.php,0.0769,0,0,0,0,67.3,yes
+bge-small,HYDE,9,Scheduling,code,scheduling.php,Cron.php,0.5000,0,1,1,1,59.9,yes
+bge-small,HYDE,10,Geotargeting setup,doc,setting-up-geotargeting,extension-list.json,0.3333,0,1,1,1,62.1,yes
+bge-small,HYDE,11,Mobile disable,doc,can-popups-be-disabled-on-mobile-devices,readme.txt,0.3333,0,1,1,1,59.0,yes
+bge-small,HYDE,12,Close on link click,doc,close-a-popup-when-a-link-inside-the-popup-is-clicked,ClosePopup.php,0.3333,0,1,1,1,61.5,yes
+bge-small,HYDE,13,Exit intent opt-in guide,doc,exit-intent-opt-in-popup-using-gravity-forms,readme.txt,0.3333,0,1,1,1,67.8,yes
+bge-small,HYDE,14,Cart abandonment guide,doc,woocommerce-cart-abandonment-popup,readme.txt,0.3333,0,1,1,1,124.5,yes
+bge-small,HYDE,15,Add trigger doc,doc,add-a-popup-trigger,readme.txt,0.3333,0,1,1,1,156.8,yes
+bge-small,HYDE,16,GDPR compliance,doc,use-popup-maker-and-meet-the-gdpr-data-privacy-requirements,Privacy.php,0.3333,0,1,1,1,72.2,yes
+bge-small,HYDE,17,Beaver Builder tutorial,doc,create-beaver-builder-popups,popup-maker.php,0.3333,0,1,1,1,66.5,yes
+bge-small,HYDE,18,Form integration API,doc,popup-maker-form-integration-api,Form.php,0.3333,0,1,1,1,65.6,yes
+bge-small,HYDE,19,Export/import doc,doc,export-and-import-popups-between-sites,installed.php,0.3333,0,1,1,1,62.6,yes
+bge-small,HYDE,20,Ninja Forms integration,cross,GravityForms.php,NinjaForms.php,1.0000,1,1,1,1,69.3,yes
+bge-small,HYDE,21,Trigger system overview,cross,Triggers.php,readme.txt,0.5000,0,1,1,1,63.3,yes
+bge-small,HYDE,22,Analytics & conversions,cross,Analytics.php,developers.php,0.3333,0,1,1,1,63.6,yes
+bge-small,HYDE,23,Cookie frequency control,cross,Cookies.php,readme.txt,0.1667,0,0,0,1,62.4,yes
+bge-small,HYDE,24,Theme & CSS styling,cross,find-the-popup-maker-core-and-popup-theme-css,deprecated.php,0.3333,0,1,1,1,64.6,yes
+bge-small,HYDE,25,FluentCRM integration,cross,FluentCRM.php,readme.txt,0.5000,0,1,1,1,64.7,yes
+bge-small,HYDE,26,Elementor trigger,cross,how-to-use-an-elementor-button-to-trigger-a-popup,template.php,0.3333,0,1,1,1,68.0,yes
+bge-small,HYDE,27,Scheduling (code + doc),cross,scheduling.php,readme.txt,0.5000,0,1,1,1,64.8,yes
+bge-small,HYDE,28,Subscribe-to-download,cross,Subscribe.php,NinjaForms.php,0.3333,0,1,1,1,62.7,yes
+bge-small,HYDE,29,Glossary,cross,popup-maker-glossary-of-terms,class-popup-maker.php,0.3333,0,1,1,1,62.2,yes
+bge-small,HYBRID,0,Frontend rendering,code,Popups.php,single-popup.php,0.1000,0,0,0,1,65.9,yes
+bge-small,HYBRID,1,Post type registration,code,PostTypes.php,PopupMetrics.php,0.0000,0,0,0,0,6.9,yes
+bge-small,HYBRID,2,Exit intent trigger,code,Triggers.php,readme.txt,0.0476,0,0,0,0,65.0,yes
+bge-small,HYBRID,3,Condition callbacks,code,ConditionCallbacks.php,ConditionCallbacks.php,1.0000,1,1,1,1,71.8,yes
+bge-small,HYBRID,4,Cookie system,code,Cookies.php,PopupCookie.php,1.0000,1,1,1,1,62.9,yes
+bge-small,HYBRID,5,Newsletter AJAX,code,Newsletters.php,Subscribe.php,1.0000,1,1,1,1,13.7,yes
+bge-small,HYBRID,6,Trigger shortcode,code,PopupTrigger.php,PopupTrigger.php,1.0000,1,1,1,1,64.3,yes
+bge-small,HYBRID,7,License REST API,code,RestAPI.php,RestAPI.php,1.0000,1,1,1,1,64.7,yes
+bge-small,HYBRID,8,DI container,code,Container.php,PimpleServiceProvider.php,0.1429,0,0,0,1,55.4,yes
+bge-small,HYBRID,9,Scheduling,code,scheduling.php,Cron.php,0.5000,0,1,1,1,66.4,yes
+bge-small,HYBRID,10,Geotargeting setup,doc,setting-up-geotargeting,input-options.php,0.3333,0,1,1,1,73.3,yes
+bge-small,HYBRID,11,Mobile disable,doc,can-popups-be-disabled-on-mobile-devices,readme.txt,0.0833,0,0,0,0,65.5,yes
+bge-small,HYBRID,12,Close on link click,doc,close-a-popup-when-a-link-inside-the-popup-is-clicked,466455-close-a-popup-when-a-link-inside-the-popup-is-clicked.json,1.0000,1,1,1,1,63.5,yes
+bge-small,HYBRID,13,Exit intent opt-in guide,doc,exit-intent-opt-in-popup-using-gravity-forms,257747-exit-intent-opt-in-popup-using-gravity-forms.md,1.0000,1,1,1,1,65.1,yes
+bge-small,HYBRID,14,Cart abandonment guide,doc,woocommerce-cart-abandonment-popup,readme.txt,0.3333,0,1,1,1,70.9,yes
+bge-small,HYBRID,15,Add trigger doc,doc,add-a-popup-trigger,readme.txt,0.0476,0,0,0,0,17.8,yes
+bge-small,HYBRID,16,GDPR compliance,doc,use-popup-maker-and-meet-the-gdpr-data-privacy-requirements,readme.txt,0.3333,0,1,1,1,66.8,yes
+bge-small,HYBRID,17,Beaver Builder tutorial,doc,create-beaver-builder-popups,Popups.php,0.1667,0,0,0,1,68.1,yes
+bge-small,HYBRID,18,Form integration API,doc,popup-maker-form-integration-api,readme.txt,0.5000,0,1,1,1,57.3,yes
+bge-small,HYBRID,19,Export/import doc,doc,export-and-import-popups-between-sites,466460-export-and-import-popups-between-sites.md,1.0000,1,1,1,1,66.0,yes
+bge-small,HYBRID,20,Ninja Forms integration,cross,GravityForms.php,460366-ninja-forms.md,1.0000,1,1,1,1,64.1,yes
+bge-small,HYBRID,21,Trigger system overview,cross,Triggers.php,readme.txt,0.1111,0,0,0,1,67.4,yes
+bge-small,HYBRID,22,Analytics & conversions,cross,Analytics.php,analytics.php,0.5000,0,1,1,1,54.9,yes
+bge-small,HYBRID,23,Cookie frequency control,cross,Cookies.php,readme.txt,0.1667,0,0,0,1,64.4,yes
+bge-small,HYBRID,24,Theme & CSS styling,cross,find-the-popup-maker-core-and-popup-theme-css,deprecated.php,0.3333,0,1,1,1,72.4,yes
+bge-small,HYBRID,25,FluentCRM integration,cross,FluentCRM.php,readme.txt,0.2000,0,0,1,1,65.1,yes
+bge-small,HYBRID,26,Elementor trigger,cross,how-to-use-an-elementor-button-to-trigger-a-popup,465462-how-to-use-an-elementor-button-to-trigger-a-popup.md,1.0000,1,1,1,1,64.8,yes
+bge-small,HYBRID,27,Scheduling (code + doc),cross,scheduling.php,readme.txt,0.5000,0,1,1,1,65.1,yes
+bge-small,HYBRID,28,Subscribe-to-download,cross,Subscribe.php,466464-subscribe-to-download-file-using-popup-maker-and-ninja-forms.json,1.0000,1,1,1,1,63.7,yes
+bge-small,HYBRID,29,Glossary,cross,popup-maker-glossary-of-terms,468176-popup-maker-glossary-of-terms.md,1.0000,1,1,1,1,65.2,yes
+bge-small,VEC+PPR,0,Frontend rendering,code,Popups.php,PopupMetrics.php,0.2500,0,0,1,1,93.2,yes
+bge-small,VEC+PPR,1,Post type registration,code,PostTypes.php,PopupMetrics.php,0.5000,0,1,1,1,84.5,yes
+bge-small,VEC+PPR,2,Exit intent trigger,code,Triggers.php,readme.txt,0.1250,0,0,0,1,71.4,yes
+bge-small,VEC+PPR,3,Condition callbacks,code,ConditionCallbacks.php,ConditionCallbacks.php,1.0000,1,1,1,1,77.6,yes
+bge-small,VEC+PPR,4,Cookie system,code,Cookies.php,PopupCookie.php,1.0000,1,1,1,1,77.3,yes
+bge-small,VEC+PPR,5,Newsletter AJAX,code,Newsletters.php,PopupMetrics.php,0.5000,0,1,1,1,79.0,yes
+bge-small,VEC+PPR,6,Trigger shortcode,code,PopupTrigger.php,PopupTrigger.php,1.0000,1,1,1,1,61.9,yes
+bge-small,VEC+PPR,7,License REST API,code,RestAPI.php,RestAPI.php,1.0000,1,1,1,1,69.3,yes
+bge-small,VEC+PPR,8,DI container,code,Container.php,PimpleServiceProvider.php,0.1000,0,0,0,1,61.5,yes
+bge-small,VEC+PPR,9,Scheduling,code,scheduling.php,PopupMetrics.php,0.5000,0,1,1,1,67.2,yes
+bge-small,VEC+PPR,10,Geotargeting setup,doc,setting-up-geotargeting,PopupMetrics.php,0.0769,0,0,0,0,78.9,yes
+bge-small,VEC+PPR,11,Mobile disable,doc,can-popups-be-disabled-on-mobile-devices,readme.txt,0.0833,0,0,0,0,61.6,yes
+bge-small,VEC+PPR,12,Close on link click,doc,close-a-popup-when-a-link-inside-the-popup-is-clicked,functions-deprecated.php,0.3333,0,1,1,1,60.7,yes
+bge-small,VEC+PPR,13,Exit intent opt-in guide,doc,exit-intent-opt-in-popup-using-gravity-forms,PopupMetrics.php,0.2500,0,0,1,1,63.7,yes
+bge-small,VEC+PPR,14,Cart abandonment guide,doc,woocommerce-cart-abandonment-popup,PopupMetrics.php,0.1111,0,0,0,1,73.0,yes
+bge-small,VEC+PPR,15,Add trigger doc,doc,add-a-popup-trigger,readme.txt,0.3333,0,1,1,1,66.7,yes
+bge-small,VEC+PPR,16,GDPR compliance,doc,use-popup-maker-and-meet-the-gdpr-data-privacy-requirements,Privacy.php,0.1000,0,0,0,1,63.2,yes
+bge-small,VEC+PPR,17,Beaver Builder tutorial,doc,create-beaver-builder-popups,Popups.php,0.1667,0,0,0,1,59.3,yes
+bge-small,VEC+PPR,18,Form integration API,doc,popup-maker-form-integration-api,readme.txt,0.3333,0,1,1,1,59.0,yes
+bge-small,VEC+PPR,19,Export/import doc,doc,export-and-import-popups-between-sites,Popups.php,0.2000,0,0,1,1,67.0,yes
+bge-small,VEC+PPR,20,Ninja Forms integration,cross,GravityForms.php,NinjaForms.php,1.0000,1,1,1,1,63.0,yes
+bge-small,VEC+PPR,21,Trigger system overview,cross,Triggers.php,readme.txt,0.1111,0,0,0,1,65.3,yes
+bge-small,VEC+PPR,22,Analytics & conversions,cross,Analytics.php,readme.txt,0.3333,0,1,1,1,59.0,yes
+bge-small,VEC+PPR,23,Cookie frequency control,cross,Cookies.php,PopupCookie.php,1.0000,1,1,1,1,68.4,yes
+bge-small,VEC+PPR,24,Theme & CSS styling,cross,find-the-popup-maker-core-and-popup-theme-css,deprecated.php,0.3333,0,1,1,1,64.3,yes
+bge-small,VEC+PPR,25,FluentCRM integration,cross,FluentCRM.php,readme.txt,0.2000,0,0,1,1,59.6,yes
+bge-small,VEC+PPR,26,Elementor trigger,cross,how-to-use-an-elementor-button-to-trigger-a-popup,google-fonts.json,0.3333,0,1,1,1,63.9,yes
+bge-small,VEC+PPR,27,Scheduling (code + doc),cross,scheduling.php,PopupMetrics.php,0.1667,0,0,0,1,72.3,yes
+bge-small,VEC+PPR,28,Subscribe-to-download,cross,Subscribe.php,NinjaForms.php,0.3333,0,1,1,1,62.5,yes
+bge-small,VEC+PPR,29,Glossary,cross,popup-maker-glossary-of-terms,readme.txt,0.3333,0,1,1,1,60.7,yes
+bge-small,HYB+PPR,0,Frontend rendering,code,Popups.php,PopupMetrics.php,0.2500,0,0,1,1,69.8,yes
+bge-small,HYB+PPR,1,Post type registration,code,PostTypes.php,PopupMetrics.php,0.0000,0,0,0,0,9.1,yes
+bge-small,HYB+PPR,2,Exit intent trigger,code,Triggers.php,readme.txt,0.0476,0,0,0,0,59.4,yes
+bge-small,HYB+PPR,3,Condition callbacks,code,ConditionCallbacks.php,ConditionCallbacks.php,1.0000,1,1,1,1,74.2,yes
+bge-small,HYB+PPR,4,Cookie system,code,Cookies.php,PopupCookie.php,1.0000,1,1,1,1,64.4,yes
+bge-small,HYB+PPR,5,Newsletter AJAX,code,Newsletters.php,PopupMetrics.php,0.5000,0,1,1,1,23.7,yes
+bge-small,HYB+PPR,6,Trigger shortcode,code,PopupTrigger.php,PopupTrigger.php,1.0000,1,1,1,1,62.0,yes
+bge-small,HYB+PPR,7,License REST API,code,RestAPI.php,RestAPI.php,1.0000,1,1,1,1,77.7,yes
+bge-small,HYB+PPR,8,DI container,code,Container.php,PimpleServiceProvider.php,0.1429,0,0,0,1,55.1,yes
+bge-small,HYB+PPR,9,Scheduling,code,scheduling.php,PopupMetrics.php,0.5000,0,1,1,1,82.6,yes
+bge-small,HYB+PPR,10,Geotargeting setup,doc,setting-up-geotargeting,PopupMetrics.php,0.0769,0,0,0,0,79.4,yes
+bge-small,HYB+PPR,11,Mobile disable,doc,can-popups-be-disabled-on-mobile-devices,readme.txt,0.0833,0,0,0,0,72.4,yes
+bge-small,HYB+PPR,12,Close on link click,doc,close-a-popup-when-a-link-inside-the-popup-is-clicked,466455-close-a-popup-when-a-link-inside-the-popup-is-clicked.json,1.0000,1,1,1,1,58.9,yes
+bge-small,HYB+PPR,13,Exit intent opt-in guide,doc,exit-intent-opt-in-popup-using-gravity-forms,257747-exit-intent-opt-in-popup-using-gravity-forms.md,1.0000,1,1,1,1,70.9,yes
+bge-small,HYB+PPR,14,Cart abandonment guide,doc,woocommerce-cart-abandonment-popup,PopupMetrics.php,0.1111,0,0,0,1,88.7,yes
+bge-small,HYB+PPR,15,Add trigger doc,doc,add-a-popup-trigger,readme.txt,0.0476,0,0,0,0,17.2,yes
+bge-small,HYB+PPR,16,GDPR compliance,doc,use-popup-maker-and-meet-the-gdpr-data-privacy-requirements,Privacy.php,0.1000,0,0,0,1,65.4,yes
+bge-small,HYB+PPR,17,Beaver Builder tutorial,doc,create-beaver-builder-popups,Popups.php,0.1667,0,0,0,1,66.1,yes
+bge-small,HYB+PPR,18,Form integration API,doc,popup-maker-form-integration-api,readme.txt,0.5000,0,1,1,1,56.9,yes
+bge-small,HYB+PPR,19,Export/import doc,doc,export-and-import-popups-between-sites,466460-export-and-import-popups-between-sites.md,1.0000,1,1,1,1,71.5,yes
+bge-small,HYB+PPR,20,Ninja Forms integration,cross,GravityForms.php,460366-ninja-forms.md,1.0000,1,1,1,1,56.4,yes
+bge-small,HYB+PPR,21,Trigger system overview,cross,Triggers.php,readme.txt,0.1111,0,0,0,1,69.3,yes
+bge-small,HYB+PPR,22,Analytics & conversions,cross,Analytics.php,analytics.php,0.5000,0,1,1,1,55.9,yes
+bge-small,HYB+PPR,23,Cookie frequency control,cross,Cookies.php,PopupCookie.php,1.0000,1,1,1,1,71.8,yes
+bge-small,HYB+PPR,24,Theme & CSS styling,cross,find-the-popup-maker-core-and-popup-theme-css,deprecated.php,0.3333,0,1,1,1,65.5,yes
+bge-small,HYB+PPR,25,FluentCRM integration,cross,FluentCRM.php,readme.txt,0.2000,0,0,1,1,65.1,yes
+bge-small,HYB+PPR,26,Elementor trigger,cross,how-to-use-an-elementor-button-to-trigger-a-popup,465462-how-to-use-an-elementor-button-to-trigger-a-popup.md,1.0000,1,1,1,1,70.6,yes
+bge-small,HYB+PPR,27,Scheduling (code + doc),cross,scheduling.php,PopupMetrics.php,0.1667,0,0,0,1,115.2,yes
+bge-small,HYB+PPR,28,Subscribe-to-download,cross,Subscribe.php,466464-subscribe-to-download-file-using-popup-maker-and-ninja-forms.json,1.0000,1,1,1,1,76.9,yes
+bge-small,HYB+PPR,29,Glossary,cross,popup-maker-glossary-of-terms,468176-popup-maker-glossary-of-terms.md,1.0000,1,1,1,1,67.8,yes
+bge-small,VEC+rerank,0,Frontend rendering,code,Popups.php,468481-why-is-my-popup-showing-in-the-footer-of-my-site.json,0.1000,0,0,0,1,329.7,yes
+bge-small,VEC+rerank,1,Post type registration,code,PostTypes.php,PostTypes.php,1.0000,1,1,1,1,282.9,yes
+bge-small,VEC+rerank,2,Exit intent trigger,code,Triggers.php,Triggers.php,1.0000,1,1,1,1,268.3,yes
+bge-small,VEC+rerank,3,Condition callbacks,code,ConditionCallbacks.php,ConditionCallbacks.php,1.0000,1,1,1,1,283.6,yes
+bge-small,VEC+rerank,4,Cookie system,code,Cookies.php,468458-troubleshooting-your-first-popup.md,0.1667,0,0,0,1,272.3,yes
+bge-small,VEC+rerank,5,Newsletter AJAX,code,Newsletters.php,Subscribe.php,1.0000,1,1,1,1,282.6,yes
+bge-small,VEC+rerank,6,Trigger shortcode,code,PopupTrigger.php,468151-shortcode-popup-trigger.json,0.3333,0,1,1,1,317.0,yes
+bge-small,VEC+rerank,7,License REST API,code,RestAPI.php,License.php,1.0000,1,1,1,1,239.2,yes
+bge-small,VEC+rerank,8,DI container,code,Container.php,PimpleServiceProvider.php,0.0000,0,0,0,0,313.8,yes
+bge-small,VEC+rerank,9,Scheduling,code,scheduling.php,468611-plugin-introduction-option-settings-2.md,0.3333,0,1,1,1,300.3,yes
+bge-small,VEC+rerank,10,Geotargeting setup,doc,setting-up-geotargeting,468601-setting-up-geotargeting.json,1.0000,1,1,1,1,312.6,yes
+bge-small,VEC+rerank,11,Mobile disable,doc,can-popups-be-disabled-on-mobile-devices,468475-can-popups-be-disabled-on-mobile-devices.json,1.0000,1,1,1,1,293.2,yes
+bge-small,VEC+rerank,12,Close on link click,doc,close-a-popup-when-a-link-inside-the-popup-is-clicked,466455-close-a-popup-when-a-link-inside-the-popup-is-clicked.json,1.0000,1,1,1,1,489.3,yes
+bge-small,VEC+rerank,13,Exit intent opt-in guide,doc,exit-intent-opt-in-popup-using-gravity-forms,257747-exit-intent-opt-in-popup-using-gravity-forms.json,1.0000,1,1,1,1,451.7,yes
+bge-small,VEC+rerank,14,Cart abandonment guide,doc,woocommerce-cart-abandonment-popup,471207-how-to-set-up-woocommerce-cart-abandonment-popups.md,1.0000,1,1,1,1,414.5,yes
+bge-small,VEC+rerank,15,Add trigger doc,doc,add-a-popup-trigger,468173-add-a-popup-trigger.md,1.0000,1,1,1,1,500.1,yes
+bge-small,VEC+rerank,16,GDPR compliance,doc,use-popup-maker-and-meet-the-gdpr-data-privacy-requirements,466470-use-popup-maker-and-meet-the-gdpr-data-privacy-requirements.md,1.0000,1,1,1,1,439.2,yes
+bge-small,VEC+rerank,17,Beaver Builder tutorial,doc,create-beaver-builder-popups,460862-create-beaver-builder-popups.md,1.0000,1,1,1,1,539.1,yes
+bge-small,VEC+rerank,18,Form integration API,doc,popup-maker-form-integration-api,Form.php,0.5000,0,1,1,1,460.2,yes
+bge-small,VEC+rerank,19,Export/import doc,doc,export-and-import-popups-between-sites,466460-export-and-import-popups-between-sites.md,1.0000,1,1,1,1,460.6,yes
+bge-small,VEC+rerank,20,Ninja Forms integration,cross,GravityForms.php,NinjaForms.php,1.0000,1,1,1,1,364.8,yes
+bge-small,VEC+rerank,21,Trigger system overview,cross,Triggers.php,468148-trigger-click-open-overview-methods.json,0.1250,0,0,0,1,354.9,yes
+bge-small,VEC+rerank,22,Analytics & conversions,cross,Analytics.php,developers.php,0.2500,0,0,1,1,391.0,yes
+bge-small,VEC+rerank,23,Cookie frequency control,cross,Cookies.php,readme.txt,0.3333,0,1,1,1,468.1,yes
+bge-small,VEC+rerank,24,Theme & CSS styling,cross,find-the-popup-maker-core-and-popup-theme-css,468182-popup-theme-settings-overlay-tab.json,1.0000,1,1,1,1,457.4,yes
+bge-small,VEC+rerank,25,FluentCRM integration,cross,FluentCRM.php,AddTag.php,1.0000,1,1,1,1,349.2,yes
+bge-small,VEC+rerank,26,Elementor trigger,cross,how-to-use-an-elementor-button-to-trigger-a-popup,465462-how-to-use-an-elementor-button-to-trigger-a-popup.json,1.0000,1,1,1,1,451.9,yes
+bge-small,VEC+rerank,27,Scheduling (code + doc),cross,scheduling.php,468611-plugin-introduction-option-settings-2.json,0.2500,0,0,1,1,384.4,yes
+bge-small,VEC+rerank,28,Subscribe-to-download,cross,Subscribe.php,466464-subscribe-to-download-file-using-popup-maker-and-ninja-forms.json,1.0000,1,1,1,1,406.5,yes
+bge-small,VEC+rerank,29,Glossary,cross,popup-maker-glossary-of-terms,468176-popup-maker-glossary-of-terms.md,1.0000,1,1,1,1,438.4,yes
+bge-small,HYDE+rerank,0,Frontend rendering,code,Popups.php,468481-why-is-my-popup-showing-in-the-footer-of-my-site.json,0.0000,0,0,0,0,555.1,yes
+bge-small,HYDE+rerank,1,Post type registration,code,PostTypes.php,Themes.php,0.5000,0,1,1,1,433.7,yes
+bge-small,HYDE+rerank,2,Exit intent trigger,code,Triggers.php,468613-exit-intent-settings.json,0.2000,0,0,1,1,375.2,yes
+bge-small,HYDE+rerank,3,Condition callbacks,code,ConditionCallbacks.php,ConditionCallbacks.php,1.0000,1,1,1,1,328.0,yes
+bge-small,HYDE+rerank,4,Cookie system,code,Cookies.php,468458-troubleshooting-your-first-popup.md,0.1429,0,0,0,1,387.7,yes
+bge-small,HYDE+rerank,5,Newsletter AJAX,code,Newsletters.php,Subscribe.php,1.0000,1,1,1,1,410.7,yes
+bge-small,HYDE+rerank,6,Trigger shortcode,code,PopupTrigger.php,468151-shortcode-popup-trigger.json,0.5000,0,1,1,1,437.4,yes
+bge-small,HYDE+rerank,7,License REST API,code,RestAPI.php,License.php,1.0000,1,1,1,1,361.4,yes
+bge-small,HYDE+rerank,8,DI container,code,Container.php,PimpleServiceProvider.php,0.0000,0,0,0,0,471.0,yes
+bge-small,HYDE+rerank,9,Scheduling,code,scheduling.php,468611-plugin-introduction-option-settings-2.md,0.3333,0,1,1,1,466.8,yes
+bge-small,HYDE+rerank,10,Geotargeting setup,doc,setting-up-geotargeting,468601-setting-up-geotargeting.json,1.0000,1,1,1,1,465.8,yes
+bge-small,HYDE+rerank,11,Mobile disable,doc,can-popups-be-disabled-on-mobile-devices,468475-can-popups-be-disabled-on-mobile-devices.json,1.0000,1,1,1,1,518.5,yes
+bge-small,HYDE+rerank,12,Close on link click,doc,close-a-popup-when-a-link-inside-the-popup-is-clicked,466455-close-a-popup-when-a-link-inside-the-popup-is-clicked.json,1.0000,1,1,1,1,523.2,yes
+bge-small,HYDE+rerank,13,Exit intent opt-in guide,doc,exit-intent-opt-in-popup-using-gravity-forms,257747-exit-intent-opt-in-popup-using-gravity-forms.json,1.0000,1,1,1,1,442.9,yes
+bge-small,HYDE+rerank,14,Cart abandonment guide,doc,woocommerce-cart-abandonment-popup,471207-how-to-set-up-woocommerce-cart-abandonment-popups.md,1.0000,1,1,1,1,517.5,yes
+bge-small,HYDE+rerank,15,Add trigger doc,doc,add-a-popup-trigger,468173-add-a-popup-trigger.md,1.0000,1,1,1,1,643.3,yes
+bge-small,HYDE+rerank,16,GDPR compliance,doc,use-popup-maker-and-meet-the-gdpr-data-privacy-requirements,466470-use-popup-maker-and-meet-the-gdpr-data-privacy-requirements.md,1.0000,1,1,1,1,429.5,yes
+bge-small,HYDE+rerank,17,Beaver Builder tutorial,doc,create-beaver-builder-popups,460862-create-beaver-builder-popups.md,1.0000,1,1,1,1,381.2,yes
+bge-small,HYDE+rerank,18,Form integration API,doc,popup-maker-form-integration-api,466851-popup-maker-form-integration-api.md,1.0000,1,1,1,1,456.3,yes
+bge-small,HYDE+rerank,19,Export/import doc,doc,export-and-import-popups-between-sites,466460-export-and-import-popups-between-sites.json,1.0000,1,1,1,1,410.0,yes
+bge-small,HYDE+rerank,20,Ninja Forms integration,cross,GravityForms.php,NinjaForms.php,1.0000,1,1,1,1,371.3,yes
+bge-small,HYDE+rerank,21,Trigger system overview,cross,Triggers.php,468184-click-trigger-settings-cheat-sheet.json,0.1111,0,0,0,1,423.4,yes
+bge-small,HYDE+rerank,22,Analytics & conversions,cross,Analytics.php,developers.php,0.2500,0,0,1,1,461.3,yes
+bge-small,HYDE+rerank,23,Cookie frequency control,cross,Cookies.php,readme.txt,0.3333,0,1,1,1,529.3,yes
+bge-small,HYDE+rerank,24,Theme & CSS styling,cross,find-the-popup-maker-core-and-popup-theme-css,468182-popup-theme-settings-overlay-tab.json,1.0000,1,1,1,1,566.9,yes
+bge-small,HYDE+rerank,25,FluentCRM integration,cross,FluentCRM.php,StartAutomation.php,0.5000,0,1,1,1,387.6,yes
+bge-small,HYDE+rerank,26,Elementor trigger,cross,how-to-use-an-elementor-button-to-trigger-a-popup,465462-how-to-use-an-elementor-button-to-trigger-a-popup.json,1.0000,1,1,1,1,555.9,yes
+bge-small,HYDE+rerank,27,Scheduling (code + doc),cross,scheduling.php,468611-plugin-introduction-option-settings-2.json,0.3333,0,1,1,1,663.4,yes
+bge-small,HYDE+rerank,28,Subscribe-to-download,cross,Subscribe.php,466464-subscribe-to-download-file-using-popup-maker-and-ninja-forms.md,1.0000,1,1,1,1,462.0,yes
+bge-small,HYDE+rerank,29,Glossary,cross,popup-maker-glossary-of-terms,468176-popup-maker-glossary-of-terms.md,1.0000,1,1,1,1,454.2,yes
+bge-small,HYB+rerank,0,Frontend rendering,code,Popups.php,468481-why-is-my-popup-showing-in-the-footer-of-my-site.json,0.1000,0,0,0,1,450.4,yes
+bge-small,HYB+rerank,1,Post type registration,code,PostTypes.php,ThemeSettings.php,0.0000,0,0,0,0,202.7,yes
+bge-small,HYB+rerank,2,Exit intent trigger,code,Triggers.php,468613-exit-intent-settings.md,0.0000,0,0,0,0,466.7,yes
+bge-small,HYB+rerank,3,Condition callbacks,code,ConditionCallbacks.php,ConditionCallbacks.php,1.0000,1,1,1,1,324.0,yes
+bge-small,HYB+rerank,4,Cookie system,code,Cookies.php,468458-troubleshooting-your-first-popup.md,0.1667,0,0,0,1,381.4,yes
+bge-small,HYB+rerank,5,Newsletter AJAX,code,Newsletters.php,Subscribe.php,1.0000,1,1,1,1,366.0,yes
+bge-small,HYB+rerank,6,Trigger shortcode,code,PopupTrigger.php,468151-shortcode-popup-trigger.json,0.2500,0,0,1,1,469.5,yes
+bge-small,HYB+rerank,7,License REST API,code,RestAPI.php,License.php,1.0000,1,1,1,1,374.9,yes
+bge-small,HYB+rerank,8,DI container,code,Container.php,PimpleServiceProvider.php,0.1111,0,0,0,1,476.1,yes
+bge-small,HYB+rerank,9,Scheduling,code,scheduling.php,468611-plugin-introduction-option-settings-2.md,0.3333,0,1,1,1,433.7,yes
+bge-small,HYB+rerank,10,Geotargeting setup,doc,setting-up-geotargeting,468601-setting-up-geotargeting.json,1.0000,1,1,1,1,533.5,yes
+bge-small,HYB+rerank,11,Mobile disable,doc,can-popups-be-disabled-on-mobile-devices,468475-can-popups-be-disabled-on-mobile-devices.json,1.0000,1,1,1,1,501.1,yes
+bge-small,HYB+rerank,12,Close on link click,doc,close-a-popup-when-a-link-inside-the-popup-is-clicked,466455-close-a-popup-when-a-link-inside-the-popup-is-clicked.json,1.0000,1,1,1,1,512.7,yes
+bge-small,HYB+rerank,13,Exit intent opt-in guide,doc,exit-intent-opt-in-popup-using-gravity-forms,257747-exit-intent-opt-in-popup-using-gravity-forms.json,1.0000,1,1,1,1,500.1,yes
+bge-small,HYB+rerank,14,Cart abandonment guide,doc,woocommerce-cart-abandonment-popup,471207-how-to-set-up-woocommerce-cart-abandonment-popups.md,1.0000,1,1,1,1,410.1,yes
+bge-small,HYB+rerank,15,Add trigger doc,doc,add-a-popup-trigger,Popups.php,0.0000,0,0,0,0,358.2,yes
+bge-small,HYB+rerank,16,GDPR compliance,doc,use-popup-maker-and-meet-the-gdpr-data-privacy-requirements,466470-use-popup-maker-and-meet-the-gdpr-data-privacy-requirements.md,1.0000,1,1,1,1,551.4,yes
+bge-small,HYB+rerank,17,Beaver Builder tutorial,doc,create-beaver-builder-popups,460862-create-beaver-builder-popups.md,1.0000,1,1,1,1,471.8,yes
+bge-small,HYB+rerank,18,Form integration API,doc,popup-maker-form-integration-api,466851-popup-maker-form-integration-api.json,1.0000,1,1,1,1,417.6,yes
+bge-small,HYB+rerank,19,Export/import doc,doc,export-and-import-popups-between-sites,466460-export-and-import-popups-between-sites.json,1.0000,1,1,1,1,587.1,yes
+bge-small,HYB+rerank,20,Ninja Forms integration,cross,GravityForms.php,460366-ninja-forms.md,1.0000,1,1,1,1,361.1,yes
+bge-small,HYB+rerank,21,Trigger system overview,cross,Triggers.php,468148-trigger-click-open-overview-methods.json,0.1250,0,0,0,1,429.1,yes
+bge-small,HYB+rerank,22,Analytics & conversions,cross,Analytics.php,analytics.php,0.5000,0,1,1,1,413.8,yes
+bge-small,HYB+rerank,23,Cookie frequency control,cross,Cookies.php,readme.txt,0.3333,0,1,1,1,447.6,yes
+bge-small,HYB+rerank,24,Theme & CSS styling,cross,find-the-popup-maker-core-and-popup-theme-css,468182-popup-theme-settings-overlay-tab.json,1.0000,1,1,1,1,485.2,yes
+bge-small,HYB+rerank,25,FluentCRM integration,cross,FluentCRM.php,AddTag.php,1.0000,1,1,1,1,477.1,yes
+bge-small,HYB+rerank,26,Elementor trigger,cross,how-to-use-an-elementor-button-to-trigger-a-popup,465462-how-to-use-an-elementor-button-to-trigger-a-popup.json,1.0000,1,1,1,1,531.6,yes
+bge-small,HYB+rerank,27,Scheduling (code + doc),cross,scheduling.php,468611-plugin-introduction-option-settings-2.json,0.2500,0,0,1,1,546.2,yes
+bge-small,HYB+rerank,28,Subscribe-to-download,cross,Subscribe.php,466464-subscribe-to-download-file-using-popup-maker-and-ninja-forms.md,1.0000,1,1,1,1,465.8,yes
+bge-small,HYB+rerank,29,Glossary,cross,popup-maker-glossary-of-terms,468176-popup-maker-glossary-of-terms.md,1.0000,1,1,1,1,507.2,yes
+bge-small,FULL,0,Frontend rendering,code,Popups.php,468481-why-is-my-popup-showing-in-the-footer-of-my-site.json,0.1250,0,0,0,1,504.3,yes
+bge-small,FULL,1,Post type registration,code,PostTypes.php,ThemeSettings.php,0.0000,0,0,0,0,199.4,yes
+bge-small,FULL,2,Exit intent trigger,code,Triggers.php,468613-exit-intent-settings.md,0.0000,0,0,0,0,410.7,yes
+bge-small,FULL,3,Condition callbacks,code,ConditionCallbacks.php,ConditionCallbacks.php,1.0000,1,1,1,1,344.9,yes
+bge-small,FULL,4,Cookie system,code,Cookies.php,468458-troubleshooting-your-first-popup.md,0.1667,0,0,0,1,426.6,yes
+bge-small,FULL,5,Newsletter AJAX,code,Newsletters.php,Subscribe.php,1.0000,1,1,1,1,354.1,yes
+bge-small,FULL,6,Trigger shortcode,code,PopupTrigger.php,468151-shortcode-popup-trigger.json,0.2500,0,0,1,1,456.4,yes
+bge-small,FULL,7,License REST API,code,RestAPI.php,License.php,1.0000,1,1,1,1,406.3,yes
+bge-small,FULL,8,DI container,code,Container.php,PimpleServiceProvider.php,0.1111,0,0,0,1,476.8,yes
+bge-small,FULL,9,Scheduling,code,scheduling.php,468611-plugin-introduction-option-settings-2.md,0.3333,0,1,1,1,495.6,yes
+bge-small,FULL,10,Geotargeting setup,doc,setting-up-geotargeting,468601-setting-up-geotargeting.json,1.0000,1,1,1,1,678.9,yes
+bge-small,FULL,11,Mobile disable,doc,can-popups-be-disabled-on-mobile-devices,468475-can-popups-be-disabled-on-mobile-devices.json,1.0000,1,1,1,1,502.7,yes
+bge-small,FULL,12,Close on link click,doc,close-a-popup-when-a-link-inside-the-popup-is-clicked,466455-close-a-popup-when-a-link-inside-the-popup-is-clicked.json,1.0000,1,1,1,1,674.7,yes
+bge-small,FULL,13,Exit intent opt-in guide,doc,exit-intent-opt-in-popup-using-gravity-forms,257747-exit-intent-opt-in-popup-using-gravity-forms.json,1.0000,1,1,1,1,513.4,yes
+bge-small,FULL,14,Cart abandonment guide,doc,woocommerce-cart-abandonment-popup,471207-how-to-set-up-woocommerce-cart-abandonment-popups.md,1.0000,1,1,1,1,558.0,yes
+bge-small,FULL,15,Add trigger doc,doc,add-a-popup-trigger,Popups.php,0.0000,0,0,0,0,466.8,yes
+bge-small,FULL,16,GDPR compliance,doc,use-popup-maker-and-meet-the-gdpr-data-privacy-requirements,466470-use-popup-maker-and-meet-the-gdpr-data-privacy-requirements.md,1.0000,1,1,1,1,482.8,yes
+bge-small,FULL,17,Beaver Builder tutorial,doc,create-beaver-builder-popups,460862-create-beaver-builder-popups.md,1.0000,1,1,1,1,432.8,yes
+bge-small,FULL,18,Form integration API,doc,popup-maker-form-integration-api,466851-popup-maker-form-integration-api.json,1.0000,1,1,1,1,355.8,yes
+bge-small,FULL,19,Export/import doc,doc,export-and-import-popups-between-sites,466460-export-and-import-popups-between-sites.json,1.0000,1,1,1,1,423.5,yes
+bge-small,FULL,20,Ninja Forms integration,cross,GravityForms.php,460366-ninja-forms.md,1.0000,1,1,1,1,489.8,yes
+bge-small,FULL,21,Trigger system overview,cross,Triggers.php,468148-trigger-click-open-overview-methods.json,0.1250,0,0,0,1,527.4,yes
+bge-small,FULL,22,Analytics & conversions,cross,Analytics.php,analytics.php,0.5000,0,1,1,1,460.4,yes
+bge-small,FULL,23,Cookie frequency control,cross,Cookies.php,readme.txt,0.3333,0,1,1,1,489.6,yes
+bge-small,FULL,24,Theme & CSS styling,cross,find-the-popup-maker-core-and-popup-theme-css,468182-popup-theme-settings-overlay-tab.json,1.0000,1,1,1,1,445.4,yes
+bge-small,FULL,25,FluentCRM integration,cross,FluentCRM.php,AddTag.php,1.0000,1,1,1,1,375.2,yes
+bge-small,FULL,26,Elementor trigger,cross,how-to-use-an-elementor-button-to-trigger-a-popup,465462-how-to-use-an-elementor-button-to-trigger-a-popup.json,1.0000,1,1,1,1,577.0,yes
+bge-small,FULL,27,Scheduling (code + doc),cross,scheduling.php,468611-plugin-introduction-option-settings-2.json,0.2500,0,0,1,1,492.6,yes
+bge-small,FULL,28,Subscribe-to-download,cross,Subscribe.php,466464-subscribe-to-download-file-using-popup-maker-and-ninja-forms.md,1.0000,1,1,1,1,489.5,yes
+bge-small,FULL,29,Glossary,cross,popup-maker-glossary-of-terms,468176-popup-maker-glossary-of-terms.md,1.0000,1,1,1,1,460.7,yes
+bge-small,ROUTED,0,Frontend rendering,code,Popups.php,single-popup.php,0.0769,0,0,0,0,66.4,yes
+bge-small,ROUTED,1,Post type registration,code,PostTypes.php,PostTypes.php,1.0000,1,1,1,1,70.6,yes
+bge-small,ROUTED,2,Exit intent trigger,code,Triggers.php,Triggers.php,1.0000,1,1,1,1,71.2,yes
+bge-small,ROUTED,3,Condition callbacks,code,ConditionCallbacks.php,ConditionCallbacks.php,1.0000,1,1,1,1,71.6,yes
+bge-small,ROUTED,4,Cookie system,code,Cookies.php,PopupCookie.php,1.0000,1,1,1,1,65.9,yes
+bge-small,ROUTED,5,Newsletter AJAX,code,Newsletters.php,Subscribe.php,1.0000,1,1,1,1,81.2,yes
+bge-small,ROUTED,6,Trigger shortcode,code,PopupTrigger.php,PopupTrigger.php,1.0000,1,1,1,1,63.9,yes
+bge-small,ROUTED,7,License REST API,code,RestAPI.php,License.php,1.0000,1,1,1,1,67.4,yes
+bge-small,ROUTED,8,DI container,code,Container.php,ServiceProviderInterface.php,0.1111,0,0,0,1,64.8,yes
+bge-small,ROUTED,9,Scheduling,code,scheduling.php,Cron.php,0.5000,0,1,1,1,73.8,yes
+bge-small,ROUTED,10,Geotargeting setup,doc,setting-up-geotargeting,468601-setting-up-geotargeting.json,1.0000,1,1,1,1,416.8,yes
+bge-small,ROUTED,11,Mobile disable,doc,can-popups-be-disabled-on-mobile-devices,468475-can-popups-be-disabled-on-mobile-devices.json,1.0000,1,1,1,1,270.6,yes
+bge-small,ROUTED,12,Close on link click,doc,close-a-popup-when-a-link-inside-the-popup-is-clicked,466455-close-a-popup-when-a-link-inside-the-popup-is-clicked.json,1.0000,1,1,1,1,369.7,yes
+bge-small,ROUTED,13,Exit intent opt-in guide,doc,exit-intent-opt-in-popup-using-gravity-forms,257747-exit-intent-opt-in-popup-using-gravity-forms.json,1.0000,1,1,1,1,424.7,yes
+bge-small,ROUTED,14,Cart abandonment guide,doc,woocommerce-cart-abandonment-popup,471207-how-to-set-up-woocommerce-cart-abandonment-popups.md,1.0000,1,1,1,1,298.8,yes
+bge-small,ROUTED,15,Add trigger doc,doc,add-a-popup-trigger,468145-triggers.md,0.5000,0,1,1,1,284.6,yes
+bge-small,ROUTED,16,GDPR compliance,doc,use-popup-maker-and-meet-the-gdpr-data-privacy-requirements,466470-use-popup-maker-and-meet-the-gdpr-data-privacy-requirements.md,1.0000,1,1,1,1,265.5,yes
+bge-small,ROUTED,17,Beaver Builder tutorial,doc,create-beaver-builder-popups,460862-create-beaver-builder-popups.json,1.0000,1,1,1,1,288.6,yes
+bge-small,ROUTED,18,Form integration API,doc,popup-maker-form-integration-api,466851-popup-maker-form-integration-api.md,1.0000,1,1,1,1,234.3,yes
+bge-small,ROUTED,19,Export/import doc,doc,export-and-import-popups-between-sites,466460-export-and-import-popups-between-sites.json,1.0000,1,1,1,1,353.1,yes
+bge-small,ROUTED,20,Ninja Forms integration,cross,GravityForms.php,460366-ninja-forms.md,1.0000,1,1,1,1,506.6,yes
+bge-small,ROUTED,21,Trigger system overview,cross,Triggers.php,468148-trigger-click-open-overview-methods.json,0.1250,0,0,0,1,336.8,yes
+bge-small,ROUTED,22,Analytics & conversions,cross,Analytics.php,analytics.php,0.5000,0,1,1,1,298.3,yes
+bge-small,ROUTED,23,Cookie frequency control,cross,Cookies.php,readme.txt,0.3333,0,1,1,1,364.1,yes
+bge-small,ROUTED,24,Theme & CSS styling,cross,find-the-popup-maker-core-and-popup-theme-css,468182-popup-theme-settings-overlay-tab.json,1.0000,1,1,1,1,491.9,yes
+bge-small,ROUTED,25,FluentCRM integration,cross,FluentCRM.php,AddTag.php,1.0000,1,1,1,1,438.2,yes
+bge-small,ROUTED,26,Elementor trigger,cross,how-to-use-an-elementor-button-to-trigger-a-popup,465462-how-to-use-an-elementor-button-to-trigger-a-popup.json,1.0000,1,1,1,1,488.2,yes
+bge-small,ROUTED,27,Scheduling (code + doc),cross,scheduling.php,468611-plugin-introduction-option-settings-2.json,0.2500,0,0,1,1,427.9,yes
+bge-small,ROUTED,28,Subscribe-to-download,cross,Subscribe.php,466464-subscribe-to-download-file-using-popup-maker-and-ninja-forms.md,1.0000,1,1,1,1,484.7,yes
+bge-small,ROUTED,29,Glossary,cross,popup-maker-glossary-of-terms,468176-popup-maker-glossary-of-terms.md,1.0000,1,1,1,1,455.7,yes

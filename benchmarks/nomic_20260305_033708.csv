@@ -1,0 +1,201 @@
+model,mode,query_id,query_desc,expected,top_file,mrr,top1,top3,top5,top10,latency_ms,keyword_weight,semantic_weight,graph_weight,chunk_budget,reranker
+nomic,VEC+code,0,Frontend rendering,Popups.php,single-popup.php,0.2500,0,0,1,1,101.7,1.0,1.2,0.8,256,yes
+nomic,VEC+code,1,Post type registration,PostTypes.php,PostTypes.php,1.0000,1,1,1,1,25.1,1.0,1.2,0.8,256,yes
+nomic,VEC+code,2,Popup model,Popup.php,developers.php,0.0588,0,0,0,0,25.7,1.0,1.2,0.8,256,yes
+nomic,VEC+code,3,Trigger registry,Triggers.php,Registry.php,0.5000,0,1,1,1,35.3,1.0,1.2,0.8,256,yes
+nomic,VEC+code,4,Exit intent trigger,Triggers.php,meta.php,0.5000,0,1,1,1,38.1,1.0,1.2,0.8,256,yes
+nomic,VEC+code,5,Condition callbacks,ConditionCallbacks.php,ConditionCallbacks.php,1.0000,1,1,1,1,55.5,1.0,1.2,0.8,256,yes
+nomic,VEC+code,6,Popup conditionals,conditionals.php,functions-deprecated.php,0.3333,0,1,1,1,44.7,1.0,1.2,0.8,256,yes
+nomic,VEC+code,7,Cookie system,Cookies.php,PopupCookie.php,1.0000,1,1,1,1,25.4,1.0,1.2,0.8,256,yes
+nomic,VEC+code,8,Newsletter AJAX,Newsletters.php,Ajax.php,0.0667,0,0,0,0,19.0,1.0,1.2,0.8,256,yes
+nomic,VEC+code,9,Gravity Forms integration,GravityForms.php,GravityForms.php,1.0000,1,1,1,1,19.6,1.0,1.2,0.8,256,yes
+nomic,VEC+code,10,Trigger shortcode,PopupTrigger.php,PopupTrigger.php,1.0000,1,1,1,1,23.7,1.0,1.2,0.8,256,yes
+nomic,VEC+code,11,Subscribe shortcode,Subscribe.php,Subscribe.php,1.0000,1,1,1,1,26.0,1.0,1.2,0.8,256,yes
+nomic,VEC+code,12,License REST API,RestAPI.php,License.php,1.0000,1,1,1,1,20.7,1.0,1.2,0.8,256,yes
+nomic,VEC+code,13,Analytics tracking,Analytics.php,class-pum-admin-upgrade-routine-5.php,0.2000,0,0,1,1,19.3,1.0,1.2,0.8,256,yes
+nomic,VEC+code,14,Admin settings,Settings.php,functions-deprecated.php,0.2500,0,0,1,1,20.7,1.0,1.2,0.8,256,yes
+nomic,VEC+code,15,Block editor,BlockEditor.php,GoogleFonts.php,0.0556,0,0,0,0,18.8,1.0,1.2,0.8,256,yes
+nomic,VEC+code,16,DI container,Container.php,Container.php,1.0000,1,1,1,1,19.6,1.0,1.2,0.8,256,yes
+nomic,VEC+code,17,FluentCRM tagging,AddTag.php,ContactForm7.php,0.5000,0,1,1,1,32.4,1.0,1.2,0.8,256,yes
+nomic,VEC+code,18,Scheduling,scheduling.php,Popups.php,0.5000,0,1,1,1,47.2,1.0,1.2,0.8,256,yes
+nomic,VEC+code,19,Attribution service,Attribution.php,developers.php,0.5000,0,1,1,1,28.3,1.0,1.2,0.8,256,yes
+nomic,HYDE+code,0,Frontend rendering,Popups.php,single-popup.php,0.5000,0,1,1,1,21.7,1.0,1.2,0.8,256,yes
+nomic,HYDE+code,1,Post type registration,PostTypes.php,Popups.php,0.2000,0,0,1,1,23.9,1.0,1.2,0.8,256,yes
+nomic,HYDE+code,2,Popup model,Popup.php,Popup.php,1.0000,1,1,1,1,25.7,1.0,1.2,0.8,256,yes
+nomic,HYDE+code,3,Trigger registry,Triggers.php,PopupTrigger.php,0.5000,0,1,1,1,23.2,1.0,1.2,0.8,256,yes
+nomic,HYDE+code,4,Exit intent trigger,Triggers.php,Ajax.php,0.5000,0,1,1,1,23.4,1.0,1.2,0.8,256,yes
+nomic,HYDE+code,5,Condition callbacks,ConditionCallbacks.php,ConditionCallbacks.php,1.0000,1,1,1,1,21.5,1.0,1.2,0.8,256,yes
+nomic,HYDE+code,6,Popup conditionals,conditionals.php,popups.php,0.3333,0,1,1,1,18.8,1.0,1.2,0.8,256,yes
+nomic,HYDE+code,7,Cookie system,Cookies.php,PopupCookie.php,1.0000,1,1,1,1,19.5,1.0,1.2,0.8,256,yes
+nomic,HYDE+code,8,Newsletter AJAX,Newsletters.php,Providers.php,0.1111,0,0,0,1,21.0,1.0,1.2,0.8,256,yes
+nomic,HYDE+code,9,Gravity Forms integration,GravityForms.php,GravityForms.php,1.0000,1,1,1,1,19.8,1.0,1.2,0.8,256,yes
+nomic,HYDE+code,10,Trigger shortcode,PopupTrigger.php,PopupTrigger.php,1.0000,1,1,1,1,20.9,1.0,1.2,0.8,256,yes
+nomic,HYDE+code,11,Subscribe shortcode,Subscribe.php,Subscribe.php,1.0000,1,1,1,1,33.3,1.0,1.2,0.8,256,yes
+nomic,HYDE+code,12,License REST API,RestAPI.php,License.php,1.0000,1,1,1,1,21.2,1.0,1.2,0.8,256,yes
+nomic,HYDE+code,13,Analytics tracking,Analytics.php,class-pum-admin-upgrade-routine-5.php,0.3333,0,1,1,1,19.9,1.0,1.2,0.8,256,yes
+nomic,HYDE+code,14,Admin settings,Settings.php,functions-deprecated.php,0.1667,0,0,0,1,19.4,1.0,1.2,0.8,256,yes
+nomic,HYDE+code,15,Block editor,BlockEditor.php,GoogleFonts.php,0.0833,0,0,0,0,20.1,1.0,1.2,0.8,256,yes
+nomic,HYDE+code,16,DI container,Container.php,Container.php,1.0000,1,1,1,1,21.5,1.0,1.2,0.8,256,yes
+nomic,HYDE+code,17,FluentCRM tagging,AddTag.php,ContactForm7.php,0.5000,0,1,1,1,19.5,1.0,1.2,0.8,256,yes
+nomic,HYDE+code,18,Scheduling,scheduling.php,Cron.php,0.5000,0,1,1,1,18.3,1.0,1.2,0.8,256,yes
+nomic,HYDE+code,19,Attribution service,Attribution.php,developers.php,0.5000,0,1,1,1,18.5,1.0,1.2,0.8,256,yes
+nomic,HYBRID+code,0,Frontend rendering,Popups.php,single-popup.php,0.2500,0,0,1,1,20.4,1.0,1.2,0.8,256,yes
+nomic,HYBRID+code,1,Post type registration,PostTypes.php,ActionScheduler_wpPostStore_PostTypeRegistrar.php,0.0000,0,0,0,0,6.3,1.0,1.2,0.8,256,yes
+nomic,HYBRID+code,2,Popup model,Popup.php,Conditions.php,0.0909,0,0,0,0,6.9,1.0,1.2,0.8,256,yes
+nomic,HYBRID+code,3,Trigger registry,Triggers.php,Registry.php,0.5000,0,1,1,1,18.2,1.0,1.2,0.8,256,yes
+nomic,HYBRID+code,4,Exit intent trigger,Triggers.php,meta.php,0.1429,0,0,0,1,13.7,1.0,1.2,0.8,256,yes
+nomic,HYBRID+code,5,Condition callbacks,ConditionCallbacks.php,ConditionCallbacks.php,1.0000,1,1,1,1,17.9,1.0,1.2,0.8,256,yes
+nomic,HYBRID+code,6,Popup conditionals,conditionals.php,scheduling.php,0.0000,0,0,0,0,5.2,1.0,1.2,0.8,256,yes
+nomic,HYBRID+code,7,Cookie system,Cookies.php,PopupCookie.php,1.0000,1,1,1,1,17.5,1.0,1.2,0.8,256,yes
+nomic,HYBRID+code,8,Newsletter AJAX,Newsletters.php,Ajax.php,0.0667,0,0,0,0,17.6,1.0,1.2,0.8,256,yes
+nomic,HYBRID+code,9,Gravity Forms integration,GravityForms.php,GravityForms.php,1.0000,1,1,1,1,17.9,1.0,1.2,0.8,256,yes
+nomic,HYBRID+code,10,Trigger shortcode,PopupTrigger.php,PopupTrigger.php,1.0000,1,1,1,1,13.3,1.0,1.2,0.8,256,yes
+nomic,HYBRID+code,11,Subscribe shortcode,Subscribe.php,Subscribe.php,1.0000,1,1,1,1,18.0,1.0,1.2,0.8,256,yes
+nomic,HYBRID+code,12,License REST API,RestAPI.php,License.php,1.0000,1,1,1,1,18.2,1.0,1.2,0.8,256,yes
+nomic,HYBRID+code,13,Analytics tracking,Analytics.php,Analytics.php,1.0000,1,1,1,1,1.0,1.0,1.2,0.8,256,yes
+nomic,HYBRID+code,14,Admin settings,Settings.php,functions-deprecated.php,0.2500,0,0,1,1,18.1,1.0,1.2,0.8,256,yes
+nomic,HYBRID+code,15,Block editor,BlockEditor.php,GoogleFonts.php,0.0556,0,0,0,0,17.7,1.0,1.2,0.8,256,yes
+nomic,HYBRID+code,16,DI container,Container.php,PimpleServiceProvider.php,0.1429,0,0,0,1,4.9,1.0,1.2,0.8,256,yes
+nomic,HYBRID+code,17,FluentCRM tagging,AddTag.php,ContactForm7.php,0.5000,0,1,1,1,17.1,1.0,1.2,0.8,256,yes
+nomic,HYBRID+code,18,Scheduling,scheduling.php,Popups.php,0.5000,0,1,1,1,18.0,1.0,1.2,0.8,256,yes
+nomic,HYBRID+code,19,Attribution service,Attribution.php,developers.php,0.5000,0,1,1,1,17.6,1.0,1.2,0.8,256,yes
+nomic,VEC+PPR,0,Frontend rendering,Popups.php,Toolbar.php,0.5000,0,1,1,1,44.3,1.0,1.2,0.8,256,yes
+nomic,VEC+PPR,1,Post type registration,PostTypes.php,PostTypes.php,1.0000,1,1,1,1,26.6,1.0,1.2,0.8,256,yes
+nomic,VEC+PPR,2,Popup model,Popup.php,getters.php,0.0526,0,0,0,0,27.1,1.0,1.2,0.8,256,yes
+nomic,VEC+PPR,3,Trigger registry,Triggers.php,Registry.php,0.5000,0,1,1,1,17.8,1.0,1.2,0.8,256,yes
+nomic,VEC+PPR,4,Exit intent trigger,Triggers.php,meta.php,0.5000,0,1,1,1,18.0,1.0,1.2,0.8,256,yes
+nomic,VEC+PPR,5,Condition callbacks,ConditionCallbacks.php,ConditionCallbacks.php,1.0000,1,1,1,1,23.7,1.0,1.2,0.8,256,yes
+nomic,VEC+PPR,6,Popup conditionals,conditionals.php,Popups.php,0.3333,0,1,1,1,27.0,1.0,1.2,0.8,256,yes
+nomic,VEC+PPR,7,Cookie system,Cookies.php,PopupCookie.php,1.0000,1,1,1,1,17.1,1.0,1.2,0.8,256,yes
+nomic,VEC+PPR,8,Newsletter AJAX,Newsletters.php,newsletter.php,0.0625,0,0,0,0,26.1,1.0,1.2,0.8,256,yes
+nomic,VEC+PPR,9,Gravity Forms integration,GravityForms.php,GravityForms.php,1.0000,1,1,1,1,17.2,1.0,1.2,0.8,256,yes
+nomic,VEC+PPR,10,Trigger shortcode,PopupTrigger.php,PopupTrigger.php,1.0000,1,1,1,1,17.0,1.0,1.2,0.8,256,yes
+nomic,VEC+PPR,11,Subscribe shortcode,Subscribe.php,Subscribe.php,1.0000,1,1,1,1,17.5,1.0,1.2,0.8,256,yes
+nomic,VEC+PPR,12,License REST API,RestAPI.php,License.php,1.0000,1,1,1,1,25.0,1.0,1.2,0.8,256,yes
+nomic,VEC+PPR,13,Analytics tracking,Analytics.php,class-pum-admin-upgrade-routine-5.php,0.2000,0,0,1,1,18.5,1.0,1.2,0.8,256,yes
+nomic,VEC+PPR,14,Admin settings,Settings.php,default-values.php,0.1429,0,0,0,1,35.5,1.0,1.2,0.8,256,yes
+nomic,VEC+PPR,15,Block editor,BlockEditor.php,GoogleFonts.php,0.0556,0,0,0,0,16.6,1.0,1.2,0.8,256,yes
+nomic,VEC+PPR,16,DI container,Container.php,Container.php,1.0000,1,1,1,1,17.0,1.0,1.2,0.8,256,yes
+nomic,VEC+PPR,17,FluentCRM tagging,AddTag.php,developers.php,0.3333,0,1,1,1,26.3,1.0,1.2,0.8,256,yes
+nomic,VEC+PPR,18,Scheduling,scheduling.php,scheduled-actions.php,1.0000,1,1,1,1,20.6,1.0,1.2,0.8,256,yes
+nomic,VEC+PPR,19,Attribution service,Attribution.php,developers.php,0.5000,0,1,1,1,16.7,1.0,1.2,0.8,256,yes
+nomic,HYB+PPR,0,Frontend rendering,Popups.php,Toolbar.php,0.5000,0,1,1,1,26.8,1.0,1.2,0.8,256,yes
+nomic,HYB+PPR,1,Post type registration,PostTypes.php,ActionScheduler_wpPostStore_PostTypeRegistrar.php,0.0000,0,0,0,0,8.2,1.0,1.2,0.8,256,yes
+nomic,HYB+PPR,2,Popup model,Popup.php,Popups.php,0.0909,0,0,0,0,8.0,1.0,1.2,0.8,256,yes
+nomic,HYB+PPR,3,Trigger registry,Triggers.php,Registry.php,0.5000,0,1,1,1,17.1,1.0,1.2,0.8,256,yes
+nomic,HYB+PPR,4,Exit intent trigger,Triggers.php,meta.php,0.1429,0,0,0,1,12.7,1.0,1.2,0.8,256,yes
+nomic,HYB+PPR,5,Condition callbacks,ConditionCallbacks.php,ConditionCallbacks.php,1.0000,1,1,1,1,23.4,1.0,1.2,0.8,256,yes
+nomic,HYB+PPR,6,Popup conditionals,conditionals.php,Popups.php,0.0000,0,0,0,0,8.1,1.0,1.2,0.8,256,yes
+nomic,HYB+PPR,7,Cookie system,Cookies.php,PopupCookie.php,1.0000,1,1,1,1,18.2,1.0,1.2,0.8,256,yes
+nomic,HYB+PPR,8,Newsletter AJAX,Newsletters.php,newsletter.php,0.0625,0,0,0,0,27.0,1.0,1.2,0.8,256,yes
+nomic,HYB+PPR,9,Gravity Forms integration,GravityForms.php,GravityForms.php,1.0000,1,1,1,1,18.7,1.0,1.2,0.8,256,yes
+nomic,HYB+PPR,10,Trigger shortcode,PopupTrigger.php,PopupTrigger.php,1.0000,1,1,1,1,13.8,1.0,1.2,0.8,256,yes
+nomic,HYB+PPR,11,Subscribe shortcode,Subscribe.php,Subscribe.php,1.0000,1,1,1,1,18.8,1.0,1.2,0.8,256,yes
+nomic,HYB+PPR,12,License REST API,RestAPI.php,License.php,1.0000,1,1,1,1,39.6,1.0,1.2,0.8,256,yes
+nomic,HYB+PPR,13,Analytics tracking,Analytics.php,Analytics.php,1.0000,1,1,1,1,0.9,1.0,1.2,0.8,256,yes
+nomic,HYB+PPR,14,Admin settings,Settings.php,Integrations.php,0.2000,0,0,1,1,24.8,1.0,1.2,0.8,256,yes
+nomic,HYB+PPR,15,Block editor,BlockEditor.php,GoogleFonts.php,0.0556,0,0,0,0,17.8,1.0,1.2,0.8,256,yes
+nomic,HYB+PPR,16,DI container,Container.php,PimpleServiceProvider.php,0.1429,0,0,0,1,5.3,1.0,1.2,0.8,256,yes
+nomic,HYB+PPR,17,FluentCRM tagging,AddTag.php,developers.php,0.3333,0,1,1,1,26.6,1.0,1.2,0.8,256,yes
+nomic,HYB+PPR,18,Scheduling,scheduling.php,scheduled-actions.php,1.0000,1,1,1,1,20.0,1.0,1.2,0.8,256,yes
+nomic,HYB+PPR,19,Attribution service,Attribution.php,developers.php,0.5000,0,1,1,1,17.0,1.0,1.2,0.8,256,yes
+nomic,VEC+rerank,0,Frontend rendering,Popups.php,popup-maker-pro.php,0.1111,0,0,0,1,6304.9,1.0,1.2,0.8,256,yes
+nomic,VEC+rerank,1,Post type registration,PostTypes.php,PostTypes.php,1.0000,1,1,1,1,440.0,1.0,1.2,0.8,256,yes
+nomic,VEC+rerank,2,Popup model,Popup.php,Popups.php,0.0000,0,0,0,0,218.4,1.0,1.2,0.8,256,yes
+nomic,VEC+rerank,3,Trigger registry,Triggers.php,Triggers.php,1.0000,1,1,1,1,202.2,1.0,1.2,0.8,256,yes
+nomic,VEC+rerank,4,Exit intent trigger,Triggers.php,Triggers.php,1.0000,1,1,1,1,226.5,1.0,1.2,0.8,256,yes
+nomic,VEC+rerank,5,Condition callbacks,ConditionCallbacks.php,ConditionCallbacks.php,1.0000,1,1,1,1,328.6,1.0,1.2,0.8,256,yes
+nomic,VEC+rerank,6,Popup conditionals,conditionals.php,conditionals.php,1.0000,1,1,1,1,303.0,1.0,1.2,0.8,256,yes
+nomic,VEC+rerank,7,Cookie system,Cookies.php,input-options.php,0.2500,0,0,1,1,252.7,1.0,1.2,0.8,256,yes
+nomic,VEC+rerank,8,Newsletter AJAX,Newsletters.php,developers.php,0.1000,0,0,0,1,309.9,1.0,1.2,0.8,256,yes
+nomic,VEC+rerank,9,Gravity Forms integration,GravityForms.php,GravityForms.php,1.0000,1,1,1,1,329.0,1.0,1.2,0.8,256,yes
+nomic,VEC+rerank,10,Trigger shortcode,PopupTrigger.php,PopupTrigger.php,1.0000,1,1,1,1,405.0,1.0,1.2,0.8,256,yes
+nomic,VEC+rerank,11,Subscribe shortcode,Subscribe.php,Subscribe.php,1.0000,1,1,1,1,741.2,1.0,1.2,0.8,256,yes
+nomic,VEC+rerank,12,License REST API,RestAPI.php,License.php,1.0000,1,1,1,1,771.2,1.0,1.2,0.8,256,yes
+nomic,VEC+rerank,13,Analytics tracking,Analytics.php,developers.php,0.1000,0,0,0,1,551.9,1.0,1.2,0.8,256,yes
+nomic,VEC+rerank,14,Admin settings,Settings.php,default-values.php,0.1250,0,0,0,1,485.5,1.0,1.2,0.8,256,yes
+nomic,VEC+rerank,15,Block editor,BlockEditor.php,Integration.php,0.5000,0,1,1,1,401.1,1.0,1.2,0.8,256,yes
+nomic,VEC+rerank,16,DI container,Container.php,PimpleServiceProvider.php,0.2000,0,0,1,1,320.9,1.0,1.2,0.8,256,yes
+nomic,VEC+rerank,17,FluentCRM tagging,AddTag.php,AddTag.php,1.0000,1,1,1,1,364.0,1.0,1.2,0.8,256,yes
+nomic,VEC+rerank,18,Scheduling,scheduling.php,scheduled-actions.php,1.0000,1,1,1,1,335.8,1.0,1.2,0.8,256,yes
+nomic,VEC+rerank,19,Attribution service,Attribution.php,developers.php,0.3333,0,1,1,1,406.2,1.0,1.2,0.8,256,yes
+nomic,HYDE+rerank,0,Frontend rendering,Popups.php,WP.php,0.1667,0,0,0,1,327.0,1.0,1.2,0.8,256,yes
+nomic,HYDE+rerank,1,Post type registration,PostTypes.php,PostTypes.php,1.0000,1,1,1,1,559.7,1.0,1.2,0.8,256,yes
+nomic,HYDE+rerank,2,Popup model,Popup.php,Popups.php,0.0000,0,0,0,0,302.5,1.0,1.2,0.8,256,yes
+nomic,HYDE+rerank,3,Trigger registry,Triggers.php,Triggers.php,1.0000,1,1,1,1,312.6,1.0,1.2,0.8,256,yes
+nomic,HYDE+rerank,4,Exit intent trigger,Triggers.php,Triggers.php,1.0000,1,1,1,1,305.4,1.0,1.2,0.8,256,yes
+nomic,HYDE+rerank,5,Condition callbacks,ConditionCallbacks.php,ConditionCallbacks.php,1.0000,1,1,1,1,305.8,1.0,1.2,0.8,256,yes
+nomic,HYDE+rerank,6,Popup conditionals,conditionals.php,conditionals.php,1.0000,1,1,1,1,375.3,1.0,1.2,0.8,256,yes
+nomic,HYDE+rerank,7,Cookie system,Cookies.php,input-options.php,0.2000,0,0,1,1,412.6,1.0,1.2,0.8,256,yes
+nomic,HYDE+rerank,8,Newsletter AJAX,Newsletters.php,Providers.php,0.1429,0,0,0,1,332.4,1.0,1.2,0.8,256,yes
+nomic,HYDE+rerank,9,Gravity Forms integration,GravityForms.php,GravityForms.php,1.0000,1,1,1,1,353.6,1.0,1.2,0.8,256,yes
+nomic,HYDE+rerank,10,Trigger shortcode,PopupTrigger.php,PopupTrigger.php,1.0000,1,1,1,1,353.5,1.0,1.2,0.8,256,yes
+nomic,HYDE+rerank,11,Subscribe shortcode,Subscribe.php,Subscribe.php,1.0000,1,1,1,1,336.2,1.0,1.2,0.8,256,yes
+nomic,HYDE+rerank,12,License REST API,RestAPI.php,License.php,1.0000,1,1,1,1,369.6,1.0,1.2,0.8,256,yes
+nomic,HYDE+rerank,13,Analytics tracking,Analytics.php,developers.php,0.1250,0,0,0,1,433.2,1.0,1.2,0.8,256,yes
+nomic,HYDE+rerank,14,Admin settings,Settings.php,default-values.php,0.1667,0,0,0,1,456.0,1.0,1.2,0.8,256,yes
+nomic,HYDE+rerank,15,Block editor,BlockEditor.php,BlockEditor.php,1.0000,1,1,1,1,422.0,1.0,1.2,0.8,256,yes
+nomic,HYDE+rerank,16,DI container,Container.php,PimpleServiceProvider.php,0.2000,0,0,1,1,408.9,1.0,1.2,0.8,256,yes
+nomic,HYDE+rerank,17,FluentCRM tagging,AddTag.php,AddTag.php,1.0000,1,1,1,1,348.5,1.0,1.2,0.8,256,yes
+nomic,HYDE+rerank,18,Scheduling,scheduling.php,scheduled-actions.php,1.0000,1,1,1,1,353.9,1.0,1.2,0.8,256,yes
+nomic,HYDE+rerank,19,Attribution service,Attribution.php,developers.php,0.5000,0,1,1,1,285.3,1.0,1.2,0.8,256,yes
+nomic,HYB+rerank,0,Frontend rendering,Popups.php,popup-maker-pro.php,0.1111,0,0,0,1,409.2,1.0,1.2,0.8,256,yes
+nomic,HYB+rerank,1,Post type registration,PostTypes.php,ActionScheduler_wpPostStore_PostTypeRegistrar.php,0.0000,0,0,0,0,349.1,1.0,1.2,0.8,256,yes
+nomic,HYB+rerank,2,Popup model,Popup.php,Popups.php,0.5000,0,1,1,1,239.5,1.0,1.2,0.8,256,yes
+nomic,HYB+rerank,3,Trigger registry,Triggers.php,Triggers.php,1.0000,1,1,1,1,382.5,1.0,1.2,0.8,256,yes
+nomic,HYB+rerank,4,Exit intent trigger,Triggers.php,Triggers.php,1.0000,1,1,1,1,251.7,1.0,1.2,0.8,256,yes
+nomic,HYB+rerank,5,Condition callbacks,ConditionCallbacks.php,ConditionCallbacks.php,1.0000,1,1,1,1,318.3,1.0,1.2,0.8,256,yes
+nomic,HYB+rerank,6,Popup conditionals,conditionals.php,bootstrap.php,0.0000,0,0,0,0,210.3,1.0,1.2,0.8,256,yes
+nomic,HYB+rerank,7,Cookie system,Cookies.php,input-options.php,0.2500,0,0,1,1,311.0,1.0,1.2,0.8,256,yes
+nomic,HYB+rerank,8,Newsletter AJAX,Newsletters.php,developers.php,0.1000,0,0,0,1,334.1,1.0,1.2,0.8,256,yes
+nomic,HYB+rerank,9,Gravity Forms integration,GravityForms.php,GravityForms.php,1.0000,1,1,1,1,349.3,1.0,1.2,0.8,256,yes
+nomic,HYB+rerank,10,Trigger shortcode,PopupTrigger.php,PopupTrigger.php,1.0000,1,1,1,1,213.6,1.0,1.2,0.8,256,yes
+nomic,HYB+rerank,11,Subscribe shortcode,Subscribe.php,Subscribe.php,1.0000,1,1,1,1,329.0,1.0,1.2,0.8,256,yes
+nomic,HYB+rerank,12,License REST API,RestAPI.php,License.php,1.0000,1,1,1,1,370.0,1.0,1.2,0.8,256,yes
+nomic,HYB+rerank,13,Analytics tracking,Analytics.php,Tracking.php,0.5000,0,1,1,1,98.4,1.0,1.2,0.8,256,yes
+nomic,HYB+rerank,14,Admin settings,Settings.php,default-values.php,0.1250,0,0,0,1,437.0,1.0,1.2,0.8,256,yes
+nomic,HYB+rerank,15,Block editor,BlockEditor.php,Integration.php,0.5000,0,1,1,1,372.0,1.0,1.2,0.8,256,yes
+nomic,HYB+rerank,16,DI container,Container.php,PimpleServiceProvider.php,0.3333,0,1,1,1,212.9,1.0,1.2,0.8,256,yes
+nomic,HYB+rerank,17,FluentCRM tagging,AddTag.php,AddTag.php,1.0000,1,1,1,1,352.6,1.0,1.2,0.8,256,yes
+nomic,HYB+rerank,18,Scheduling,scheduling.php,scheduled-actions.php,1.0000,1,1,1,1,322.9,1.0,1.2,0.8,256,yes
+nomic,HYB+rerank,19,Attribution service,Attribution.php,developers.php,0.3333,0,1,1,1,400.4,1.0,1.2,0.8,256,yes
+nomic,VEC+PPR+rr,0,Frontend rendering,Popups.php,Toolbar.php,0.5000,0,1,1,1,72.4,1.0,1.2,0.8,256,yes
+nomic,VEC+PPR+rr,1,Post type registration,PostTypes.php,PostTypes.php,1.0000,1,1,1,1,58.9,1.0,1.2,0.8,256,yes
+nomic,VEC+PPR+rr,2,Popup model,Popup.php,getters.php,0.0526,0,0,0,0,73.5,1.0,1.2,0.8,256,yes
+nomic,VEC+PPR+rr,3,Trigger registry,Triggers.php,Registry.php,0.5000,0,1,1,1,39.0,1.0,1.2,0.8,256,yes
+nomic,VEC+PPR+rr,4,Exit intent trigger,Triggers.php,meta.php,0.5000,0,1,1,1,40.8,1.0,1.2,0.8,256,yes
+nomic,VEC+PPR+rr,5,Condition callbacks,ConditionCallbacks.php,ConditionCallbacks.php,1.0000,1,1,1,1,78.2,1.0,1.2,0.8,256,yes
+nomic,VEC+PPR+rr,6,Popup conditionals,conditionals.php,Popups.php,0.3333,0,1,1,1,62.0,1.0,1.2,0.8,256,yes
+nomic,VEC+PPR+rr,7,Cookie system,Cookies.php,PopupCookie.php,1.0000,1,1,1,1,33.7,1.0,1.2,0.8,256,yes
+nomic,VEC+PPR+rr,8,Newsletter AJAX,Newsletters.php,newsletter.php,0.0625,0,0,0,0,47.3,1.0,1.2,0.8,256,yes
+nomic,VEC+PPR+rr,9,Gravity Forms integration,GravityForms.php,GravityForms.php,1.0000,1,1,1,1,29.3,1.0,1.2,0.8,256,yes
+nomic,VEC+PPR+rr,10,Trigger shortcode,PopupTrigger.php,PopupTrigger.php,1.0000,1,1,1,1,28.6,1.0,1.2,0.8,256,yes
+nomic,VEC+PPR+rr,11,Subscribe shortcode,Subscribe.php,Subscribe.php,1.0000,1,1,1,1,28.7,1.0,1.2,0.8,256,yes
+nomic,VEC+PPR+rr,12,License REST API,RestAPI.php,License.php,1.0000,1,1,1,1,41.5,1.0,1.2,0.8,256,yes
+nomic,VEC+PPR+rr,13,Analytics tracking,Analytics.php,class-pum-admin-upgrade-routine-5.php,0.2000,0,0,1,1,30.7,1.0,1.2,0.8,256,yes
+nomic,VEC+PPR+rr,14,Admin settings,Settings.php,default-values.php,0.1429,0,0,0,1,38.2,1.0,1.2,0.8,256,yes
+nomic,VEC+PPR+rr,15,Block editor,BlockEditor.php,GoogleFonts.php,0.0556,0,0,0,0,26.5,1.0,1.2,0.8,256,yes
+nomic,VEC+PPR+rr,16,DI container,Container.php,Container.php,1.0000,1,1,1,1,29.1,1.0,1.2,0.8,256,yes
+nomic,VEC+PPR+rr,17,FluentCRM tagging,AddTag.php,developers.php,0.3333,0,1,1,1,40.5,1.0,1.2,0.8,256,yes
+nomic,VEC+PPR+rr,18,Scheduling,scheduling.php,scheduled-actions.php,1.0000,1,1,1,1,31.1,1.0,1.2,0.8,256,yes
+nomic,VEC+PPR+rr,19,Attribution service,Attribution.php,developers.php,0.5000,0,1,1,1,28.9,1.0,1.2,0.8,256,yes
+nomic,FULL,0,Frontend rendering,Popups.php,popup-maker-pro.php,0.1111,0,0,0,1,348.3,1.0,1.2,0.8,256,yes
+nomic,FULL,1,Post type registration,PostTypes.php,ActionScheduler_wpPostStore_PostTypeRegistrar.php,0.0000,0,0,0,0,192.0,1.0,1.2,0.8,256,yes
+nomic,FULL,2,Popup model,Popup.php,Popups.php,0.5000,0,1,1,1,197.3,1.0,1.2,0.8,256,yes
+nomic,FULL,3,Trigger registry,Triggers.php,Triggers.php,1.0000,1,1,1,1,403.5,1.0,1.2,0.8,256,yes
+nomic,FULL,4,Exit intent trigger,Triggers.php,Triggers.php,1.0000,1,1,1,1,243.5,1.0,1.2,0.8,256,yes
+nomic,FULL,5,Condition callbacks,ConditionCallbacks.php,ConditionCallbacks.php,1.0000,1,1,1,1,368.9,1.0,1.2,0.8,256,yes
+nomic,FULL,6,Popup conditionals,conditionals.php,bootstrap.php,0.0000,0,0,0,0,243.6,1.0,1.2,0.8,256,yes
+nomic,FULL,7,Cookie system,Cookies.php,input-options.php,0.2500,0,0,1,1,369.0,1.0,1.2,0.8,256,yes
+nomic,FULL,8,Newsletter AJAX,Newsletters.php,developers.php,0.1000,0,0,0,1,415.2,1.0,1.2,0.8,256,yes
+nomic,FULL,9,Gravity Forms integration,GravityForms.php,GravityForms.php,1.0000,1,1,1,1,396.3,1.0,1.2,0.8,256,yes
+nomic,FULL,10,Trigger shortcode,PopupTrigger.php,PopupTrigger.php,1.0000,1,1,1,1,260.7,1.0,1.2,0.8,256,yes
+nomic,FULL,11,Subscribe shortcode,Subscribe.php,Subscribe.php,1.0000,1,1,1,1,488.0,1.0,1.2,0.8,256,yes
+nomic,FULL,12,License REST API,RestAPI.php,License.php,1.0000,1,1,1,1,366.0,1.0,1.2,0.8,256,yes
+nomic,FULL,13,Analytics tracking,Analytics.php,Tracking.php,0.5000,0,1,1,1,81.3,1.0,1.2,0.8,256,yes
+nomic,FULL,14,Admin settings,Settings.php,default-values.php,0.1250,0,0,0,1,403.3,1.0,1.2,0.8,256,yes
+nomic,FULL,15,Block editor,BlockEditor.php,Integration.php,0.5000,0,1,1,1,308.4,1.0,1.2,0.8,256,yes
+nomic,FULL,16,DI container,Container.php,PimpleServiceProvider.php,0.3333,0,1,1,1,142.4,1.0,1.2,0.8,256,yes
+nomic,FULL,17,FluentCRM tagging,AddTag.php,AddTag.php,1.0000,1,1,1,1,388.5,1.0,1.2,0.8,256,yes
+nomic,FULL,18,Scheduling,scheduling.php,scheduled-actions.php,1.0000,1,1,1,1,305.5,1.0,1.2,0.8,256,yes
+nomic,FULL,19,Attribution service,Attribution.php,developers.php,0.3333,0,1,1,1,393.5,1.0,1.2,0.8,256,yes

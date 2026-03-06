@@ -34,6 +34,7 @@ from tessera.embeddings import (
     FastembedClient,
     FastembedReranker,
     HTTPReranker,
+    TransformersReranker,
 )
 from tessera.graph import load_project_graph
 from tessera.indexer import IndexerPipeline
@@ -82,6 +83,12 @@ FASTEMBED_RERANKERS = {
     "ms-marco-12": ("Xenova/ms-marco-MiniLM-L-12-v2", "MiniLM-L12-reranker", 120),
     "jina-tiny": ("jinaai/jina-reranker-v1-tiny-en", "Jina-tiny-reranker", 130),
     "jina-turbo": ("jinaai/jina-reranker-v1-turbo-en", "Jina-turbo-reranker", 150),
+    "jina-v2": ("jinaai/jina-reranker-v2-base-multilingual", "Jina-v2-base-reranker", 560),
+}
+
+# Rerankers loaded via HuggingFace transformers (custom architectures)
+TRANSFORMERS_RERANKERS = {
+    "jina-v3": ("jinaai/jina-reranker-v3", "Jina-v3-reranker", 1200),
 }
 
 QUERIES = [
@@ -318,17 +325,41 @@ def create_client_and_reranker(args):
             return None, None, None, None
 
         model_name, model_label, embed_mb = FASTEMBED_MODELS[model_key]
+
+        # Load embedding FIRST — fully warm before second ONNX model loads.
+        # Two large ONNX runtimes initializing simultaneously deadlocks on macOS.
         print(f"  Loading local embedding: {model_label} ({model_name}, ~{embed_mb}MB)")
         client = FastembedClient(model_name=model_name)
+        _ = client.embed_single("warmup")  # force full ONNX graph init
 
         reranker = None
-        reranker_key = args.reranker or "jina-tiny"
-        if (args.rerank or args.all) and reranker_key in FASTEMBED_RERANKERS:
-            rr_name, rr_label, rr_mb = FASTEMBED_RERANKERS[reranker_key]
-            print(f"  Loading local reranker: {rr_label} ({rr_name}, ~{rr_mb}MB)")
-            reranker = FastembedReranker(model_name=rr_name)
-            total_mb = embed_mb + rr_mb
-            print(f"  Total model footprint: ~{total_mb}MB")
+        if args.rerank or args.all:
+            if args.reranker_model:
+                rr_endpoint = args.reranker_endpoint or "http://localhost:8800/v1/rerank"
+                rr_model = args.reranker_model
+                reranker = HTTPReranker(endpoint=rr_endpoint, model=rr_model)
+                try:
+                    test = reranker.rerank("test", ["test doc"], top_k=1)
+                    if test and test[0][1] > 0:
+                        print(f"  Reranker: OK ({rr_model} via {rr_endpoint})")
+                    else:
+                        print("  Reranker: FALLBACK (zero scores, disabling)")
+                        reranker = None
+                except Exception as e:
+                    print(f"  Reranker: UNAVAILABLE ({e}), disabling")
+                    reranker = None
+            else:
+                reranker_key = args.reranker or "jina-tiny"
+                if reranker_key in TRANSFORMERS_RERANKERS:
+                    rr_name, rr_label, rr_mb = TRANSFORMERS_RERANKERS[reranker_key]
+                    print(f"  Loading local reranker: {rr_label} ({rr_name}, ~{rr_mb}MB)")
+                    reranker = TransformersReranker(model_name=rr_name)
+                elif reranker_key in FASTEMBED_RERANKERS:
+                    rr_name, rr_label, rr_mb = FASTEMBED_RERANKERS[reranker_key]
+                    print(f"  Loading local reranker: {rr_label} ({rr_name}, ~{rr_mb}MB)")
+                    reranker = FastembedReranker(model_name=rr_name)
+                total_mb = embed_mb + (rr_mb if reranker else 0)
+                print(f"  Total model footprint: ~{total_mb}MB")
 
         return client, reranker, model_key, model_label
 

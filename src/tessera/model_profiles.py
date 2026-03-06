@@ -59,8 +59,8 @@ _register(
         architecture="bert", provider="fastembed",
         scope_prefix=False,   # EXP-004: -3.9% VEC. 384d can't absorb prefix.
         recommended_reranker=RERANKER_JINA_TINY,
-        baseline_mrr=0.766, best_mrr=0.800,
-        notes="Default tier. Prefix hurts VEC, helps HYB slightly.",
+        baseline_mrr=0.480, best_mrr=0.800,
+        notes="Default. 0.800 MRR (HYB+rerank) at 154ms/query, ~197MB total. PM20 benchmark.",
     ),
     ModelProfile(
         key="bge-base",
@@ -166,7 +166,7 @@ _register(
         key="nomic-code-http",
         model_id="nomic-embed-code",
         display_name="Nomic-Code-7B (gateway)",
-        dimensions=768, max_tokens=8192, size_mb=0,
+        dimensions=3584, max_tokens=8192, size_mb=0,
         architecture="rope", provider="http",
         scope_prefix=True,    # Uses "Represent this query for searching relevant code:"
         recommended_reranker=RERANKER_JINA_V3,
@@ -190,25 +190,10 @@ _register(
 # ---- Preset tiers ----
 
 PRESETS: dict[str, dict] = {
-    "compact": {
-        "description": "Minimal footprint (~200MB). Fast indexing.",
+    "default": {
+        "description": "Best local quality (~197MB). 0.800 MRR, 154ms/query.",
         "embedding": "bge-small",
         "reranker": RERANKER_JINA_TINY,
-    },
-    "balanced": {
-        "description": "Best quality per MB (~340MB). Recommended.",
-        "embedding": "bge-base",
-        "reranker": RERANKER_JINA_TINY,
-    },
-    "quality": {
-        "description": "Maximum local quality (~590MB).",
-        "embedding": "gte-base",
-        "reranker": RERANKER_JINA_TURBO,
-    },
-    "deep": {
-        "description": "Long-context code model (~770MB).",
-        "embedding": "jina-code",
-        "reranker": RERANKER_JINA_TURBO,
     },
 }
 

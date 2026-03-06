@@ -312,6 +312,75 @@ class FastembedReranker:
         self.close()
 
 
+# Models that use custom HF model classes instead of CrossEncoder
+_CUSTOM_RERANKERS = {"jinaai/jina-reranker-v3"}
+
+
+class TransformersReranker:
+    """Cross-encoder reranker using HuggingFace transformers.
+
+    Supports models with custom architectures (e.g. JinaForRanking)
+    by dynamically importing their modeling.py from the HF snapshot.
+    Falls back to sentence-transformers CrossEncoder for standard models.
+    """
+
+    def __init__(self, model_name: str = "jinaai/jina-reranker-v3"):
+        self.model_name = model_name
+        self._use_custom = model_name in _CUSTOM_RERANKERS
+        logger.info("Loading reranker model: %s (custom=%s)", model_name, self._use_custom)
+
+        if self._use_custom:
+            import importlib.util
+            import sys
+            from huggingface_hub import snapshot_download
+
+            local_path = snapshot_download(model_name)
+            mod_name = "jina_reranker_modeling"
+            spec = importlib.util.spec_from_file_location(
+                mod_name, f"{local_path}/modeling.py",
+            )
+            jina_mod = importlib.util.module_from_spec(spec)
+            sys.modules[mod_name] = jina_mod  # register so transformers can find it
+            spec.loader.exec_module(jina_mod)
+            self._model = jina_mod.JinaForRanking.from_pretrained(local_path)
+        else:
+            from sentence_transformers import CrossEncoder
+            self._model = CrossEncoder(model_name, trust_remote_code=True)
+
+    def rerank(self, query: str, documents: list[str], top_k: int = 10) -> list[tuple[int, float]]:
+        """Rerank documents by relevance to query.
+
+        Returns list of (original_index, score) sorted by descending score.
+        """
+        if not documents:
+            return []
+
+        if self._use_custom:
+            results = self._model.rerank(query, documents, top_n=top_k)
+            return [
+                (int(r["index"]), float(r["relevance_score"]))
+                for r in results
+            ]
+
+        pairs = [[query, doc] for doc in documents]
+        try:
+            scores = self._model.predict(pairs)
+        except ValueError:
+            scores = self._model.predict(pairs, batch_size=1)
+        indexed = [(i, float(s)) for i, s in enumerate(scores)]
+        indexed.sort(key=lambda x: x[1], reverse=True)
+        return indexed[:top_k]
+
+    def close(self):
+        pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+
+
 def create_embedding_client(
     provider: str = "auto",
     embedding_endpoint: str | None = None,

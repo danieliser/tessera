@@ -57,6 +57,10 @@ core-languages = [
 embed = ["fastembed>=0.4"]
 all-languages = ["tree-sitter-language-pack"]
 all = ["tessera-idx[embed]", "tessera-idx[core-languages]"]
+bench = [
+    "datasets>=4.6.1",
+    "pyarrow>=23.0.1",
+]
 
 [project.urls]
 Homepage = "https://github.com/danieliser/tessera"

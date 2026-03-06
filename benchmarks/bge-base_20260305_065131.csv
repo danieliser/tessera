@@ -1,0 +1,201 @@
+model,mode,query_id,query_desc,expected,top_file,mrr,top1,top3,top5,top10,latency_ms,keyword_weight,semantic_weight,graph_weight,chunk_budget,reranker
+bge-base,VEC+code,0,Frontend rendering,Popups.php,single-popup.php,0.3333,0,1,1,1,21.0,1.0,1.2,0.8,512,yes
+bge-base,VEC+code,1,Post type registration,PostTypes.php,types.php,0.0588,0,0,0,0,18.5,1.0,1.2,0.8,512,yes
+bge-base,VEC+code,2,Popup model,Popup.php,Settings.php,0.0000,0,0,0,0,19.2,1.0,1.2,0.8,512,yes
+bge-base,VEC+code,3,Trigger registry,Triggers.php,getters.php,0.1667,0,0,0,1,17.6,1.0,1.2,0.8,512,yes
+bge-base,VEC+code,4,Exit intent trigger,Triggers.php,Triggers.php,1.0000,1,1,1,1,19.7,1.0,1.2,0.8,512,yes
+bge-base,VEC+code,5,Condition callbacks,ConditionCallbacks.php,condition-helpers.php,0.5000,0,1,1,1,25.5,1.0,1.2,0.8,512,yes
+bge-base,VEC+code,6,Popup conditionals,conditionals.php,conditionals.php,1.0000,1,1,1,1,17.3,1.0,1.2,0.8,512,yes
+bge-base,VEC+code,7,Cookie system,Cookies.php,PopupCookie.php,1.0000,1,1,1,1,17.6,1.0,1.2,0.8,512,yes
+bge-base,VEC+code,8,Newsletter AJAX,Newsletters.php,Ajax.php,0.3333,0,1,1,1,17.0,1.0,1.2,0.8,512,yes
+bge-base,VEC+code,9,Gravity Forms integration,GravityForms.php,GravityForms.php,1.0000,1,1,1,1,19.3,1.0,1.2,0.8,512,yes
+bge-base,VEC+code,10,Trigger shortcode,PopupTrigger.php,PopupClose.php,0.3333,0,1,1,1,18.9,1.0,1.2,0.8,512,yes
+bge-base,VEC+code,11,Subscribe shortcode,Subscribe.php,Subscribe.php,1.0000,1,1,1,1,16.6,1.0,1.2,0.8,512,yes
+bge-base,VEC+code,12,License REST API,RestAPI.php,ObjectSearch.php,0.3333,0,1,1,1,16.3,1.0,1.2,0.8,512,yes
+bge-base,VEC+code,13,Analytics tracking,Analytics.php,developers.php,0.1111,0,0,0,1,16.3,1.0,1.2,0.8,512,yes
+bge-base,VEC+code,14,Admin settings,Settings.php,default-values.php,0.5000,0,1,1,1,19.0,1.0,1.2,0.8,512,yes
+bge-base,VEC+code,15,Block editor,BlockEditor.php,Integration.php,0.2500,0,0,1,1,17.1,1.0,1.2,0.8,512,yes
+bge-base,VEC+code,16,DI container,Container.php,ServiceProviderInterface.php,0.1111,0,0,0,1,15.9,1.0,1.2,0.8,512,yes
+bge-base,VEC+code,17,FluentCRM tagging,AddTag.php,FluentForms.php,0.5000,0,1,1,1,17.1,1.0,1.2,0.8,512,yes
+bge-base,VEC+code,18,Scheduling,scheduling.php,Cron.php,0.5000,0,1,1,1,18.3,1.0,1.2,0.8,512,yes
+bge-base,VEC+code,19,Attribution service,Attribution.php,developers.php,0.5000,0,1,1,1,18.1,1.0,1.2,0.8,512,yes
+bge-base,HYDE+code,0,Frontend rendering,Popups.php,single-popup.php,0.3333,0,1,1,1,17.4,1.0,1.2,0.8,512,yes
+bge-base,HYDE+code,1,Post type registration,PostTypes.php,Popups.php,0.3333,0,1,1,1,17.7,1.0,1.2,0.8,512,yes
+bge-base,HYDE+code,2,Popup model,Popup.php,Settings.php,0.1429,0,0,0,1,19.5,1.0,1.2,0.8,512,yes
+bge-base,HYDE+code,3,Trigger registry,Triggers.php,getters.php,0.5000,0,1,1,1,19.4,1.0,1.2,0.8,512,yes
+bge-base,HYDE+code,4,Exit intent trigger,Triggers.php,popup-maker.php,0.3333,0,1,1,1,18.6,1.0,1.2,0.8,512,yes
+bge-base,HYDE+code,5,Condition callbacks,ConditionCallbacks.php,ConditionCallbacks.php,1.0000,1,1,1,1,17.5,1.0,1.2,0.8,512,yes
+bge-base,HYDE+code,6,Popup conditionals,conditionals.php,conditionals.php,1.0000,1,1,1,1,17.1,1.0,1.2,0.8,512,yes
+bge-base,HYDE+code,7,Cookie system,Cookies.php,PopupCookie.php,1.0000,1,1,1,1,17.8,1.0,1.2,0.8,512,yes
+bge-base,HYDE+code,8,Newsletter AJAX,Newsletters.php,Newsletters.php,1.0000,1,1,1,1,16.9,1.0,1.2,0.8,512,yes
+bge-base,HYDE+code,9,Gravity Forms integration,GravityForms.php,GravityForms.php,1.0000,1,1,1,1,16.0,1.0,1.2,0.8,512,yes
+bge-base,HYDE+code,10,Trigger shortcode,PopupTrigger.php,PopupClose.php,0.3333,0,1,1,1,16.0,1.0,1.2,0.8,512,yes
+bge-base,HYDE+code,11,Subscribe shortcode,Subscribe.php,Subscribe.php,1.0000,1,1,1,1,16.6,1.0,1.2,0.8,512,yes
+bge-base,HYDE+code,12,License REST API,RestAPI.php,License.php,1.0000,1,1,1,1,19.9,1.0,1.2,0.8,512,yes
+bge-base,HYDE+code,13,Analytics tracking,Analytics.php,developers.php,0.1429,0,0,0,1,19.7,1.0,1.2,0.8,512,yes
+bge-base,HYDE+code,14,Admin settings,Settings.php,default-values.php,0.5000,0,1,1,1,23.5,1.0,1.2,0.8,512,yes
+bge-base,HYDE+code,15,Block editor,BlockEditor.php,Integration.php,0.2500,0,0,1,1,16.5,1.0,1.2,0.8,512,yes
+bge-base,HYDE+code,16,DI container,Container.php,ServiceProviderInterface.php,0.1429,0,0,0,1,15.3,1.0,1.2,0.8,512,yes
+bge-base,HYDE+code,17,FluentCRM tagging,AddTag.php,FluentForms.php,0.5000,0,1,1,1,17.6,1.0,1.2,0.8,512,yes
+bge-base,HYDE+code,18,Scheduling,scheduling.php,Cron.php,0.5000,0,1,1,1,17.7,1.0,1.2,0.8,512,yes
+bge-base,HYDE+code,19,Attribution service,Attribution.php,developers.php,0.5000,0,1,1,1,17.2,1.0,1.2,0.8,512,yes
+bge-base,HYBRID+code,0,Frontend rendering,Popups.php,single-popup.php,0.3333,0,1,1,1,19.9,1.0,1.2,0.8,512,yes
+bge-base,HYBRID+code,1,Post type registration,PostTypes.php,types.php,0.0588,0,0,0,0,17.6,1.0,1.2,0.8,512,yes
+bge-base,HYBRID+code,2,Popup model,Popup.php,scheduling.php,0.0909,0,0,0,0,6.1,1.0,1.2,0.8,512,yes
+bge-base,HYBRID+code,3,Trigger registry,Triggers.php,getters.php,0.1667,0,0,0,1,19.2,1.0,1.2,0.8,512,yes
+bge-base,HYBRID+code,4,Exit intent trigger,Triggers.php,Triggers.php,1.0000,1,1,1,1,16.1,1.0,1.2,0.8,512,yes
+bge-base,HYBRID+code,5,Condition callbacks,ConditionCallbacks.php,condition-helpers.php,0.5000,0,1,1,1,18.3,1.0,1.2,0.8,512,yes
+bge-base,HYBRID+code,6,Popup conditionals,conditionals.php,features.php,0.0000,0,0,0,0,4.1,1.0,1.2,0.8,512,yes
+bge-base,HYBRID+code,7,Cookie system,Cookies.php,PopupCookie.php,1.0000,1,1,1,1,18.8,1.0,1.2,0.8,512,yes
+bge-base,HYBRID+code,8,Newsletter AJAX,Newsletters.php,Ajax.php,0.3333,0,1,1,1,15.9,1.0,1.2,0.8,512,yes
+bge-base,HYBRID+code,9,Gravity Forms integration,GravityForms.php,GravityForms.php,1.0000,1,1,1,1,19.4,1.0,1.2,0.8,512,yes
+bge-base,HYBRID+code,10,Trigger shortcode,PopupTrigger.php,PopupClose.php,0.5000,0,1,1,1,14.8,1.0,1.2,0.8,512,yes
+bge-base,HYBRID+code,11,Subscribe shortcode,Subscribe.php,Subscribe.php,1.0000,1,1,1,1,17.5,1.0,1.2,0.8,512,yes
+bge-base,HYBRID+code,12,License REST API,RestAPI.php,ObjectSearch.php,0.3333,0,1,1,1,17.8,1.0,1.2,0.8,512,yes
+bge-base,HYBRID+code,13,Analytics tracking,Analytics.php,Analytics.php,1.0000,1,1,1,1,1.8,1.0,1.2,0.8,512,yes
+bge-base,HYBRID+code,14,Admin settings,Settings.php,default-values.php,0.5000,0,1,1,1,16.5,1.0,1.2,0.8,512,yes
+bge-base,HYBRID+code,15,Block editor,BlockEditor.php,Integration.php,0.2500,0,0,1,1,17.1,1.0,1.2,0.8,512,yes
+bge-base,HYBRID+code,16,DI container,Container.php,ServiceProviderInterface.php,0.1250,0,0,0,1,3.5,1.0,1.2,0.8,512,yes
+bge-base,HYBRID+code,17,FluentCRM tagging,AddTag.php,FluentForms.php,0.5000,0,1,1,1,18.0,1.0,1.2,0.8,512,yes
+bge-base,HYBRID+code,18,Scheduling,scheduling.php,Cron.php,0.5000,0,1,1,1,18.4,1.0,1.2,0.8,512,yes
+bge-base,HYBRID+code,19,Attribution service,Attribution.php,developers.php,0.5000,0,1,1,1,17.9,1.0,1.2,0.8,512,yes
+bge-base,VEC+PPR,0,Frontend rendering,Popups.php,Templates.php,0.3333,0,1,1,1,27.8,1.0,1.2,0.8,512,yes
+bge-base,VEC+PPR,1,Post type registration,PostTypes.php,ScheduleTypes.php,0.1111,0,0,0,1,28.1,1.0,1.2,0.8,512,yes
+bge-base,VEC+PPR,2,Popup model,Popup.php,getters.php,0.0000,0,0,0,0,35.9,1.0,1.2,0.8,512,yes
+bge-base,VEC+PPR,3,Trigger registry,Triggers.php,getters.php,0.1667,0,0,0,1,18.5,1.0,1.2,0.8,512,yes
+bge-base,VEC+PPR,4,Exit intent trigger,Triggers.php,Triggers.php,1.0000,1,1,1,1,19.4,1.0,1.2,0.8,512,yes
+bge-base,VEC+PPR,5,Condition callbacks,ConditionCallbacks.php,ConditionCallbacks.php,1.0000,1,1,1,1,25.2,1.0,1.2,0.8,512,yes
+bge-base,VEC+PPR,6,Popup conditionals,conditionals.php,features.php,0.5000,0,1,1,1,27.4,1.0,1.2,0.8,512,yes
+bge-base,VEC+PPR,7,Cookie system,Cookies.php,PopupCookie.php,1.0000,1,1,1,1,18.7,1.0,1.2,0.8,512,yes
+bge-base,VEC+PPR,8,Newsletter AJAX,Newsletters.php,CronExpression_MonthField.php,0.5000,0,1,1,1,28.3,1.0,1.2,0.8,512,yes
+bge-base,VEC+PPR,9,Gravity Forms integration,GravityForms.php,GravityForms.php,1.0000,1,1,1,1,19.0,1.0,1.2,0.8,512,yes
+bge-base,VEC+PPR,10,Trigger shortcode,PopupTrigger.php,PopupClose.php,0.3333,0,1,1,1,19.7,1.0,1.2,0.8,512,yes
+bge-base,VEC+PPR,11,Subscribe shortcode,Subscribe.php,Subscribe.php,1.0000,1,1,1,1,18.9,1.0,1.2,0.8,512,yes
+bge-base,VEC+PPR,12,License REST API,RestAPI.php,License.php,1.0000,1,1,1,1,26.3,1.0,1.2,0.8,512,yes
+bge-base,VEC+PPR,13,Analytics tracking,Analytics.php,developers.php,0.1111,0,0,0,1,18.4,1.0,1.2,0.8,512,yes
+bge-base,VEC+PPR,14,Admin settings,Settings.php,Options.php,0.0909,0,0,0,0,25.9,1.0,1.2,0.8,512,yes
+bge-base,VEC+PPR,15,Block editor,BlockEditor.php,Integration.php,0.2500,0,0,1,1,18.8,1.0,1.2,0.8,512,yes
+bge-base,VEC+PPR,16,DI container,Container.php,ServiceProviderInterface.php,0.1111,0,0,0,1,18.5,1.0,1.2,0.8,512,yes
+bge-base,VEC+PPR,17,FluentCRM tagging,AddTag.php,AddTag.php,1.0000,1,1,1,1,29.8,1.0,1.2,0.8,512,yes
+bge-base,VEC+PPR,18,Scheduling,scheduling.php,scheduled-actions.php,1.0000,1,1,1,1,20.9,1.0,1.2,0.8,512,yes
+bge-base,VEC+PPR,19,Attribution service,Attribution.php,developers.php,0.5000,0,1,1,1,15.9,1.0,1.2,0.8,512,yes
+bge-base,HYB+PPR,0,Frontend rendering,Popups.php,Templates.php,0.3333,0,1,1,1,31.2,1.0,1.2,0.8,512,yes
+bge-base,HYB+PPR,1,Post type registration,PostTypes.php,ScheduleTypes.php,0.1111,0,0,0,1,24.3,1.0,1.2,0.8,512,yes
+bge-base,HYB+PPR,2,Popup model,Popup.php,PopupMetrics.php,0.0909,0,0,0,0,6.5,1.0,1.2,0.8,512,yes
+bge-base,HYB+PPR,3,Trigger registry,Triggers.php,getters.php,0.1667,0,0,0,1,16.1,1.0,1.2,0.8,512,yes
+bge-base,HYB+PPR,4,Exit intent trigger,Triggers.php,Triggers.php,1.0000,1,1,1,1,13.0,1.0,1.2,0.8,512,yes
+bge-base,HYB+PPR,5,Condition callbacks,ConditionCallbacks.php,ConditionCallbacks.php,1.0000,1,1,1,1,27.8,1.0,1.2,0.8,512,yes
+bge-base,HYB+PPR,6,Popup conditionals,conditionals.php,features.php,0.0000,0,0,0,0,7.5,1.0,1.2,0.8,512,yes
+bge-base,HYB+PPR,7,Cookie system,Cookies.php,PopupCookie.php,1.0000,1,1,1,1,19.3,1.0,1.2,0.8,512,yes
+bge-base,HYB+PPR,8,Newsletter AJAX,Newsletters.php,CronExpression_MonthField.php,0.5000,0,1,1,1,27.9,1.0,1.2,0.8,512,yes
+bge-base,HYB+PPR,9,Gravity Forms integration,GravityForms.php,GravityForms.php,1.0000,1,1,1,1,18.8,1.0,1.2,0.8,512,yes
+bge-base,HYB+PPR,10,Trigger shortcode,PopupTrigger.php,PopupClose.php,0.5000,0,1,1,1,15.9,1.0,1.2,0.8,512,yes
+bge-base,HYB+PPR,11,Subscribe shortcode,Subscribe.php,Subscribe.php,1.0000,1,1,1,1,17.9,1.0,1.2,0.8,512,yes
+bge-base,HYB+PPR,12,License REST API,RestAPI.php,License.php,1.0000,1,1,1,1,26.6,1.0,1.2,0.8,512,yes
+bge-base,HYB+PPR,13,Analytics tracking,Analytics.php,Analytics.php,1.0000,1,1,1,1,1.7,1.0,1.2,0.8,512,yes
+bge-base,HYB+PPR,14,Admin settings,Settings.php,Options.php,0.2000,0,0,1,1,25.0,1.0,1.2,0.8,512,yes
+bge-base,HYB+PPR,15,Block editor,BlockEditor.php,Integration.php,0.2500,0,0,1,1,18.7,1.0,1.2,0.8,512,yes
+bge-base,HYB+PPR,16,DI container,Container.php,ServiceProviderInterface.php,0.1250,0,0,0,1,4.2,1.0,1.2,0.8,512,yes
+bge-base,HYB+PPR,17,FluentCRM tagging,AddTag.php,AddTag.php,1.0000,1,1,1,1,28.3,1.0,1.2,0.8,512,yes
+bge-base,HYB+PPR,18,Scheduling,scheduling.php,scheduled-actions.php,1.0000,1,1,1,1,22.5,1.0,1.2,0.8,512,yes
+bge-base,HYB+PPR,19,Attribution service,Attribution.php,developers.php,0.5000,0,1,1,1,18.6,1.0,1.2,0.8,512,yes
+bge-base,VEC+rerank,0,Frontend rendering,Popups.php,Templates.php,0.3333,0,1,1,1,313.9,1.0,1.2,0.8,512,yes
+bge-base,VEC+rerank,1,Post type registration,PostTypes.php,deprecated.php,0.5000,0,1,1,1,311.2,1.0,1.2,0.8,512,yes
+bge-base,VEC+rerank,2,Popup model,Popup.php,Settings.php,0.0000,0,0,0,0,265.2,1.0,1.2,0.8,512,yes
+bge-base,VEC+rerank,3,Trigger registry,Triggers.php,getters.php,0.1667,0,0,0,1,297.4,1.0,1.2,0.8,512,yes
+bge-base,VEC+rerank,4,Exit intent trigger,Triggers.php,Triggers.php,1.0000,1,1,1,1,301.0,1.0,1.2,0.8,512,yes
+bge-base,VEC+rerank,5,Condition callbacks,ConditionCallbacks.php,ConditionCallbacks.php,1.0000,1,1,1,1,289.1,1.0,1.2,0.8,512,yes
+bge-base,VEC+rerank,6,Popup conditionals,conditionals.php,conditionals.php,1.0000,1,1,1,1,327.3,1.0,1.2,0.8,512,yes
+bge-base,VEC+rerank,7,Cookie system,Cookies.php,PopupCookie.php,1.0000,1,1,1,1,315.6,1.0,1.2,0.8,512,yes
+bge-base,VEC+rerank,8,Newsletter AJAX,Newsletters.php,Subscribe.php,1.0000,1,1,1,1,286.2,1.0,1.2,0.8,512,yes
+bge-base,VEC+rerank,9,Gravity Forms integration,GravityForms.php,class-pum-gravity-forms.php,0.5000,0,1,1,1,362.7,1.0,1.2,0.8,512,yes
+bge-base,VEC+rerank,10,Trigger shortcode,PopupTrigger.php,PopupTrigger.php,1.0000,1,1,1,1,348.1,1.0,1.2,0.8,512,yes
+bge-base,VEC+rerank,11,Subscribe shortcode,Subscribe.php,Subscribe.php,1.0000,1,1,1,1,383.7,1.0,1.2,0.8,512,yes
+bge-base,VEC+rerank,12,License REST API,RestAPI.php,Addons.php,0.5000,0,1,1,1,292.3,1.0,1.2,0.8,512,yes
+bge-base,VEC+rerank,13,Analytics tracking,Analytics.php,analytics.php,0.0000,0,0,0,0,329.0,1.0,1.2,0.8,512,yes
+bge-base,VEC+rerank,14,Admin settings,Settings.php,default-values.php,0.5000,0,1,1,1,314.1,1.0,1.2,0.8,512,yes
+bge-base,VEC+rerank,15,Block editor,BlockEditor.php,BlockEditor.php,1.0000,1,1,1,1,293.3,1.0,1.2,0.8,512,yes
+bge-base,VEC+rerank,16,DI container,Container.php,Container.php,1.0000,1,1,1,1,234.7,1.0,1.2,0.8,512,yes
+bge-base,VEC+rerank,17,FluentCRM tagging,AddTag.php,AddTag.php,1.0000,1,1,1,1,300.3,1.0,1.2,0.8,512,yes
+bge-base,VEC+rerank,18,Scheduling,scheduling.php,Cron.php,0.5000,0,1,1,1,243.7,1.0,1.2,0.8,512,yes
+bge-base,VEC+rerank,19,Attribution service,Attribution.php,developers.php,0.5000,0,1,1,1,181.3,1.0,1.2,0.8,512,yes
+bge-base,HYDE+rerank,0,Frontend rendering,Popups.php,Templates.php,0.3333,0,1,1,1,373.0,1.0,1.2,0.8,512,yes
+bge-base,HYDE+rerank,1,Post type registration,PostTypes.php,PostTypes.php,1.0000,1,1,1,1,362.1,1.0,1.2,0.8,512,yes
+bge-base,HYDE+rerank,2,Popup model,Popup.php,Popups.php,0.0000,0,0,0,0,312.1,1.0,1.2,0.8,512,yes
+bge-base,HYDE+rerank,3,Trigger registry,Triggers.php,getters.php,0.5000,0,1,1,1,341.2,1.0,1.2,0.8,512,yes
+bge-base,HYDE+rerank,4,Exit intent trigger,Triggers.php,popup-maker.php,0.3333,0,1,1,1,277.3,1.0,1.2,0.8,512,yes
+bge-base,HYDE+rerank,5,Condition callbacks,ConditionCallbacks.php,ConditionCallbacks.php,1.0000,1,1,1,1,342.0,1.0,1.2,0.8,512,yes
+bge-base,HYDE+rerank,6,Popup conditionals,conditionals.php,conditionals.php,1.0000,1,1,1,1,358.2,1.0,1.2,0.8,512,yes
+bge-base,HYDE+rerank,7,Cookie system,Cookies.php,PopupCookie.php,1.0000,1,1,1,1,387.5,1.0,1.2,0.8,512,yes
+bge-base,HYDE+rerank,8,Newsletter AJAX,Newsletters.php,Subscribe.php,1.0000,1,1,1,1,285.4,1.0,1.2,0.8,512,yes
+bge-base,HYDE+rerank,9,Gravity Forms integration,GravityForms.php,class-pum-gravity-forms.php,0.5000,0,1,1,1,366.1,1.0,1.2,0.8,512,yes
+bge-base,HYDE+rerank,10,Trigger shortcode,PopupTrigger.php,PopupTrigger.php,1.0000,1,1,1,1,327.5,1.0,1.2,0.8,512,yes
+bge-base,HYDE+rerank,11,Subscribe shortcode,Subscribe.php,Subscribe.php,1.0000,1,1,1,1,379.2,1.0,1.2,0.8,512,yes
+bge-base,HYDE+rerank,12,License REST API,RestAPI.php,Addons.php,0.5000,0,1,1,1,301.6,1.0,1.2,0.8,512,yes
+bge-base,HYDE+rerank,13,Analytics tracking,Analytics.php,analytics.php,0.0000,0,0,0,0,351.4,1.0,1.2,0.8,512,yes
+bge-base,HYDE+rerank,14,Admin settings,Settings.php,default-values.php,0.5000,0,1,1,1,325.6,1.0,1.2,0.8,512,yes
+bge-base,HYDE+rerank,15,Block editor,BlockEditor.php,BlockEditor.php,1.0000,1,1,1,1,307.0,1.0,1.2,0.8,512,yes
+bge-base,HYDE+rerank,16,DI container,Container.php,Container.php,1.0000,1,1,1,1,269.3,1.0,1.2,0.8,512,yes
+bge-base,HYDE+rerank,17,FluentCRM tagging,AddTag.php,AddTag.php,1.0000,1,1,1,1,322.8,1.0,1.2,0.8,512,yes
+bge-base,HYDE+rerank,18,Scheduling,scheduling.php,Cron.php,0.5000,0,1,1,1,254.4,1.0,1.2,0.8,512,yes
+bge-base,HYDE+rerank,19,Attribution service,Attribution.php,developers.php,0.5000,0,1,1,1,201.8,1.0,1.2,0.8,512,yes
+bge-base,HYB+rerank,0,Frontend rendering,Popups.php,Templates.php,0.3333,0,1,1,1,368.7,1.0,1.2,0.8,512,yes
+bge-base,HYB+rerank,1,Post type registration,PostTypes.php,deprecated.php,0.5000,0,1,1,1,366.3,1.0,1.2,0.8,512,yes
+bge-base,HYB+rerank,2,Popup model,Popup.php,scheduling.php,0.0909,0,0,0,0,158.4,1.0,1.2,0.8,512,yes
+bge-base,HYB+rerank,3,Trigger registry,Triggers.php,getters.php,0.1667,0,0,0,1,345.1,1.0,1.2,0.8,512,yes
+bge-base,HYB+rerank,4,Exit intent trigger,Triggers.php,Triggers.php,1.0000,1,1,1,1,162.0,1.0,1.2,0.8,512,yes
+bge-base,HYB+rerank,5,Condition callbacks,ConditionCallbacks.php,ConditionCallbacks.php,1.0000,1,1,1,1,315.5,1.0,1.2,0.8,512,yes
+bge-base,HYB+rerank,6,Popup conditionals,conditionals.php,features.php,0.0000,0,0,0,0,164.9,1.0,1.2,0.8,512,yes
+bge-base,HYB+rerank,7,Cookie system,Cookies.php,PopupCookie.php,1.0000,1,1,1,1,364.0,1.0,1.2,0.8,512,yes
+bge-base,HYB+rerank,8,Newsletter AJAX,Newsletters.php,Subscribe.php,1.0000,1,1,1,1,302.7,1.0,1.2,0.8,512,yes
+bge-base,HYB+rerank,9,Gravity Forms integration,GravityForms.php,class-pum-gravity-forms.php,0.5000,0,1,1,1,353.2,1.0,1.2,0.8,512,yes
+bge-base,HYB+rerank,10,Trigger shortcode,PopupTrigger.php,PopupTrigger.php,1.0000,1,1,1,1,185.3,1.0,1.2,0.8,512,yes
+bge-base,HYB+rerank,11,Subscribe shortcode,Subscribe.php,Subscribe.php,1.0000,1,1,1,1,356.8,1.0,1.2,0.8,512,yes
+bge-base,HYB+rerank,12,License REST API,RestAPI.php,Addons.php,0.5000,0,1,1,1,330.9,1.0,1.2,0.8,512,yes
+bge-base,HYB+rerank,13,Analytics tracking,Analytics.php,Analytics.php,1.0000,1,1,1,1,37.7,1.0,1.2,0.8,512,yes
+bge-base,HYB+rerank,14,Admin settings,Settings.php,default-values.php,0.5000,0,1,1,1,363.2,1.0,1.2,0.8,512,yes
+bge-base,HYB+rerank,15,Block editor,BlockEditor.php,BlockEditor.php,1.0000,1,1,1,1,324.2,1.0,1.2,0.8,512,yes
+bge-base,HYB+rerank,16,DI container,Container.php,Container.php,1.0000,1,1,1,1,140.2,1.0,1.2,0.8,512,yes
+bge-base,HYB+rerank,17,FluentCRM tagging,AddTag.php,AddTag.php,1.0000,1,1,1,1,295.1,1.0,1.2,0.8,512,yes
+bge-base,HYB+rerank,18,Scheduling,scheduling.php,Cron.php,0.5000,0,1,1,1,263.4,1.0,1.2,0.8,512,yes
+bge-base,HYB+rerank,19,Attribution service,Attribution.php,developers.php,0.5000,0,1,1,1,181.8,1.0,1.2,0.8,512,yes
+bge-base,VEC+PPR+rr,0,Frontend rendering,Popups.php,Templates.php,0.3333,0,1,1,1,29.7,1.0,1.2,0.8,512,yes
+bge-base,VEC+PPR+rr,1,Post type registration,PostTypes.php,ScheduleTypes.php,0.1111,0,0,0,1,40.1,1.0,1.2,0.8,512,yes
+bge-base,VEC+PPR+rr,2,Popup model,Popup.php,getters.php,0.0000,0,0,0,0,29.9,1.0,1.2,0.8,512,yes
+bge-base,VEC+PPR+rr,3,Trigger registry,Triggers.php,getters.php,0.1667,0,0,0,1,19.5,1.0,1.2,0.8,512,yes
+bge-base,VEC+PPR+rr,4,Exit intent trigger,Triggers.php,Triggers.php,1.0000,1,1,1,1,18.8,1.0,1.2,0.8,512,yes
+bge-base,VEC+PPR+rr,5,Condition callbacks,ConditionCallbacks.php,ConditionCallbacks.php,1.0000,1,1,1,1,25.5,1.0,1.2,0.8,512,yes
+bge-base,VEC+PPR+rr,6,Popup conditionals,conditionals.php,features.php,0.5000,0,1,1,1,30.7,1.0,1.2,0.8,512,yes
+bge-base,VEC+PPR+rr,7,Cookie system,Cookies.php,PopupCookie.php,1.0000,1,1,1,1,19.3,1.0,1.2,0.8,512,yes
+bge-base,VEC+PPR+rr,8,Newsletter AJAX,Newsletters.php,CronExpression_MonthField.php,0.5000,0,1,1,1,28.2,1.0,1.2,0.8,512,yes
+bge-base,VEC+PPR+rr,9,Gravity Forms integration,GravityForms.php,GravityForms.php,1.0000,1,1,1,1,18.9,1.0,1.2,0.8,512,yes
+bge-base,VEC+PPR+rr,10,Trigger shortcode,PopupTrigger.php,PopupClose.php,0.3333,0,1,1,1,17.8,1.0,1.2,0.8,512,yes
+bge-base,VEC+PPR+rr,11,Subscribe shortcode,Subscribe.php,Subscribe.php,1.0000,1,1,1,1,17.0,1.0,1.2,0.8,512,yes
+bge-base,VEC+PPR+rr,12,License REST API,RestAPI.php,License.php,1.0000,1,1,1,1,24.2,1.0,1.2,0.8,512,yes
+bge-base,VEC+PPR+rr,13,Analytics tracking,Analytics.php,developers.php,0.1111,0,0,0,1,16.9,1.0,1.2,0.8,512,yes
+bge-base,VEC+PPR+rr,14,Admin settings,Settings.php,Options.php,0.0909,0,0,0,0,22.5,1.0,1.2,0.8,512,yes
+bge-base,VEC+PPR+rr,15,Block editor,BlockEditor.php,Integration.php,0.2500,0,0,1,1,15.8,1.0,1.2,0.8,512,yes
+bge-base,VEC+PPR+rr,16,DI container,Container.php,ServiceProviderInterface.php,0.1111,0,0,0,1,16.3,1.0,1.2,0.8,512,yes
+bge-base,VEC+PPR+rr,17,FluentCRM tagging,AddTag.php,AddTag.php,1.0000,1,1,1,1,25.3,1.0,1.2,0.8,512,yes
+bge-base,VEC+PPR+rr,18,Scheduling,scheduling.php,scheduled-actions.php,1.0000,1,1,1,1,20.3,1.0,1.2,0.8,512,yes
+bge-base,VEC+PPR+rr,19,Attribution service,Attribution.php,developers.php,0.5000,0,1,1,1,24.1,1.0,1.2,0.8,512,yes
+bge-base,FULL,0,Frontend rendering,Popups.php,Templates.php,0.3333,0,1,1,1,316.4,1.0,1.2,0.8,512,yes
+bge-base,FULL,1,Post type registration,PostTypes.php,deprecated.php,0.5000,0,1,1,1,354.3,1.0,1.2,0.8,512,yes
+bge-base,FULL,2,Popup model,Popup.php,PopupMetrics.php,0.0909,0,0,0,0,155.8,1.0,1.2,0.8,512,yes
+bge-base,FULL,3,Trigger registry,Triggers.php,getters.php,0.1667,0,0,0,1,329.3,1.0,1.2,0.8,512,yes
+bge-base,FULL,4,Exit intent trigger,Triggers.php,Triggers.php,1.0000,1,1,1,1,161.9,1.0,1.2,0.8,512,yes
+bge-base,FULL,5,Condition callbacks,ConditionCallbacks.php,ConditionCallbacks.php,1.0000,1,1,1,1,354.6,1.0,1.2,0.8,512,yes
+bge-base,FULL,6,Popup conditionals,conditionals.php,features.php,0.0000,0,0,0,0,171.8,1.0,1.2,0.8,512,yes
+bge-base,FULL,7,Cookie system,Cookies.php,PopupCookie.php,1.0000,1,1,1,1,368.2,1.0,1.2,0.8,512,yes
+bge-base,FULL,8,Newsletter AJAX,Newsletters.php,Subscribe.php,1.0000,1,1,1,1,296.4,1.0,1.2,0.8,512,yes
+bge-base,FULL,9,Gravity Forms integration,GravityForms.php,class-pum-gravity-forms.php,0.5000,0,1,1,1,346.9,1.0,1.2,0.8,512,yes
+bge-base,FULL,10,Trigger shortcode,PopupTrigger.php,PopupTrigger.php,1.0000,1,1,1,1,177.9,1.0,1.2,0.8,512,yes
+bge-base,FULL,11,Subscribe shortcode,Subscribe.php,Subscribe.php,1.0000,1,1,1,1,354.1,1.0,1.2,0.8,512,yes
+bge-base,FULL,12,License REST API,RestAPI.php,Addons.php,0.5000,0,1,1,1,311.1,1.0,1.2,0.8,512,yes
+bge-base,FULL,13,Analytics tracking,Analytics.php,Analytics.php,1.0000,1,1,1,1,33.6,1.0,1.2,0.8,512,yes
+bge-base,FULL,14,Admin settings,Settings.php,Options.php,0.2000,0,0,1,1,358.9,1.0,1.2,0.8,512,yes
+bge-base,FULL,15,Block editor,BlockEditor.php,BlockEditor.php,1.0000,1,1,1,1,342.6,1.0,1.2,0.8,512,yes
+bge-base,FULL,16,DI container,Container.php,Container.php,1.0000,1,1,1,1,124.3,1.0,1.2,0.8,512,yes
+bge-base,FULL,17,FluentCRM tagging,AddTag.php,AddTag.php,1.0000,1,1,1,1,329.5,1.0,1.2,0.8,512,yes
+bge-base,FULL,18,Scheduling,scheduling.php,scheduled-actions.php,1.0000,1,1,1,1,288.6,1.0,1.2,0.8,512,yes
+bge-base,FULL,19,Attribution service,Attribution.php,developers.php,0.5000,0,1,1,1,193.5,1.0,1.2,0.8,512,yes

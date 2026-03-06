@@ -39,12 +39,12 @@ Before: scores like -7.31, -4.71 â€” meaningless to agents. After: 0.88, 0.83 â€
 
 | Query | embed_single Top-3 | embed_query Top-3 | Top-5 Overlap | Score Delta |
 |-------|-------------------|------------------|--------------|-------------|
-| `normalize_bm25_score` | index.html, index.html, search.py | index.html, index.html, search.py | 5/5 | +0.0000 |
-| `ProjectDB` | conftest.py, test_real_federation.py, test_real_federation.py | conftest.py, test_real_federation.py, test_real_federation.py | 5/5 | +0.0000 |
-| `hybrid_search` | index.html, index.html, index.html | index.html, index.html, index.html | 5/5 | +0.0000 |
-| `error handling` | index.html, benchmark-search-quality.md, test_embeddings.py | index.html, benchmark-search-quality.md, test_embeddings.py | 5/5 | +0.0000 |
-| `authentication scope` | index.html, index.html, test_search_benchmark.py | index.html, index.html, test_search_benchmark.py | 5/5 | +0.0000 |
-| `graph traversal` | benchmark-search-quality.md, index.html, index.html | benchmark-search-quality.md, index.html, index.html | 5/5 | +0.0000 |
+| `normalize_bm25_score` | .mcp.json, research.md, panel-scorecard.md | research.md, PLAN.md, panel-scorecard.md | 3/5 | +0.0000 |
+| `ProjectDB` | search.2c215733.min.js, bundle.79ae519e.min.js, 404.html | search.2c215733.min.js, bundle.79ae519e.min.js, exceptions.py | 2/5 | +0.0000 |
+| `hybrid_search` | auth.py, exceptions.py, index.html | research.md, spec-v1.md, research.md | 0/5 | +0.0000 |
+| `error handling` | conditions.md, VALIDATION.md, index.html | conditions.md, research.md, PLAN.md | 1/5 | +0.0000 |
+| `authentication scope` | index.html, spec-v1.md, index.html | spec-v1.md, research.md, intake.md | 1/5 | +0.0000 |
+| `graph traversal` | auth.py, index.html, cross_file_b.py | spec-v1.md, multi-project.md, spec-v1.md | 0/5 | +0.0000 |
 
 **Embedding divergence:** How much the retrieval prefix changes the vector.
 
@@ -138,9 +138,9 @@ Before: only `json.dumps`. After: agents can request the format that suits their
 
 | Format | Valid | Size | Notes |
 |--------|-------|------|-------|
-| json | Yes | 9397 chars | 5 items, full metadata |
-| csv | Yes | 7029 chars | 5 rows, 21 columns |
-| markdown | Yes | 1668 chars | 6 result sections with code blocks |
+| json | Yes | 9396 chars | 5 items, full metadata |
+| csv | Yes | 7028 chars | 5 rows, 21 columns |
+| markdown | Yes | 1667 chars | 6 result sections with code blocks |
 | files | Yes | 134 chars | 4 unique file paths |
 
 **Field filtering:** `fields=['file_path', 'score', 'docid']` correctly restricts output.
@@ -151,26 +151,26 @@ Before: only `json.dumps`. After: agents can request the format that suits their
 
 | Query | Search (ms) | + Snippet (ms) | + DocID (ms) | Total (ms) | Results |
 |-------|-----------|---------------|-------------|-----------|---------|
-| `normalize_bm25_score` | 0.74 | 0.74 | 0.02 | 1.50 | 10 |
-| `ProjectDB` | 0.51 | 0.51 | 0.01 | 1.04 | 10 |
-| `hybrid_search` | 1.26 | 0.86 | 0.02 | 2.14 | 10 |
-| `error handling` | 0.63 | 0.74 | 0.02 | 1.39 | 10 |
-| `authentication scope` | 0.75 | 1.06 | 0.03 | 1.83 | 10 |
-| `graph traversal` | 0.83 | 0.96 | 0.03 | 1.82 | 10 |
-| `keyword_search limit` | 1.36 | 0.96 | 0.03 | 2.35 | 10 |
-| `create_scope` | 1.10 | 0.79 | 0.02 | 1.91 | 10 |
-| `async to_thread` | 1.40 | 1.06 | 0.02 | 2.48 | 10 |
-| `FTS5 BM25` | 0.61 | 0.91 | 0.03 | 1.55 | 10 |
+| `normalize_bm25_score` | 0.69 | 0.72 | 0.02 | 1.43 | 10 |
+| `ProjectDB` | 0.50 | 0.52 | 0.01 | 1.03 | 10 |
+| `hybrid_search` | 1.25 | 0.86 | 0.02 | 2.12 | 10 |
+| `error handling` | 0.66 | 0.77 | 0.02 | 1.45 | 10 |
+| `authentication scope` | 0.80 | 1.09 | 0.02 | 1.91 | 10 |
+| `graph traversal` | 0.85 | 0.97 | 0.02 | 1.85 | 10 |
+| `keyword_search limit` | 1.44 | 0.94 | 0.02 | 2.41 | 10 |
+| `create_scope` | 1.09 | 0.81 | 0.02 | 1.92 | 10 |
+| `async to_thread` | 1.42 | 1.00 | 0.02 | 2.44 | 10 |
+| `FTS5 BM25` | 0.53 | 0.90 | 0.02 | 1.45 | 10 |
 
 **Full hybrid search** (embed + keyword + semantic + RRF + snippet + docid):
 
 | Query | Embed (ms) | Search (ms) | Post-process (ms) | Total (ms) |
 |-------|-----------|-----------|-------------------|-----------|
-| `normalize_bm25_score` | 0.0 | 8.0 | 0.75 | 8.8 |
-| `ProjectDB` | 0.0 | 7.2 | 0.53 | 7.8 |
-| `hybrid_search` | 0.0 | 7.6 | 0.87 | 8.5 |
-| `error handling` | 0.0 | 6.7 | 0.79 | 7.5 |
-| `authentication scope` | 0.0 | 7.8 | 1.08 | 8.9 |
+| `normalize_bm25_score` | 0.0 | 8.9 | 1.37 | 10.3 |
+| `ProjectDB` | 0.0 | 8.5 | 0.46 | 9.0 |
+| `hybrid_search` | 0.0 | 8.9 | 1.38 | 10.3 |
+| `error handling` | 0.0 | 9.1 | 1.24 | 10.4 |
+| `authentication scope` | 0.0 | 9.0 | 0.91 | 9.9 |
 
 ## 7. BM25 Strong-Signal Short-Circuit
 
@@ -195,24 +195,24 @@ Saves ~30-50ms per query when keyword match is unambiguous.
 | Query | Full Pipeline (ms) | Short-Circuit (ms) | Saved (ms) | Triggered? |
 |-------|-------------------|-------------------|-----------|-----------|
 | `normalize_bm25_score` | 9.5 | 0.7 | +8.8 | No |
-| `ProjectDB` | 8.7 | 0.5 | +8.2 | No |
-| `hybrid_search` | 9.5 | 1.3 | +8.2 | No |
-| `error handling` | 8.5 | 0.8 | +7.7 | No |
-| `authentication scope` | 12.1 | 0.9 | +11.2 | No |
+| `ProjectDB` | 8.1 | 0.5 | +7.5 | No |
+| `hybrid_search` | 8.8 | 1.3 | +7.5 | No |
+| `error handling` | 7.6 | 0.7 | +6.9 | No |
+| `authentication scope` | 7.8 | 0.8 | +7.0 | No |
 
 ## 8. Weighted RRF Fusion
 
-**Change:** Per-list weights: keyword=1.5x, semantic=1.0x, graph=0.8x (was 1.0x equal).
+**Change:** Per-list weights: keyword=1.0x, semantic=1.2x, graph=0.8x (was 1.0x equal).
 Keyword results boosted because FTS5 precision is higher for code search.
 
 | Query | Equal RRF Top-3 | Weighted RRF Top-3 | Rank Changes | Score Boost |
 |-------|-----------------|--------------------|-------------|-------------|
-| `normalize_bm25_score` | 12330924, 12332897, 12330917 | 12330924, 12330917, 12332439 | 2/3 | +0.008197 |
-| `ProjectDB` | 12332488, 12330907, 12332588 | 12332488, 12332588, 12332587 | 2/3 | +0.008197 |
-| `hybrid_search` | 12332170, 12332889, 12330925 | 12332170, 12330925, 12332196 | 2/3 | +0.008197 |
-| `error handling` | 12332275, 12332847, 12332837 | 12332275, 12332837, 12332771 | 2/3 | +0.008197 |
-| `authentication scope` | 12330995, 12332901, 12330918 | 12330995, 12330918, 12332661 | 2/3 | +0.008197 |
-| `graph traversal` | 12332837, 12332906, 12330923 | 12332837, 12330923, 12331166 | 2/3 | +0.008197 |
+| `normalize_bm25_score` | 12330924, 12332897, 12330917 | 12332897, 12332877, 12332880 | 3/3 | +0.003279 |
+| `ProjectDB` | 12332488, 12330907, 12332588 | 12330907, 12330854, 12332367 | 3/3 | +0.003279 |
+| `hybrid_search` | 12332170, 12332889, 12330925 | 12332889, 12332906, 12332900 | 3/3 | +0.003279 |
+| `error handling` | 12332275, 12332847, 12332837 | 12332847, 12332889, 12332874 | 3/3 | +0.003279 |
+| `authentication scope` | 12330995, 12332901, 12330918 | 12332901, 12332889, 12332878 | 3/3 | +0.003279 |
+| `graph traversal` | 12332837, 12332906, 12330923 | 12332906, 12332873, 12332927 | 3/3 | +0.003279 |
 
 **Weight sensitivity:** How per-list weights shift RRF scores.
 
@@ -294,10 +294,10 @@ Keyword results boosted because FTS5 precision is higher for code search.
 
 | Query | Safe (ms) | Advanced (ms) |
 |-------|----------|-------------|
-| `hybrid_search` | 1.13 | 1.12 |
-| `"def hybrid_search"` | 1.38 | 1.29 |
-| `error NOT warning` | 0.88 | 0.57 |
-| `hybrid*` | 0.42 | 0.47 |
+| `hybrid_search` | 1.09 | 1.05 |
+| `"def hybrid_search"` | 1.32 | 1.24 |
+| `error NOT warning` | 0.83 | 0.53 |
+| `hybrid*` | 0.41 | 0.47 |
 
 ---
 
