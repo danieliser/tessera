@@ -46,6 +46,30 @@ Real-world retrieval pipeline: AST-aware chunking + FTS5 + FAISS hybrid search.
 Chunking splits long functions across multiple chunks, diluting per-function scores.
 This is intentional — chunking improves real-world retrieval for partial/sub-function queries.
 
+## Dual-Model Fan-Out Benchmark
+
+Source-type routing with reranker fusion across two specialized models.
+
+**Models:** CodeRankEmbed (137M, code) + BGE-small (67MB, general)
+**Reranker:** Jina v2 cross-encoder
+**Dataset:** PM20 codebase — 10 code, 10 doc, 10 cross-media queries
+
+| Mode | Code MRR | Doc MRR | Cross MRR | Blended |
+|------|----------|---------|-----------|---------|
+| **SMART+rerank** | **0.808** | **0.950** | **0.550** | **0.769** |
+| FANOUT+rerank | 0.792 | 0.000 | 0.227 | 0.339 |
+| CodeRank+rr (single) | 0.420 | 0.400 | 0.550 | 0.457 |
+| BGE-small+rr (single) | 0.700 | 0.200 | 0.387 | 0.429 |
+
+**SMART routing strategy:**
+- Code queries → fan-out both models, code source filter, reranker picks winners
+- Doc queries → BGE-small only, HyDE embedding, markdown+json filter
+- Cross queries → CodeRankEmbed only, hybrid search + reranker
+
+Key finding: CodeRankEmbed scores 0.000 on doc retrieval — code-specialized models cannot retrieve natural language documents. Source-type routing is Tessera's genuine differentiator.
+
+See `scripts/benchmark_fanout.py`.
+
 ## Mixed-Media Benchmark (PM20 Codebase)
 
 Internal benchmark across code, documentation, and cross-media queries on a real WordPress plugin codebase.
@@ -66,6 +90,10 @@ uv run python scripts/benchmark_csn.py --model bge-base --samples 500
 
 # Mixed-media benchmark
 uv run python scripts/benchmark_mixed.py --all
+
+# Dual-model fan-out benchmark
+uv run python scripts/benchmark_fanout.py          # pure fan-out
+uv run python scripts/benchmark_fanout.py --smart   # smart routing
 
 # Aggregate mixed-media results
 uv run python scripts/aggregate_mixed.py
