@@ -134,7 +134,8 @@ def evaluate_hits(hit_files: list[str], expected: list[str]) -> dict:
     return {"mrr": mrr, "top1": top1, "top3": top3, "top5": top5, "top10": top10}
 
 
-def run_queries(queries, db, embed_client, reranker, rerank_pool: int = 40):
+def run_queries(queries, db, embed_client, reranker, rerank_pool: int = 40,
+                smart_routing: bool = False):
     """Run queries against a single DB, return per-query results."""
     results = []
 
@@ -144,9 +145,18 @@ def run_queries(queries, db, embed_client, reranker, rerank_pool: int = 40):
         raw = embed_client.embed_query(query_text)
         query_embedding = np.array(raw, dtype=np.float32)
 
+        # Smart routing: filter by source type per category
+        source_type = None
+        if smart_routing:
+            if category == "code":
+                source_type = ["code"]
+            elif category == "doc":
+                source_type = ["markdown", "md", "text"]
+
         hits = hybrid_search(
             query_text, query_embedding, db,
             limit=rerank_pool, advanced_fts=False,
+            source_type=source_type,
         )
 
         # Rerank
@@ -217,7 +227,8 @@ def main():
     parser.add_argument("--codebase", default="nextjs",
                         choices=list(CODEBASES.keys()))
     parser.add_argument("--model", default="bge-small",
-                        choices=["bge-small", "bge-base", "nomic-embed"])
+                        choices=["bge-small", "bge-base", "nomic-embed",
+                                 "jina-code", "nomic-text"])
     parser.add_argument("--http", action="store_true",
                         help="Use HTTP embedding endpoint instead of local fastembed")
     parser.add_argument("--reranker", default="Xenova/ms-marco-MiniLM-L-6-v2",
@@ -228,6 +239,8 @@ def main():
                         help="Use HTTP reranker via gateway")
     parser.add_argument("--no-reranker", action="store_true")
     parser.add_argument("--rerank-pool", type=int, default=40)
+    parser.add_argument("--smart-routing", action="store_true",
+                        help="Filter by source type per query category")
     parser.add_argument("--reindex", action="store_true")
     args = parser.parse_args()
 
@@ -251,6 +264,8 @@ def main():
         "bge-small": ("BAAI/bge-small-en-v1.5", "BGE-small-384d"),
         "bge-base": ("BAAI/bge-base-en-v1.5", "BGE-base-768d"),
         "nomic-embed": ("nomic-embed", "Nomic-Embed-Base"),
+        "jina-code": ("jinaai/jina-embeddings-v2-base-code", "Jina-Code-768d"),
+        "nomic-text": ("nomic-ai/nomic-embed-text-v1.5", "Nomic-Text-v1.5-768d"),
     }
     model_name, model_label = MODELS[args.model]
     if args.http:
@@ -291,7 +306,8 @@ def main():
     # Run
     print(f"\n  Running {len(queries)} queries...\n")
     results = run_queries(queries, db, embed_client, reranker,
-                          rerank_pool=args.rerank_pool)
+                          rerank_pool=args.rerank_pool,
+                          smart_routing=args.smart_routing)
 
     # Summary
     reranker_label = args.reranker.split("/")[-1] if not args.no_reranker else "none"
