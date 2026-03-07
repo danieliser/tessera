@@ -1,6 +1,6 @@
 # Phase 5a Spike Test Results — PPR Precision Validation
 
-**Date:** 2026-03-07 06:48:58
+**Date:** 2026-03-07 17:18:35
 **Status:** PRELIMINARY (automated test harness, not full annotation study)
 
 ## Executive Summary
@@ -25,19 +25,19 @@ Spike test validates PPR graph signal feasibility by:
 
 **Indexing Results:**
 - Files indexed: 37
-- Symbols extracted: 566
+- Symbols extracted: 567
 - Chunks created: 223
-- Index time: 0.43s
+- Index time: 0.32s
 
 **Graph Metrics:**
-- Symbol count: 566
+- Symbol count: 567
 - Edge count: 552
-- Edge/Symbol ratio: 0.98
+- Edge/Symbol ratio: 0.97
 - Sparse (edges < symbols): True
 - **Assessment:** SPARSE (PPR may degrade gracefully)
 
 **PPR Performance:**
-- Computation time: 0.83ms
+- Computation time: 0.95ms
 - **Gate:** ✅ <100ms (passed)
 
 ---
@@ -104,9 +104,9 @@ Test validated:
 
 | Metric | Value | Gate | Status |
 |--------|-------|------|--------|
-| Tessera PPR time | 0.83ms | <100ms | ✅ |
-| Avg PPR time (all projects) | 0.83ms | <100ms | ✅ |
-| Max PPR time | 0.83ms | <100ms | ✅ |
+| Tessera PPR time | 0.95ms | <100ms | ✅ |
+| Avg PPR time (all projects) | 0.95ms | <100ms | ✅ |
+| Max PPR time | 0.95ms | <100ms | ✅ |
 
 ---
 

@@ -80,7 +80,7 @@ def register_search_tools(mcp: FastMCP) -> None:
                 E.g., max_depth=1 shows only the immediate containing function/class.
         """
         # Import state at call time to get current values (globals are mutable)
-        from .._state import _embedding_client, _project_graphs
+        from .._state import _embedding_client
 
         scope, err = _check_session({"session_id": session_id}, "project")
         if err:

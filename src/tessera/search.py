@@ -644,25 +644,22 @@ def hybrid_search(
     Algorithm:
     1. Run FTS5 keyword search via db.keyword_search()
     2. If query_embedding provided: run cosine_search on db.get_all_embeddings()
-    3. NEW: Personalized PageRank search (if graph provided and not sparse)
-    4. Merge with RRF
-    5. Enrich results with file_path, start_line, end_line from chunk_meta
+    3. Merge with weighted RRF
+    4. Apply optional post-merge boosts (filename, symbol, depth)
+    5. Optionally dedup by file (keep best chunk per file)
+    6. Enrich results with file_path, start_line, end_line from chunk_meta
 
     Args:
         query: Search query string
         query_embedding: Optional query embedding (1D array)
-        db: ProjectDB instance with methods: keyword_search(), get_all_embeddings(), get_chunk()
-        graph: Optional ProjectGraph for PPR-based ranking
+        db: ProjectDB instance
+        graph: Optional ProjectGraph for PPR-based ranking (currently disabled)
         limit: Max results to return
         source_type: Optional list of source types to filter by (e.g., ['code', 'markdown'])
         search_types: Which search lists to run. None = parse from query prefix.
-            [LEX] = keyword only, [VEC] = semantic only, [HYDE] = semantic (no prefix).
         advanced_fts: If True, allow FTS5 operators (phrases, NOT, *, NEAR).
-
-    Returns:
-        list of SearchResult dicts with:
-            id, file_path, start_line, end_line, content, score, rank_sources,
-            source_type, trusted, section_heading, key_path, page_number, parent_section, graph_version
+        filename_boost: Boost RRF score per query-token/filename overlap (0.003 recommended)
+        file_dedup: Keep only the best-scoring chunk per file
     """
     # Parse structured query prefix if search_types not explicitly provided
     if search_types is None:

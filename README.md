@@ -133,6 +133,17 @@ Tessera works without embeddings (keyword search only via FTS5). For semantic se
 
 Recommended: [LM Studio](https://lmstudio.ai) with `nomic-embed-text` or any embedding model serving on `/v1/embeddings`.
 
+### Search Quality
+
+Validated against Next.js v16.1.6 (3,677 chunks, 1,729 files) and Popup Maker (~580 files):
+
+| Dataset | Doc Top-10 | Cross Top-10 | Code Top-10 | Blend MRR |
+|---------|------------|--------------|-------------|-----------|
+| Next.js | 100% | 100% | 70% | 0.748 |
+| Popup Maker | — | — | 90% | 0.542 |
+
+Default stack: BGE-base (768d, ~210MB) with filename-aware RRF boosting. No reranker needed — BGE-base vectors are strong enough on their own. PPR graph ranking available for impact/reference analysis but disabled in search (neutral-to-harmful in benchmarks).
+
 ### Run Tests
 ```bash
 uv run pytest tests/ -v

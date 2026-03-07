@@ -4,7 +4,7 @@
 Tessera is a fast code and document search server for AI agents, exposed via MCP. It indexes entire file systems — code, docs, config, assets — with scope-gated access control, and provides search, symbol navigation, reference tracing, and impact analysis across multi-language, multi-project workspaces.
 
 ## Project Status
-**v0.7.0** — Published on PyPI as `tessera-idx`. Break-point markdown chunker, hybrid search (FTS5 + FAISS + PPR), scope-gated multi-project federation, document/asset indexing.
+**v0.9.0** — Published on PyPI as `tessera-idx`. MDX indexing, filename-aware RRF boosting, file-level dedup, async pipeline with hook-driven model profiles, validated search quality (100% doc/cross Top-10 on Next.js).
 
 ## Tech Stack
 - **Language**: Python 3.11+
