@@ -133,6 +133,15 @@ Deferred from Phase 4.5. Complex VP8/VP8L bitstream parsing for image dimensions
 
 Evaluate Tessera against the CoIR (Code Information Retrieval) benchmark suite or CodeSearchNet to get industry-standard scores comparable to published model leaderboards. Would give us NDCG@10 numbers that mean something to researchers and potential adopters.
 
+### Evaluate microsoft/markitdown for document conversion
+
+https://github.com/microsoft/markitdown
+
+Microsoft's library converts PDF, DOCX, PPTX, XLSX, images, audio, and more to Markdown. Could replace or supplement our current doc parsing pipeline as a pre-processor before indexing — potentially handles all non-code file types in one dependency.
+
+**Compare against:** current chunker.py markdown/JSON/YAML handling, existing doc indexing pipeline
+**When:** after benchmarking sprint is complete. Do not prioritize over current work.
+
 ### Phase 6: Always-on file watcher
 
 Auto-reindex on file changes instead of manual `reindex` calls. The next major planned phase per the roadmap.

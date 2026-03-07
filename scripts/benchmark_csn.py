@@ -41,7 +41,9 @@ from tessera.search import hybrid_search, SearchType
 
 HTTP_MODELS = {
     "nomic": ("nomic-embed", "Nomic-768d"),
+    "nomic-code": ("nomic-embed-code", "Nomic-Code-768d"),
     "coderank": ("code-rank-embed", "CodeRankEmbed-137M"),
+    "codesage": ("codesage-large-v2", "CodeSage-large-v2-1.3B"),
     "qwen3": ("qwen3-embed", "Qwen3-1024d"),
 }
 
