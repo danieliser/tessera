@@ -211,8 +211,11 @@ def print_summary(results: list[dict], label: str):
         mrr = sum(r["mrr"] for r in cat_results) / len(cat_results)
         top1 = sum(r["top1"] for r in cat_results) / len(cat_results)
         top3 = sum(r["top3"] for r in cat_results) / len(cat_results)
+        top5 = sum(r["top5"] for r in cat_results) / len(cat_results)
+        top10 = sum(r["top10"] for r in cat_results) / len(cat_results)
         avg_ms = sum(r["latency_ms"] for r in cat_results) / len(cat_results)
         print(f"  {cat:6s}  MRR: {mrr:.3f}  Top1: {top1:.0%}  Top3: {top3:.0%}  "
+              f"Top5: {top5:.0%}  Top10: {top10:.0%}  "
               f"({len(cat_results)} queries, {avg_ms:.0f}ms avg)")
         total_mrr += mrr
         total_n += 1

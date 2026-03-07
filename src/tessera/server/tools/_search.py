@@ -136,13 +136,9 @@ def register_search_tools(mcp: FastMCP) -> None:
                 except EmbeddingUnavailableError:
                     logger.debug("Embedding endpoint unavailable, falling back to keyword-only search")
 
-            # Parallel query across all accessible projects
-            ppr_used = False
-            for pid, _pname, _db in dbs:
-                g = _project_graphs.get(pid)
-                if g:
-                    ppr_used = True
-                    logger.debug("Search on project %d using graph version %.1f", pid, g.loaded_at)
+            # PPR graph boost disabled in search — neutral-to-harmful in benchmarks.
+            # Graphs still load for impact/references analysis tools.
+            # To re-enable, pass _project_graphs.get(pid) instead of None below.
 
             # Use model profile's keyword weight unless explicit rrf_weights provided
             profile_kw_weight = _model_profile.hybrid_keyword_weight if _model_profile and not rrf_weights else None
@@ -150,7 +146,7 @@ def register_search_tools(mcp: FastMCP) -> None:
             tasks = [
                 asyncio.to_thread(
                     hybrid_search, query, query_embedding, db,
-                    _project_graphs.get(pid), limit, source_type_filter,
+                    None, limit, source_type_filter,
                     search_types, advanced_fts, rrf_weights,
                     keyword_weight=profile_kw_weight,
                 )
@@ -224,7 +220,7 @@ def register_search_tools(mcp: FastMCP) -> None:
                     )
                     r.update(snippet_info)
 
-            _log_audit("search", len(all_results), agent_id=agent_id, ppr_used=ppr_used)
+            _log_audit("search", len(all_results), agent_id=agent_id, ppr_used=False)
             warning = _stale_index_warning([pid for pid, _, _ in dbs])
             return warning + format_results(all_results, format=output_format)
         except Exception as e:
