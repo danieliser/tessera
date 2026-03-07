@@ -151,26 +151,26 @@ Before: only `json.dumps`. After: agents can request the format that suits their
 
 | Query | Search (ms) | + Snippet (ms) | + DocID (ms) | Total (ms) | Results |
 |-------|-----------|---------------|-------------|-----------|---------|
-| `normalize_bm25_score` | 0.69 | 0.72 | 0.02 | 1.43 | 10 |
-| `ProjectDB` | 0.50 | 0.52 | 0.01 | 1.03 | 10 |
-| `hybrid_search` | 1.25 | 0.86 | 0.02 | 2.12 | 10 |
-| `error handling` | 0.66 | 0.77 | 0.02 | 1.45 | 10 |
-| `authentication scope` | 0.80 | 1.09 | 0.02 | 1.91 | 10 |
-| `graph traversal` | 0.85 | 0.97 | 0.02 | 1.85 | 10 |
-| `keyword_search limit` | 1.44 | 0.94 | 0.02 | 2.41 | 10 |
-| `create_scope` | 1.09 | 0.81 | 0.02 | 1.92 | 10 |
-| `async to_thread` | 1.42 | 1.00 | 0.02 | 2.44 | 10 |
-| `FTS5 BM25` | 0.53 | 0.90 | 0.02 | 1.45 | 10 |
+| `normalize_bm25_score` | 0.68 | 0.73 | 0.02 | 1.43 | 10 |
+| `ProjectDB` | 0.49 | 0.50 | 0.01 | 1.00 | 10 |
+| `hybrid_search` | 1.24 | 0.86 | 0.02 | 2.11 | 10 |
+| `error handling` | 0.64 | 0.73 | 0.02 | 1.39 | 10 |
+| `authentication scope` | 0.82 | 1.03 | 0.02 | 1.87 | 10 |
+| `graph traversal` | 0.79 | 0.92 | 0.02 | 1.73 | 10 |
+| `keyword_search limit` | 1.47 | 0.87 | 0.03 | 2.37 | 10 |
+| `create_scope` | 1.16 | 0.79 | 0.02 | 1.97 | 10 |
+| `async to_thread` | 1.44 | 0.99 | 0.02 | 2.44 | 10 |
+| `FTS5 BM25` | 0.55 | 0.87 | 0.02 | 1.44 | 10 |
 
 **Full hybrid search** (embed + keyword + semantic + RRF + snippet + docid):
 
 | Query | Embed (ms) | Search (ms) | Post-process (ms) | Total (ms) |
 |-------|-----------|-----------|-------------------|-----------|
-| `normalize_bm25_score` | 0.0 | 8.9 | 1.37 | 10.3 |
-| `ProjectDB` | 0.0 | 8.5 | 0.46 | 9.0 |
-| `hybrid_search` | 0.0 | 8.9 | 1.38 | 10.3 |
-| `error handling` | 0.0 | 9.1 | 1.24 | 10.4 |
-| `authentication scope` | 0.0 | 9.0 | 0.91 | 9.9 |
+| `normalize_bm25_score` | 0.0 | 9.2 | 1.45 | 10.7 |
+| `ProjectDB` | 0.0 | 7.4 | 0.46 | 7.9 |
+| `hybrid_search` | 0.0 | 7.5 | 1.25 | 8.7 |
+| `error handling` | 0.0 | 7.3 | 1.25 | 8.6 |
+| `authentication scope` | 0.0 | 6.9 | 0.93 | 7.9 |
 
 ## 7. BM25 Strong-Signal Short-Circuit
 
@@ -194,11 +194,11 @@ Saves ~30-50ms per query when keyword match is unambiguous.
 
 | Query | Full Pipeline (ms) | Short-Circuit (ms) | Saved (ms) | Triggered? |
 |-------|-------------------|-------------------|-----------|-----------|
-| `normalize_bm25_score` | 9.5 | 0.7 | +8.8 | No |
-| `ProjectDB` | 8.1 | 0.5 | +7.5 | No |
-| `hybrid_search` | 8.8 | 1.3 | +7.5 | No |
-| `error handling` | 7.6 | 0.7 | +6.9 | No |
-| `authentication scope` | 7.8 | 0.8 | +7.0 | No |
+| `normalize_bm25_score` | 7.0 | 0.7 | +6.3 | No |
+| `ProjectDB` | 6.6 | 0.5 | +6.1 | No |
+| `hybrid_search` | 7.6 | 1.3 | +6.3 | No |
+| `error handling` | 6.5 | 0.6 | +5.9 | No |
+| `authentication scope` | 6.9 | 0.8 | +6.1 | No |
 
 ## 8. Weighted RRF Fusion
 
@@ -294,9 +294,9 @@ Keyword results boosted because FTS5 precision is higher for code search.
 
 | Query | Safe (ms) | Advanced (ms) |
 |-------|----------|-------------|
-| `hybrid_search` | 1.09 | 1.05 |
-| `"def hybrid_search"` | 1.32 | 1.24 |
-| `error NOT warning` | 0.83 | 0.53 |
+| `hybrid_search` | 1.09 | 1.06 |
+| `"def hybrid_search"` | 1.31 | 1.27 |
+| `error NOT warning` | 0.84 | 0.53 |
 | `hybrid*` | 0.41 | 0.47 |
 
 ---
