@@ -135,7 +135,8 @@ def evaluate_hits(hit_files: list[str], expected: list[str]) -> dict:
 
 
 def run_queries(queries, db, embed_client, reranker, rerank_pool: int = 40,
-                smart_routing: bool = False):
+                smart_routing: bool = False, graph=None,
+                keyword_weight: float | None = None):
     """Run queries against a single DB, return per-query results."""
     results = []
 
@@ -145,18 +146,21 @@ def run_queries(queries, db, embed_client, reranker, rerank_pool: int = 40,
         raw = embed_client.embed_query(query_text)
         query_embedding = np.array(raw, dtype=np.float32)
 
-        # Smart routing: filter by source type per category
+        # Smart routing: filter code queries to code chunks only
+        # Use larger pool for code (more candidates needed), smaller for doc
         source_type = None
+        pool = rerank_pool
         if smart_routing:
             if category == "code":
                 source_type = ["code"]
-            elif category == "doc":
-                source_type = ["markdown", "md", "text"]
+                pool = max(rerank_pool, 100)
 
         hits = hybrid_search(
             query_text, query_embedding, db,
-            limit=rerank_pool, advanced_fts=False,
+            graph=graph,
+            limit=pool, advanced_fts=False,
             source_type=source_type,
+            keyword_weight=keyword_weight,
         )
 
         # Rerank
@@ -241,6 +245,10 @@ def main():
     parser.add_argument("--rerank-pool", type=int, default=40)
     parser.add_argument("--smart-routing", action="store_true",
                         help="Filter by source type per query category")
+    parser.add_argument("--graph", action="store_true",
+                        help="Enable PPR graph boost in hybrid search")
+    parser.add_argument("--keyword-weight", type=float, default=None,
+                        help="FTS5 keyword weight override (default: auto)")
     parser.add_argument("--reindex", action="store_true")
     args = parser.parse_args()
 
@@ -303,11 +311,25 @@ def main():
         model_key=args.model, reindex=args.reindex,
     )
 
+    # Load graph if requested
+    graph = None
+    if args.graph:
+        from tessera.graph import load_project_graph
+        try:
+            graph = load_project_graph(db, project_id=1)
+            lcc = graph.largest_cc_size / graph.n_symbols if graph.n_symbols else 0
+            print(f"  Graph: {graph.n_symbols} symbols, {graph.edge_count} edges, "
+                  f"LCC {lcc:.1%}")
+        except (ValueError, Exception) as e:
+            print(f"  Graph: failed to load ({e})")
+
     # Run
     print(f"\n  Running {len(queries)} queries...\n")
     results = run_queries(queries, db, embed_client, reranker,
                           rerank_pool=args.rerank_pool,
-                          smart_routing=args.smart_routing)
+                          smart_routing=args.smart_routing,
+                          graph=graph,
+                          keyword_weight=args.keyword_weight)
 
     # Summary
     reranker_label = args.reranker.split("/")[-1] if not args.no_reranker else "none"
