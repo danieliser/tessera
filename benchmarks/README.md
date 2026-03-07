@@ -48,25 +48,33 @@ This is intentional — chunking improves real-world retrieval for partial/sub-f
 
 ## Dual-Model Fan-Out Benchmark
 
-Source-type routing with reranker fusion across two specialized models.
+Source-type routing with reranker fusion. SMARTv2 routing: fan-out both models for code+cross, BGE-small only for docs, reranker picks winners.
 
-**Models:** CodeRankEmbed (137M, code) + BGE-small (67MB, general)
-**Reranker:** Jina v2 cross-encoder
+**Embedding:** BGE-small (67MB, 384d)
 **Dataset:** PM20 codebase — 10 code, 10 doc, 10 cross-media queries
+**Pool:** 40 candidates → reranker
 
-| Mode | Code MRR | Doc MRR | Cross MRR | Blended |
-|------|----------|---------|-----------|---------|
-| **SMART+rerank** | **0.808** | **0.950** | **0.550** | **0.769** |
-| FANOUT+rerank | 0.792 | 0.000 | 0.227 | 0.339 |
-| CodeRank+rr (single) | 0.420 | 0.400 | 0.550 | 0.457 |
-| BGE-small+rr (single) | 0.700 | 0.200 | 0.387 | 0.429 |
+### Reranker Comparison (all pool=40, SMARTv2 routing)
 
-**SMART routing strategy:**
-- Code queries → fan-out both models, code source filter, reranker picks winners
-- Doc queries → BGE-small only, HyDE embedding, markdown+json filter
-- Cross queries → CodeRankEmbed only, hybrid search + reranker
+| Reranker | Size | Total DL | Code | Doc | Cross | **Blended** |
+|----------|------|----------|------|-----|-------|------------|
+| Jina v3 | 1.2GB | 1.3GB | 0.883 | 0.950 | 0.814 | **0.883** |
+| **MiniLM-L-6 (default)** | **80MB** | **147MB** | **0.838** | **0.950** | **0.825** | **0.871** |
+| Jina-tiny | 130MB | 197MB | **0.925** | 0.950 | 0.600 | 0.825 |
+| Jina v2 | 560MB | 627MB | 0.783 | 0.950 | 0.692 | 0.808 |
+| Jina-turbo | 150MB | 217MB | 0.755 | 0.950 | 0.642 | 0.782 |
 
-Key finding: CodeRankEmbed scores 0.000 on doc retrieval — code-specialized models cannot retrieve natural language documents. Source-type routing is Tessera's genuine differentiator.
+**Key findings:**
+- MiniLM-L-6 (80MB) beats Jina v2 (560MB) — 0.871 vs 0.808 blended
+- Pool=40 is the sweet spot (+0.085 over pool=20, flat above 40)
+- Jina-tiny scores 0.925 code MRR — highest of any configuration
+- Default stack: BGE-small + MiniLM-L-6 = **147MB total download**
+
+### Routing Strategy
+
+- **Code:** fan-out both models (CodeRankEmbed + BGE-small), VEC+LEX, reranker picks
+- **Doc:** BGE-small only, HyDE embedding, markdown+json filter
+- **Cross:** fan-out both models, VEC+LEX, HyDE on general model, graph boost
 
 See `scripts/benchmark_fanout.py`.
 
