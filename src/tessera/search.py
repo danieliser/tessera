@@ -634,6 +634,9 @@ def hybrid_search(
     filename_boost: float = 0.0,
     symbol_boost: float = 0.0,
     retrieval_pool: int | None = None,
+    query_expansion: bool = False,
+    depth_penalty: float = 0.0,
+    file_dedup: bool = False,
 ) -> list[dict]:
     """
     Hybrid search combining keyword (FTS5) and semantic (vector) results.
@@ -675,12 +678,27 @@ def hybrid_search(
     list_labels = []
     ppr_results = []
 
+    # 0. Query expansion: add hyphenated and camelCase variants for keyword search
+    expanded_query = query
+    if query_expansion and run_keyword:
+        tokens = re.findall(r'[a-zA-Z]+', query)
+        if len(tokens) >= 2:
+            # Add hyphenated: "webpack config" → "webpack-config"
+            hyphenated = "-".join(t.lower() for t in tokens)
+            # Add camelCase: "webpack config" → "webpackConfig"
+            camel = tokens[0].lower() + "".join(t.capitalize() for t in tokens[1:])
+            # Add snake_case: "webpack config" → "webpack_config"
+            snake = "_".join(t.lower() for t in tokens)
+            expanded_query = f'{query} OR "{hyphenated}" OR "{camel}" OR "{snake}"'
+
     # 1. Keyword search (SQL-level filtering when source_type is active)
     keyword_results = []
     if run_keyword:
         try:
+            kw_query = expanded_query if query_expansion else query
+            kw_advanced = True if query_expansion else advanced_fts
             keyword_results = db.keyword_search(
-                query, limit=limit, source_type=source_type, advanced_fts=advanced_fts
+                kw_query, limit=limit, source_type=source_type, advanced_fts=kw_advanced
             )
             if keyword_results:
                 ranked_lists.append(keyword_results)
@@ -887,6 +905,43 @@ def hybrid_search(
 
         # Re-sort after boosting
         merged.sort(key=lambda x: x.get("rrf_score", 0), reverse=True)
+
+    # 4c. Depth penalty — penalize deeply nested files
+    if depth_penalty > 0:
+        for item in merged:
+            chunk_id = item["id"]
+            try:
+                meta = db.get_chunk(chunk_id)
+                file_path = meta.get("file_path", "")
+                if not file_path and meta.get("file_id"):
+                    file_rec = db.get_file(file_id=meta["file_id"])
+                    if file_rec:
+                        file_path = file_rec.get("path", "")
+                depth = file_path.count(os.sep)
+                item["rrf_score"] = item.get("rrf_score", 0) - depth_penalty * depth
+            except Exception:
+                pass
+        merged.sort(key=lambda x: x.get("rrf_score", 0), reverse=True)
+
+    # 4d. File-level dedup — keep only the best-scoring chunk per file
+    if file_dedup:
+        seen_files = set()
+        deduped = []
+        for item in merged:
+            chunk_id = item["id"]
+            try:
+                meta = db.get_chunk(chunk_id)
+                file_path = meta.get("file_path", "")
+                if not file_path and meta.get("file_id"):
+                    file_rec = db.get_file(file_id=meta["file_id"])
+                    if file_rec:
+                        file_path = file_rec.get("path", "")
+            except Exception:
+                file_path = ""
+            if file_path not in seen_files:
+                seen_files.add(file_path)
+                deduped.append(item)
+        merged = deduped
 
     # 5. Enrich with chunk metadata
     results = []

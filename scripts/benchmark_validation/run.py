@@ -138,7 +138,9 @@ def run_queries(queries, db, embed_client, reranker, rerank_pool: int = 40,
                 smart_routing: bool = False, graph=None,
                 keyword_weight: float | None = None,
                 filename_boost: float = 0.0, symbol_boost: float = 0.0,
-                retrieval_pool: int | None = None):
+                retrieval_pool: int | None = None,
+                query_expansion: bool = False, depth_penalty: float = 0.0,
+                file_dedup: bool = False):
     """Run queries against a single DB, return per-query results."""
     results = []
 
@@ -166,6 +168,9 @@ def run_queries(queries, db, embed_client, reranker, rerank_pool: int = 40,
             filename_boost=filename_boost,
             symbol_boost=symbol_boost,
             retrieval_pool=retrieval_pool,
+            query_expansion=query_expansion,
+            depth_penalty=depth_penalty,
+            file_dedup=file_dedup,
         )
 
         # Rerank
@@ -263,6 +268,12 @@ def main():
                         help="Boost RRF score for symbol name token overlap")
     parser.add_argument("--retrieval-pool", type=int, default=None,
                         help="Override FAISS retrieval pool size (candidates before RRF)")
+    parser.add_argument("--query-expansion", action="store_true",
+                        help="Add hyphenated/camelCase/snake_case variants to keyword search")
+    parser.add_argument("--depth-penalty", type=float, default=0.0,
+                        help="Penalize deeply nested files (per path separator)")
+    parser.add_argument("--file-dedup", action="store_true",
+                        help="Keep only best-scoring chunk per file")
     parser.add_argument("--reindex", action="store_true")
     args = parser.parse_args()
 
@@ -346,7 +357,10 @@ def main():
                           keyword_weight=args.keyword_weight,
                           filename_boost=args.filename_boost,
                           symbol_boost=args.symbol_boost,
-                          retrieval_pool=args.retrieval_pool)
+                          retrieval_pool=args.retrieval_pool,
+                          query_expansion=args.query_expansion,
+                          depth_penalty=args.depth_penalty,
+                          file_dedup=args.file_dedup)
 
     # Summary
     reranker_label = args.reranker.split("/")[-1] if not args.no_reranker else "none"

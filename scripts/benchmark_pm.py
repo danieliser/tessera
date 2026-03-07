@@ -154,6 +154,7 @@ def search_both_dbs(
     keyword_weight: float | None = None,
     rrf_weights: dict[str, float] | None = None,
     filename_boost: float = 0.0,
+    file_dedup: bool = False,
 ) -> list[dict]:
     """Search both core and pro DBs, merge by score, optionally rerank."""
     hits_core = hybrid_search(
@@ -163,6 +164,7 @@ def search_both_dbs(
         advanced_fts=False, rrf_weights=rrf_weights,
         keyword_weight=keyword_weight,
         filename_boost=filename_boost,
+        file_dedup=file_dedup,
     )
     hits_pro = hybrid_search(
         query, query_embedding, db_pro,
@@ -171,6 +173,7 @@ def search_both_dbs(
         advanced_fts=False, rrf_weights=rrf_weights,
         keyword_weight=keyword_weight,
         filename_boost=filename_boost,
+        file_dedup=file_dedup,
     )
 
     all_hits = []
@@ -215,6 +218,7 @@ def run_mode(
     rrf_weights: dict[str, float] | None = None,
     use_hyde: bool = False,
     filename_boost: float = 0.0,
+    file_dedup: bool = False,
 ) -> list[dict]:
     """Run all queries for a single mode, return results with timing."""
     results = []
@@ -238,6 +242,7 @@ def run_mode(
             keyword_weight=keyword_weight,
             rrf_weights=rrf_weights,
             filename_boost=filename_boost,
+            file_dedup=file_dedup,
         )
         elapsed_ms = (time.perf_counter() - t0) * 1000
         total_ms += elapsed_ms
@@ -433,6 +438,8 @@ def main():
                         help="Override chunk budget for indexing (requires --reindex)")
     parser.add_argument("--filename-boost", type=float, default=0.0,
                         help="Boost RRF score for filename token overlap")
+    parser.add_argument("--file-dedup", action="store_true",
+                        help="Keep only best-scoring chunk per file")
     parser.add_argument("--csv", action="store_true", help="Export results to CSV")
     args = parser.parse_args()
 
@@ -649,6 +656,7 @@ def main():
             rrf_weights=rrf_weights,
             use_hyde=hyde,
             filename_boost=args.filename_boost,
+            file_dedup=args.file_dedup,
         )
         all_results[mode_label] = results
         labels.append(mode_label)
