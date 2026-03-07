@@ -38,6 +38,14 @@ from benchmark_mixed import (
 ENDPOINT = "http://localhost:8800/v1/embeddings"
 RERANK_ENDPOINT = "http://localhost:8800/v1/rerank"
 
+# Boilerplate files that dominate reranker input without being useful results
+BOILERPLATE_FILES = {
+    "readme.txt", "readme.md", "readme.rst",
+    "changelog.md", "changelog.txt", "changes.md",
+    "license.md", "license.txt", "license",
+    "contributing.md", "code_of_conduct.md",
+}
+
 
 def load_dbs(model_key: str):
     """Load pre-built indexes for a model."""
@@ -77,18 +85,28 @@ def search_with_model(query, client, dbs, search_types=None, src_filter=None,
 
 
 def run_fanout(code_client, code_dbs, gen_client, gen_dbs, reranker,
-               mode="fanout", graphs_code=None, graphs_gen=None):
-    """Fan-out: search both models, merge candidates, rerank."""
+               mode="fanout", graphs_code=None, graphs_gen=None,
+               filter_boilerplate=False, rerank_pool=20, gen_weight=1):
+    """Fan-out: search both models, merge candidates, rerank.
+
+    Args:
+        filter_boilerplate: Deprioritize readme/changelog/license before reranking.
+        rerank_pool: Number of candidates to feed the reranker (default 20).
+        gen_weight: How many gen hits per code hit during interleaving (default 1).
+                    Use 2 for cross queries to prioritize general model results.
+    """
     results = []
     total_ms = 0.0
 
     for query, expected_files, desc, category in QUERIES:
         t0 = time.perf_counter()
 
-        if mode == "smart":
-            # Smart routing: both models for code, general-only for docs, both for cross
+        # Per-query gen weight (v3 uses 2:1 for cross)
+        q_gen_weight = gen_weight
+
+        if mode in ("smart", "smart_v2", "smart_v3"):
+            # Smart routing: both models for code, general-only for docs
             if category == "code":
-                # Fan-out: both models generate candidates, reranker picks
                 code_hits = search_with_model(
                     query, code_client, code_dbs,
                     search_types=[SearchType.VEC], src_filter=["code"],
@@ -99,6 +117,7 @@ def run_fanout(code_client, code_dbs, gen_client, gen_dbs, reranker,
                     search_types=[SearchType.VEC], src_filter=["code"],
                     use_hyde=False, graphs=graphs_gen,
                 )
+                q_gen_weight = 1  # code: equal weighting
             elif category == "doc":
                 code_hits = []
                 gen_hits = search_with_model(
@@ -106,7 +125,33 @@ def run_fanout(code_client, code_dbs, gen_client, gen_dbs, reranker,
                     search_types=[SearchType.VEC], src_filter=["markdown", "json"],
                     use_hyde=True, graphs=graphs_gen,
                 )
-            else:  # cross — code model only with hybrid + reranker
+            elif mode == "smart_v3":
+                # Cross v3: fan-out both + hybrid + HyDE on gen + graph +
+                # boilerplate filter + 2:1 gen weighting + larger pool
+                code_hits = search_with_model(
+                    query, code_client, code_dbs,
+                    search_types=[SearchType.VEC, SearchType.LEX],
+                    use_hyde=False, graphs=graphs_code,
+                )
+                gen_hits = search_with_model(
+                    query, gen_client, gen_dbs,
+                    search_types=[SearchType.VEC, SearchType.LEX],
+                    use_hyde=True, graphs=graphs_gen,
+                )
+                q_gen_weight = 2  # cross: favor gen model 2:1
+            elif mode == "smart_v2":
+                # Cross v2: fan-out both + hybrid + HyDE on gen + graph
+                code_hits = search_with_model(
+                    query, code_client, code_dbs,
+                    search_types=[SearchType.VEC, SearchType.LEX],
+                    use_hyde=False, graphs=graphs_code,
+                )
+                gen_hits = search_with_model(
+                    query, gen_client, gen_dbs,
+                    search_types=[SearchType.VEC, SearchType.LEX],
+                    use_hyde=True, graphs=graphs_gen,
+                )
+            else:  # cross v1 — code model only with hybrid + reranker
                 code_hits = search_with_model(
                     query, code_client, code_dbs,
                     use_hyde=False, graphs=graphs_code,
@@ -124,14 +169,16 @@ def run_fanout(code_client, code_dbs, gen_client, gen_dbs, reranker,
                 use_hyde=False, graphs=graphs_gen,
             )
 
-        # Interleave: alternate code/gen hits, dedup by file_path+content
+        # Interleave: weighted code/gen hits, dedup by file_path+content
         seen = set()
         merged = []
         code_iter = iter(code_hits)
         gen_iter = iter(gen_hits)
         code_done = gen_done = False
+        merge_limit = max(30, rerank_pool + 10)
 
-        while len(merged) < 30:
+        while len(merged) < merge_limit:
+            # One code hit per round
             if not code_done:
                 try:
                     h = next(code_iter)
@@ -142,22 +189,36 @@ def run_fanout(code_client, code_dbs, gen_client, gen_dbs, reranker,
                         merged.append(h)
                 except StopIteration:
                     code_done = True
-            if not gen_done:
-                try:
-                    h = next(gen_iter)
-                    key = (h.get("file_path", ""), h.get("content", "")[:100])
-                    if key not in seen:
-                        seen.add(key)
-                        h["_model"] = "gen"
-                        merged.append(h)
-                except StopIteration:
-                    gen_done = True
+            # q_gen_weight gen hits per round (2:1 for cross v3)
+            for _ in range(q_gen_weight):
+                if not gen_done:
+                    try:
+                        h = next(gen_iter)
+                        key = (h.get("file_path", ""), h.get("content", "")[:100])
+                        if key not in seen:
+                            seen.add(key)
+                            h["_model"] = "gen"
+                            merged.append(h)
+                    except StopIteration:
+                        gen_done = True
             if code_done and gen_done:
                 break
 
+        # Filter boilerplate before reranking (push to end, don't remove)
+        if filter_boilerplate and merged:
+            priority = []
+            deprioritized = []
+            for h in merged:
+                fname = os.path.basename(h.get("file_path", "")).lower()
+                if fname in BOILERPLATE_FILES:
+                    deprioritized.append(h)
+                else:
+                    priority.append(h)
+            merged = priority + deprioritized
+
         # Rerank the merged candidates
         if reranker and merged:
-            docs = [h.get("content", "")[:512] for h in merged[:20]]
+            docs = [h.get("content", "")[:512] for h in merged[:rerank_pool]]
             reranked = reranker.rerank(query, docs, top_k=10)
             if reranked and reranked[0][1] > 0:
                 reordered = []
@@ -194,6 +255,12 @@ def main():
                         choices=["bge-small", "bge-base"], help="General-purpose model")
     parser.add_argument("--gen-provider", default="fastembed",
                         choices=["fastembed", "http"])
+    parser.add_argument("--reranker", default="jina-reranker",
+                        help="Reranker model (HTTP gateway model name or fastembed model path)")
+    parser.add_argument("--reranker-local", action="store_true",
+                        help="Use FastembedReranker (local ONNX) instead of HTTP gateway")
+    parser.add_argument("--rerank-pool", type=int, default=20,
+                        help="Number of candidates to feed reranker (default 20)")
     args = parser.parse_args()
 
     print("=" * 100)
@@ -225,17 +292,27 @@ def main():
     print(f"  General model: {model_label} — {len(v)}d")
 
     # Reranker
-    reranker = HTTPReranker(endpoint=RERANK_ENDPOINT, model="jina-reranker")
-    try:
-        test = reranker.rerank("test", ["test doc"], top_k=1)
-        if test and test[0][1] > 0:
-            print(f"  Reranker: OK (jina-reranker via HTTP)")
-        else:
-            print("  Reranker: zero scores, disabling")
+    if args.reranker_local:
+        from tessera.embeddings import FastembedReranker
+        reranker = FastembedReranker(model_name=args.reranker)
+        try:
+            test = reranker.rerank("test", ["test doc"], top_k=1)
+            print(f"  Reranker: OK ({args.reranker} via fastembed/ONNX)")
+        except Exception as e:
+            print(f"  Reranker: UNAVAILABLE ({e})")
             reranker = None
-    except Exception as e:
-        print(f"  Reranker: UNAVAILABLE ({e})")
-        reranker = None
+    else:
+        reranker = HTTPReranker(endpoint=RERANK_ENDPOINT, model=args.reranker)
+        try:
+            test = reranker.rerank("test", ["test doc"], top_k=1)
+            if test and test[0][1] > 0:
+                print(f"  Reranker: OK ({args.reranker} via HTTP)")
+            else:
+                print("  Reranker: zero scores, disabling")
+                reranker = None
+        except Exception as e:
+            print(f"  Reranker: UNAVAILABLE ({e})")
+            reranker = None
 
     # Load indexes
     print(f"\n  Loading indexes...")
@@ -259,7 +336,7 @@ def main():
     labels.append("FANOUT+rerank")
     print(f"    FANOUT+rerank: avg {fanout_ms:.0f}ms/query")
 
-    # 2. Smart routing (code→coderank, doc→bge, cross→both)
+    # 2. Smart routing v1 (code→both, doc→bge, cross→coderank only)
     smart_results, smart_ms = run_fanout(
         code_client, code_dbs, gen_client, gen_dbs, reranker, mode="smart",
     )
@@ -267,7 +344,34 @@ def main():
     labels.append("SMART+rerank")
     print(f"    SMART+rerank: avg {smart_ms:.0f}ms/query")
 
-    # 3. Baselines for comparison: single-model bests
+    # 3. Smart v2 (cross: fan-out both + hybrid + HyDE on gen + graph)
+    # Load graphs for v2/v3
+    graphs_code = {}
+    graphs_gen = {}
+    for label, db in code_dbs:
+        graphs_code[label] = try_load_graph(db)
+    for label, db in gen_dbs:
+        graphs_gen[label] = try_load_graph(db)
+    smart2_results, smart2_ms = run_fanout(
+        code_client, code_dbs, gen_client, gen_dbs, reranker, mode="smart_v2",
+        graphs_code=graphs_code, graphs_gen=graphs_gen,
+        rerank_pool=args.rerank_pool,
+    )
+    all_results["SMARTv2+rerank"] = smart2_results
+    labels.append("SMARTv2+rerank")
+    print(f"    SMARTv2+rerank: avg {smart2_ms:.0f}ms/query")
+
+    # 4. Smart v3 (v2 + boilerplate filter + 2:1 gen weight + larger pool)
+    smart3_results, smart3_ms = run_fanout(
+        code_client, code_dbs, gen_client, gen_dbs, reranker, mode="smart_v3",
+        graphs_code=graphs_code, graphs_gen=graphs_gen,
+        filter_boilerplate=True, rerank_pool=args.rerank_pool,
+    )
+    all_results["SMARTv3+rerank"] = smart3_results
+    labels.append("SMARTv3+rerank")
+    print(f"    SMARTv3+rerank: avg {smart3_ms:.0f}ms/query")
+
+    # 5. Baselines for comparison: single-model bests
     # CodeRankEmbed alone with reranker
     cr_results = []
     for query, expected_files, desc, category in QUERIES:
