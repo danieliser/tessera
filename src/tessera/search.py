@@ -20,6 +20,7 @@ import hashlib
 import io
 import json
 import logging
+import os
 import re
 from enum import StrEnum
 from collections.abc import Callable
@@ -630,6 +631,9 @@ def hybrid_search(
     advanced_fts: bool = False,
     rrf_weights: dict[str, float] | None = None,
     keyword_weight: float | None = None,
+    filename_boost: float = 0.0,
+    symbol_boost: float = 0.0,
+    retrieval_pool: int | None = None,
 ) -> list[dict]:
     """
     Hybrid search combining keyword (FTS5) and semantic (vector) results.
@@ -747,7 +751,12 @@ def hybrid_search(
             all_embeddings = db.get_all_embeddings()
             if all_embeddings and len(all_embeddings) > 0:
                 chunk_ids, embedding_vectors = all_embeddings
-                fetch_limit = limit * SEMANTIC_SEARCH_OVER_FETCH_MULTIPLIER if source_type else limit
+                if retrieval_pool:
+                    fetch_limit = retrieval_pool
+                elif source_type:
+                    fetch_limit = limit * SEMANTIC_SEARCH_OVER_FETCH_MULTIPLIER
+                else:
+                    fetch_limit = limit
                 semantic_results = cosine_search(
                     query_embedding,
                     chunk_ids,
@@ -838,6 +847,46 @@ def hybrid_search(
 
     weights = [effective_weights.get(label, 1.0) for label in list_labels]
     merged = weighted_rrf_merge(ranked_lists, weights=weights)
+
+    # 4b. Filename / symbol boost — re-score merged results before taking top-k
+    if filename_boost > 0 or symbol_boost > 0:
+        query_tokens = set(re.findall(r'[a-z]+', query.lower()))
+        for item in merged:
+            chunk_id = item["id"]
+            try:
+                meta = db.get_chunk(chunk_id)
+                # Filename boost: query tokens in filename
+                if filename_boost > 0:
+                    file_path = meta.get("file_path", "")
+                    if not file_path and meta.get("file_id"):
+                        file_rec = db.get_file(file_id=meta["file_id"])
+                        if file_rec:
+                            file_path = file_rec.get("path", "")
+                    fname = os.path.basename(file_path).lower()
+                    fname_tokens = set(re.findall(r'[a-z]+', fname))
+                    overlap = len(query_tokens & fname_tokens)
+                    if overlap:
+                        item["rrf_score"] = item.get("rrf_score", 0) + filename_boost * overlap
+
+                # Symbol boost: query tokens match symbol names in chunk
+                if symbol_boost > 0 and meta.get("file_id"):
+                    start = meta.get("start_line", 0)
+                    end = meta.get("end_line", 0)
+                    symbols = db.conn.execute(
+                        "SELECT name FROM symbols WHERE file_id = ? AND line >= ? AND line <= ?",
+                        (meta["file_id"], start, end),
+                    ).fetchall()
+                    for (sym_name,) in symbols:
+                        sym_tokens = set(re.findall(r'[a-z]+', sym_name.lower()))
+                        sym_overlap = len(query_tokens & sym_tokens)
+                        if sym_overlap:
+                            item["rrf_score"] = item.get("rrf_score", 0) + symbol_boost * sym_overlap
+                            break  # one match is enough
+            except Exception:
+                pass
+
+        # Re-sort after boosting
+        merged.sort(key=lambda x: x.get("rrf_score", 0), reverse=True)
 
     # 5. Enrich with chunk metadata
     results = []

@@ -153,6 +153,7 @@ def search_both_dbs(
     reranker=None,
     keyword_weight: float | None = None,
     rrf_weights: dict[str, float] | None = None,
+    filename_boost: float = 0.0,
 ) -> list[dict]:
     """Search both core and pro DBs, merge by score, optionally rerank."""
     hits_core = hybrid_search(
@@ -161,6 +162,7 @@ def search_both_dbs(
         source_type=src_filter, search_types=search_types,
         advanced_fts=False, rrf_weights=rrf_weights,
         keyword_weight=keyword_weight,
+        filename_boost=filename_boost,
     )
     hits_pro = hybrid_search(
         query, query_embedding, db_pro,
@@ -168,6 +170,7 @@ def search_both_dbs(
         source_type=src_filter, search_types=search_types,
         advanced_fts=False, rrf_weights=rrf_weights,
         keyword_weight=keyword_weight,
+        filename_boost=filename_boost,
     )
 
     all_hits = []
@@ -211,6 +214,7 @@ def run_mode(
     keyword_weight: float | None = None,
     rrf_weights: dict[str, float] | None = None,
     use_hyde: bool = False,
+    filename_boost: float = 0.0,
 ) -> list[dict]:
     """Run all queries for a single mode, return results with timing."""
     results = []
@@ -233,6 +237,7 @@ def run_mode(
             graph_core, graph_pro, search_types, src_filter, reranker,
             keyword_weight=keyword_weight,
             rrf_weights=rrf_weights,
+            filename_boost=filename_boost,
         )
         elapsed_ms = (time.perf_counter() - t0) * 1000
         total_ms += elapsed_ms
@@ -426,6 +431,8 @@ def main():
                         help="Override RRF graph weight (default: 0.8)")
     parser.add_argument("--chunk-budget", type=int, default=None,
                         help="Override chunk budget for indexing (requires --reindex)")
+    parser.add_argument("--filename-boost", type=float, default=0.0,
+                        help="Boost RRF score for filename token overlap")
     parser.add_argument("--csv", action="store_true", help="Export results to CSV")
     args = parser.parse_args()
 
@@ -641,6 +648,7 @@ def main():
             keyword_weight=kw_weight,
             rrf_weights=rrf_weights,
             use_hyde=hyde,
+            filename_boost=args.filename_boost,
         )
         all_results[mode_label] = results
         labels.append(mode_label)

@@ -136,7 +136,9 @@ def evaluate_hits(hit_files: list[str], expected: list[str]) -> dict:
 
 def run_queries(queries, db, embed_client, reranker, rerank_pool: int = 40,
                 smart_routing: bool = False, graph=None,
-                keyword_weight: float | None = None):
+                keyword_weight: float | None = None,
+                filename_boost: float = 0.0, symbol_boost: float = 0.0,
+                retrieval_pool: int | None = None):
     """Run queries against a single DB, return per-query results."""
     results = []
 
@@ -161,6 +163,9 @@ def run_queries(queries, db, embed_client, reranker, rerank_pool: int = 40,
             limit=pool, advanced_fts=False,
             source_type=source_type,
             keyword_weight=keyword_weight,
+            filename_boost=filename_boost,
+            symbol_boost=symbol_boost,
+            retrieval_pool=retrieval_pool,
         )
 
         # Rerank
@@ -252,6 +257,12 @@ def main():
                         help="Enable PPR graph boost in hybrid search")
     parser.add_argument("--keyword-weight", type=float, default=None,
                         help="FTS5 keyword weight override (default: auto)")
+    parser.add_argument("--filename-boost", type=float, default=0.0,
+                        help="Boost RRF score for filename token overlap")
+    parser.add_argument("--symbol-boost", type=float, default=0.0,
+                        help="Boost RRF score for symbol name token overlap")
+    parser.add_argument("--retrieval-pool", type=int, default=None,
+                        help="Override FAISS retrieval pool size (candidates before RRF)")
     parser.add_argument("--reindex", action="store_true")
     args = parser.parse_args()
 
@@ -332,7 +343,10 @@ def main():
                           rerank_pool=args.rerank_pool,
                           smart_routing=args.smart_routing,
                           graph=graph,
-                          keyword_weight=args.keyword_weight)
+                          keyword_weight=args.keyword_weight,
+                          filename_boost=args.filename_boost,
+                          symbol_boost=args.symbol_boost,
+                          retrieval_pool=args.retrieval_pool)
 
     # Summary
     reranker_label = args.reranker.split("/")[-1] if not args.no_reranker else "none"
