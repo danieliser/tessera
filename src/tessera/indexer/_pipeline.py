@@ -318,7 +318,7 @@ class IndexerPipeline:
                     ) from None
                 markdown_text = pymupdf4llm.to_markdown(file_path)
                 chunks = chunk_markdown_breakpoint(markdown_text)
-            elif file_path.endswith('.md'):
+            elif file_path.endswith(('.md', '.mdx')):
                 content = Path(file_path).read_text(encoding='utf-8', errors='replace')
                 chunks = chunk_markdown_breakpoint(content)
             elif file_path.endswith(('.yaml', '.yml')):

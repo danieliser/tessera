@@ -6,7 +6,7 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-DOCUMENT_EXTENSIONS = ['.pdf', '.md', '.yaml', '.yml', '.json']
+DOCUMENT_EXTENSIONS = ['.pdf', '.md', '.mdx', '.yaml', '.yml', '.json']
 
 # Text formats (plaintext line-based chunking)
 TEXT_EXTENSIONS = [
