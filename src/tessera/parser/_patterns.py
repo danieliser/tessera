@@ -25,7 +25,7 @@ class Reference:
 
     from_symbol: str  # name of the calling symbol
     to_symbol: str  # name of the called symbol
-    kind: str  # 'calls', 'imports', 'extends', 'implements', 'hooks_into'
+    kind: str  # 'calls', 'imports', 'extends', 'implements', 'hooks_into', 'registers_on', 'fires', 'type_reference'
     line: int
     context: str = ""  # surrounding code snippet
 
@@ -36,7 +36,7 @@ class Edge:
 
     from_name: str
     to_name: str
-    type: str  # 'calls', 'imports', 'extends', 'hooks_into'
+    type: str  # 'calls', 'imports', 'extends', 'hooks_into', 'registers_on', 'fires'
     weight: float = 1.0
 
 

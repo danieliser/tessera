@@ -5,13 +5,20 @@ import importlib
 import tree_sitter
 from tree_sitter import Language, Parser
 
+from tessera.parser._patterns import Edge, Reference, Symbol
+from tessera.parser.languages import (
+    detect_language_from_ext,
+    get_all_extractors,
+    get_extractor,
+)
+
+# Keep imports for backward compatibility - code may import these directly
 from tessera.parser._extractors import (
     _extract_symbols_generic,
     _extract_symbols_php,
     _extract_symbols_python,
     _extract_symbols_typescript,
 )
-from tessera.parser._patterns import Edge, Reference, Symbol
 from tessera.parser._references import (
     _extract_references_generic,
     _extract_references_php,
@@ -87,6 +94,12 @@ def detect_language(file_path: str) -> str | None:
         Language identifier ('python', 'typescript', 'javascript', 'php', 'go', 'rust',
         'java', 'csharp', 'ruby', 'swift', 'kotlin', 'c', 'cpp') or None if cannot be detected
     """
+    # Try auto-discovery registry first
+    lang = detect_language_from_ext(file_path)
+    if lang:
+        return lang
+
+    # Fallback to hardcoded extension map for languages without extractors
     if file_path.endswith(".py"):
         return "python"
     elif file_path.endswith((".ts", ".tsx")):
@@ -147,19 +160,23 @@ def extract_symbols(source_code: str, language: str) -> list[Symbol]:
         List of Symbol objects found in the source code
     """
     tree = parse_file(source_code, language)
-    symbols = []
 
+    # For existing languages with old functions, use those for backward compatibility
+    # (ensures consistent behavior and hook kinds)
     if language == "python":
-        symbols = _extract_symbols_python(tree, source_code)
+        return _extract_symbols_python(tree, source_code)
     elif language in ("typescript", "javascript"):
-        symbols = _extract_symbols_typescript(tree, source_code)
+        return _extract_symbols_typescript(tree, source_code)
     elif language == "php":
-        symbols = _extract_symbols_php(tree, source_code)
-    else:
-        # Fallback to generic extractor for unsupported languages
-        symbols = _extract_symbols_generic(tree, source_code)
+        return _extract_symbols_php(tree, source_code)
 
-    return symbols
+    # For new languages, try plugin registry
+    all_extractors = get_all_extractors()
+    if language in all_extractors:
+        return all_extractors[language].extract_symbols(tree, source_code)
+
+    # Fallback to generic for anything else
+    return _extract_symbols_generic(tree, source_code)
 
 
 def extract_references(
@@ -176,19 +193,23 @@ def extract_references(
         List of Reference objects found in the source code
     """
     tree = parse_file(source_code, language)
-    references = []
 
+    # For existing languages with old functions, use those for backward compatibility
+    # (ensures consistent behavior and hook kinds)
     if language == "python":
-        references = _extract_references_python(tree, source_code, known_symbols)
+        return _extract_references_python(tree, source_code, known_symbols)
     elif language in ("typescript", "javascript"):
-        references = _extract_references_typescript(tree, source_code, known_symbols)
+        return _extract_references_typescript(tree, source_code, known_symbols)
     elif language == "php":
-        references = _extract_references_php(tree, source_code, known_symbols)
-    else:
-        # Fallback to generic extractor for unsupported languages
-        references = _extract_references_generic(tree, source_code, known_symbols)
+        return _extract_references_php(tree, source_code, known_symbols)
 
-    return references
+    # For new languages, try plugin registry
+    all_extractors = get_all_extractors()
+    if language in all_extractors:
+        return all_extractors[language].extract_references(tree, source_code, known_symbols)
+
+    # Fallback to generic for anything else
+    return _extract_references_generic(tree, source_code, known_symbols)
 
 
 def build_edges(symbols: list[Symbol], references: list[Reference]) -> list[Edge]:
@@ -207,8 +228,12 @@ def build_edges(symbols: list[Symbol], references: list[Reference]) -> list[Edge
 
     for ref in references:
         # Only create edges for references that resolve to known symbols
-        # or for special cases like hooks which may not be defined in the file
-        if ref.to_symbol in symbol_names or ref.kind == "hooks_into":
+        # or for special cases like hooks/events which may not be defined in the file
+        if ref.to_symbol in symbol_names or ref.kind in (
+            "hooks_into",
+            "registers_on",
+            "fires",
+        ):
             key = (ref.from_symbol, ref.to_symbol, ref.kind)
             if key not in seen:
                 seen.add(key)
