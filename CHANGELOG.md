@@ -2,6 +2,51 @@
 
 All notable changes to Tessera are documented in this file.
 
+## [0.10.0] — 2026-03-08
+
+### Added
+- **Per-language parser plugin architecture** — auto-discovery of language modules, one file per language
+  - `LanguageExtractor` abstract base class with declarative event pattern registry
+  - Drop-in language support: create a module in `parser/languages/`, it auto-registers
+  - Shared AST helpers extracted to `_helpers.py` and `_base.py`
+- **Directional event/hook edges** — replaces undirected `hooks_into` with `registers_on` and `fires`
+  - PHP: `add_action`/`add_filter` → `registers_on`, `do_action`/`apply_filters` → `fires`
+  - JS/TS: `on`/`once`/`addEventListener` → `registers_on`, `emit`/`dispatchEvent`/`trigger` → `fires`
+  - Python: `signal.connect` → `registers_on`, `signal.send`/`send_robust` → `fires`
+- **Expanded default ignore patterns** — `.pytest_cache/`, `.ruff_cache/`, `.webpack-cache/`, `.nx/`, `.cursor/`, `.husky/`, `.serena/`, `.phpstan-cache/`
+
+### Changed
+- Parser dispatch uses plugin registry with fallback to legacy functions
+- `build_edges()` allows `registers_on` and `fires` edges for unresolved external symbols
+- All existing `hooks_into` references become `registers_on` or `fires` on re-index
+
+### Removed
+- `hooks_into` edge kind — replaced by directional `registers_on`/`fires`
+
+## [0.9.0] — 2026-03-07
+
+### Added
+- **MDX file indexing** — `.mdx` files indexed as markdown documents
+- **Filename-aware RRF boosting** — post-merge score boost when query tokens match filename
+- **File-level dedup** — keeps best chunk per file, frees result slots for diverse files
+- **Search quality validation** — Next.js v16.1.6 benchmark (3,677 chunks): Doc 100%, Cross 100%, Code 70%, Blend MRR 0.748
+- **Popup Maker benchmark** — 20-query PHP benchmark suite with VEC MRR 0.542
+- Query expansion, depth penalty, symbol boost levers (tested, some disabled)
+- Top-5 and Top-10 accuracy metrics in benchmark output
+
+### Changed
+- PPR graph boost disabled in search (neutral-to-harmful in benchmarks) — graphs still load for impact/references
+- Default search stack: BGE-base (768d) with filename-aware RRF, no reranker
+
+## [0.8.0] — 2026-03-05
+
+### Added
+- **Model profiles** — per-model embedding configuration (dimensions, chunk size, query prefix)
+- **Reranker support** — configurable reranker endpoint with pool size sweep
+- **CSN benchmark** — CodeSearchNet evaluation, #2 on CoIR leaderboard at NDCG@10 91.4
+- Flexible reranker endpoints in model profiles
+- 4-lever benchmark sweep infrastructure (CSV export, HyDE, RRF weights, chunk budget)
+
 ## [0.7.0] — 2026-03-03
 
 ### Added
