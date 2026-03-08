@@ -782,6 +782,55 @@ class ProjectDB:
                 ids.append(cursor.lastrowid)
         return ids
 
+    def get_events(
+        self,
+        event_name: str | None = None,
+        direction: str = "all",
+    ) -> list[dict[str, Any]]:
+        """Query event/hook references (registers_on, fires).
+
+        Args:
+            event_name: Filter by event/hook name pattern (supports SQL LIKE with %).
+                        None returns all events.
+            direction: "registers_on", "fires", or "all" (default).
+
+        Returns:
+            List of dicts with: event_name, direction, from_symbol, from_file, line.
+        """
+        event_kinds = []
+        if direction in ("all", "registers_on"):
+            event_kinds.append("registers_on")
+        if direction in ("all", "fires"):
+            event_kinds.append("fires")
+        if not event_kinds:
+            return []
+
+        placeholders = ",".join("?" * len(event_kinds))
+        sql = f"""
+            SELECT r.to_symbol_name AS event_name,
+                   r.kind AS direction,
+                   s.name AS from_symbol,
+                   s.scope AS from_scope,
+                   f.path AS from_file,
+                   r.line
+            FROM refs r
+            JOIN symbols s ON r.from_symbol_id = s.id
+            LEFT JOIN files f ON s.file_id = f.id
+            WHERE r.kind IN ({placeholders})
+        """
+        params: list = list(event_kinds)
+
+        if event_name is not None:
+            if "%" in event_name or "_" in event_name:
+                sql += " AND r.to_symbol_name LIKE ?"
+            else:
+                sql += " AND r.to_symbol_name = ?"
+            params.append(event_name)
+
+        sql += " ORDER BY r.to_symbol_name, r.kind, r.line"
+        cursor = self.conn.execute(sql, params)
+        return [dict(row) for row in cursor.fetchall()]
+
     def get_forward_refs(
         self,
         symbol_id: int,

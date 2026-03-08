@@ -2,6 +2,15 @@
 
 All notable changes to Tessera are documented in this file.
 
+## [0.10.1] — 2026-03-08
+
+### Added
+- **`events()` MCP tool** — query event/hook registrations and emissions across indexed projects
+  - Filter by event name (supports `%` wildcard), direction (`registers_on`, `fires`, or both)
+  - Mismatch detection: `ORPHANED_LISTENER` (registered but never fired), `UNHEARD_HOOK` (fired but no listeners)
+  - Multi-project parallel queries with scope-gated access
+- **`ProjectDB.get_events()` method** — SQL query layer for directional event edges
+
 ## [0.10.0] — 2026-03-08
 
 ### Added
