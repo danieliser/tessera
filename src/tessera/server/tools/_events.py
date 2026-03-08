@@ -19,7 +19,8 @@ def register_event_tools(mcp: FastMCP) -> None:
     async def events(
         query: str = "",
         direction: str = "all",
-        include_unheard: bool = False,
+        detect_mismatches: bool = False,
+        mismatch_filter: str = "all",
         limit: int = 50,
         offset: int = 0,
         session_id: str = "",
@@ -32,10 +33,12 @@ def register_event_tools(mcp: FastMCP) -> None:
 
         **Common patterns:**
         - All events in the project: events()
-        - Who listens to a hook: events("pum_popup_saved", direction="registers_on")
-        - Who fires a hook: events("pum_popup_saved", direction="fires")
-        - Find hooks with prefix: events("pum_%")
-        - Detect orphaned listeners: events(include_unheard=True)
+        - Who listens to an event: events("pum_popup_saved", direction="registers_on")
+        - Who fires an event: events("pum_popup_saved", direction="fires")
+        - Find events with prefix: events("pum_%")
+        - All mismatches: events(detect_mismatches=True)
+        - Only orphaned listeners: events(detect_mismatches=True, mismatch_filter="orphaned")
+        - Only unfired events: events(detect_mismatches=True, mismatch_filter="unfired")
         - Page through results: events("pum_%", limit=20, offset=40)
 
         **Direction values:**
@@ -43,14 +46,20 @@ def register_event_tools(mcp: FastMCP) -> None:
         - "registers_on": Only listener registrations (add_action, on, connect)
         - "fires": Only event emissions (do_action, emit, send)
 
-        **Mismatch detection (include_unheard=True):**
+        **Mismatch detection (detect_mismatches=True):**
         - ORPHANED_LISTENER: Registered but never fired in indexed code
-        - UNHEARD_HOOK: Fired but no listener registered in indexed code
+        - UNFIRED_EVENT: Fired but no listener registered in indexed code
+
+        **Mismatch filter (requires detect_mismatches=True):**
+        - "all" (default): Show both orphaned listeners and unfired events
+        - "orphaned": Only ORPHANED_LISTENER mismatches
+        - "unfired": Only UNFIRED_EVENT mismatches
 
         Args:
             query: Event/hook name or pattern (supports % wildcard). Empty = all events.
             direction: Filter by direction — "all", "registers_on", or "fires".
-            include_unheard: When true, flag events with mismatched registrations/emissions.
+            detect_mismatches: When true, analyze event registration/emission balance.
+            mismatch_filter: Filter mismatches — "all", "orphaned", or "unfired".
             limit: Max results to return (default 50). Use 0 for unlimited.
             offset: Skip this many results for pagination (default 0).
         """
@@ -94,7 +103,7 @@ def register_event_tools(mcp: FastMCP) -> None:
 
             effective_limit = limit if limit > 0 else None
 
-            if include_unheard:
+            if detect_mismatches:
                 # Group by event name to detect mismatches
                 by_event: dict[str, dict] = defaultdict(lambda: {
                     "registers": [], "fires": [],
@@ -126,7 +135,7 @@ def register_event_tools(mcp: FastMCP) -> None:
                     elif data["fires"] and not data["registers"]:
                         mismatches.append({
                             "event_name": name,
-                            "issue": "UNHEARD_HOOK",
+                            "issue": "UNFIRED_EVENT",
                             "detail": f"Fired {len(data['fires'])} time(s), no listeners",
                             "locations": [
                                 {
@@ -139,6 +148,11 @@ def register_event_tools(mcp: FastMCP) -> None:
                             ],
                         })
 
+                if mismatch_filter == "orphaned":
+                    mismatches = [m for m in mismatches if m["issue"] == "ORPHANED_LISTENER"]
+                elif mismatch_filter == "unfired":
+                    mismatches = [m for m in mismatches if m["issue"] == "UNFIRED_EVENT"]
+
                 total_mismatches = len(mismatches)
                 paged = mismatches[offset:offset + effective_limit] if effective_limit else mismatches[offset:]
                 output["mismatches"] = paged
@@ -146,10 +160,11 @@ def register_event_tools(mcp: FastMCP) -> None:
                     "total_events": len(by_event),
                     "total_mismatches": total_mismatches,
                     "orphaned_listeners": sum(1 for m in mismatches if m["issue"] == "ORPHANED_LISTENER"),
-                    "unheard_hooks": sum(1 for m in mismatches if m["issue"] == "UNHEARD_HOOK"),
+                    "unfired_events": sum(1 for m in mismatches if m["issue"] == "UNFIRED_EVENT"),
                     "healthy": len(by_event) - total_mismatches,
                     "showing": len(paged),
                     "offset": offset,
+                    "filter": mismatch_filter,
                 }
             else:
                 total = len(all_events)
