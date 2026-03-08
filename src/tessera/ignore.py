@@ -67,6 +67,8 @@ class IgnoreFilter:
         "coverage/",
         ".nyc_output/",
         ".tessera/",
+        ".pytest_cache/",
+        ".ruff_cache/",
         "*.log",
         ".gitignore",
     ]
