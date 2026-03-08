@@ -88,7 +88,7 @@ def register_event_tools(mcp: FastMCP) -> None:
                     logger.warning("Events query on project %d failed: %s", pid, result)
                     continue
                 for r in result:
-                    all_events.append({
+                    entry = {
                         "event_name": r["event_name"],
                         "direction": r["direction"],
                         "from_symbol": r["from_symbol"],
@@ -97,7 +97,11 @@ def register_event_tools(mcp: FastMCP) -> None:
                         "line": r.get("line", 0),
                         "project_id": pid,
                         "project_name": pname,
-                    })
+                    }
+                    subtype = r.get("subtype", "")
+                    if subtype:
+                        entry["event_subtype"] = subtype
+                    all_events.append(entry)
 
             output: dict = {}
 

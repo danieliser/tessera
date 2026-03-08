@@ -733,7 +733,8 @@ class IndexerPipeline:
                         'to_symbol_name': r.to_symbol,
                         'kind': r.kind,
                         'context': r.context,
-                        'line': r.line
+                        'line': r.line,
+                        'subtype': getattr(r, 'subtype', ''),
                     })
 
             if ref_dicts:

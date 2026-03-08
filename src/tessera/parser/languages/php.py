@@ -30,7 +30,19 @@ class PHPExtractor(LanguageExtractor):
     }
     EVENT_FIRES = {
         "do_action": "fires",
+        "do_action_ref_array": "fires",
         "apply_filters": "fires",
+        "apply_filters_ref_array": "fires",
+    }
+
+    # Subtype mapping: function name → event subtype
+    EVENT_SUBTYPES = {
+        "add_action": "action",
+        "do_action": "action",
+        "do_action_ref_array": "action",
+        "add_filter": "filter",
+        "apply_filters": "filter",
+        "apply_filters_ref_array": "filter",
     }
 
     def extract_symbols(self, tree: tree_sitter.Tree, source_code: str) -> list[Symbol]:
@@ -241,6 +253,7 @@ class PHPExtractor(LanguageExtractor):
                                     to_symbol=hook_name,
                                     kind=kind,
                                     line=node.start_point[0] + 1,
+                                    subtype=self.EVENT_SUBTYPES.get(func_name, ""),
                                 )
                                 references.append(ref)
                     else:

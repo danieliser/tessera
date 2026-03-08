@@ -215,6 +215,12 @@ class ProjectDB:
             except Exception:
                 self.conn.execute("ALTER TABLE refs ADD COLUMN to_symbol_name TEXT")
 
+            # Migration: add subtype column for event type classification
+            try:
+                self.conn.execute("SELECT subtype FROM refs LIMIT 0")
+            except Exception:
+                self.conn.execute("ALTER TABLE refs ADD COLUMN subtype TEXT DEFAULT ''")
+
             self.conn.execute(
                 "CREATE INDEX IF NOT EXISTS idx_refs_to_name ON refs(project_id, to_symbol_name)"
             )
@@ -638,9 +644,9 @@ class ProjectDB:
                 cursor = self.conn.execute(
                     """
                     INSERT INTO refs (
-                        project_id, from_symbol_id, to_symbol_id, to_symbol_name, kind, context, line
+                        project_id, from_symbol_id, to_symbol_id, to_symbol_name, kind, context, line, subtype
                     )
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         ref.get("project_id"),
@@ -649,7 +655,8 @@ class ProjectDB:
                         ref.get("to_symbol_name"),
                         ref.get("kind"),
                         ref.get("context"),
-                        ref.get("line")
+                        ref.get("line"),
+                        ref.get("subtype", ""),
                     )
                 )
                 ids.append(cursor.lastrowid)
@@ -812,7 +819,8 @@ class ProjectDB:
                    s.name AS from_symbol,
                    s.scope AS from_scope,
                    f.path AS from_file,
-                   r.line
+                   r.line,
+                   COALESCE(r.subtype, '') AS subtype
             FROM refs r
             JOIN symbols s ON r.from_symbol_id = s.id
             LEFT JOIN files f ON s.file_id = f.id

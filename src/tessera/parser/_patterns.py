@@ -25,9 +25,10 @@ class Reference:
 
     from_symbol: str  # name of the calling symbol
     to_symbol: str  # name of the called symbol
-    kind: str  # 'calls', 'imports', 'extends', 'implements', 'hooks_into', 'registers_on', 'fires', 'type_reference'
+    kind: str  # 'calls', 'imports', 'extends', 'implements', 'registers_on', 'fires', 'type_reference'
     line: int
     context: str = ""  # surrounding code snippet
+    subtype: str = ""  # optional event subtype: 'action', 'filter' (PHP/WP), empty for generic events
 
 
 @dataclass

@@ -40,6 +40,7 @@ class LanguageExtractor(ABC):
     # --- Event pattern registry (override in subclass) ---
     EVENT_REGISTERS: dict[str, str] = {}
     EVENT_FIRES: dict[str, str] = {}
+    EVENT_SUBTYPES: dict[str, str] = {}  # func_name → subtype (e.g. "action", "filter")
 
     @abstractmethod
     def extract_symbols(self, tree: tree_sitter.Tree, source_code: str) -> list[Symbol]:
@@ -102,6 +103,7 @@ class LanguageExtractor(ABC):
                             to_symbol=event_name,
                             kind=event_funcs[func_name],
                             line=node.start_point[0] + 1,
+                            subtype=self.EVENT_SUBTYPES.get(func_name, ""),
                         )
                     )
 

@@ -27,12 +27,26 @@ class TypeScriptExtractor(LanguageExtractor):
         "once": "registers_on",
         "addListener": "registers_on",
         "addEventListener": "registers_on",
+        # @wordpress/hooks package
+        "addAction": "registers_on",
+        "addFilter": "registers_on",
     }
 
     EVENT_FIRES = {
         "emit": "fires",
         "dispatchEvent": "fires",
         "trigger": "fires",
+        # @wordpress/hooks package
+        "doAction": "fires",
+        "applyFilters": "fires",
+    }
+
+    # Subtype mapping for WordPress hooks (JS variant)
+    EVENT_SUBTYPES = {
+        "addAction": "action",
+        "doAction": "action",
+        "addFilter": "filter",
+        "applyFilters": "filter",
     }
 
     def extract_symbols(self, tree: tree_sitter.Tree, source_code: str) -> list[Symbol]:
@@ -294,6 +308,21 @@ class TypeScriptExtractor(LanguageExtractor):
 
                     if func_node.type == "identifier":
                         func_name = func_node.text.decode("utf-8")
+                        # Check if it's a top-level event function (e.g. @wordpress/hooks)
+                        all_event_funcs = {**self.EVENT_REGISTERS, **self.EVENT_FIRES}
+                        if func_name in all_event_funcs:
+                            event_name = extract_first_string_arg_generic(node, source_code, self.language)
+                            if event_name:
+                                references.append(
+                                    Reference(
+                                        from_symbol=current_function or "<module>",
+                                        to_symbol=event_name,
+                                        kind=all_event_funcs[func_name],
+                                        line=node.start_point[0] + 1,
+                                        subtype=self.EVENT_SUBTYPES.get(func_name, ""),
+                                    )
+                                )
+                            func_name = None
                     elif func_node.type == "member_expression":
                         # obj.method() or obj.method().chain()
                         # First, check if this is an event function (on, emit, etc.)
@@ -313,6 +342,7 @@ class TypeScriptExtractor(LanguageExtractor):
                                             to_symbol=event_name,
                                             kind=all_event_funcs[method_name],
                                             line=node.start_point[0] + 1,
+                                            subtype=self.EVENT_SUBTYPES.get(method_name, ""),
                                         )
                                     )
                                 # Don't process as regular call
