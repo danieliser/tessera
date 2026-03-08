@@ -161,19 +161,18 @@ def extract_symbols(source_code: str, language: str) -> list[Symbol]:
     """
     tree = parse_file(source_code, language)
 
-    # For existing languages with old functions, use those for backward compatibility
-    # (ensures consistent behavior and hook kinds)
+    # Try plugin registry first for new language extractors
+    all_extractors = get_all_extractors()
+    if language in all_extractors:
+        return all_extractors[language].extract_symbols(tree, source_code)
+
+    # Fallback to old functions for backward compatibility
     if language == "python":
         return _extract_symbols_python(tree, source_code)
     elif language in ("typescript", "javascript"):
         return _extract_symbols_typescript(tree, source_code)
     elif language == "php":
         return _extract_symbols_php(tree, source_code)
-
-    # For new languages, try plugin registry
-    all_extractors = get_all_extractors()
-    if language in all_extractors:
-        return all_extractors[language].extract_symbols(tree, source_code)
 
     # Fallback to generic for anything else
     return _extract_symbols_generic(tree, source_code)
@@ -194,19 +193,18 @@ def extract_references(
     """
     tree = parse_file(source_code, language)
 
-    # For existing languages with old functions, use those for backward compatibility
-    # (ensures consistent behavior and hook kinds)
+    # Try plugin registry first for new language extractors
+    all_extractors = get_all_extractors()
+    if language in all_extractors:
+        return all_extractors[language].extract_references(tree, source_code, known_symbols)
+
+    # Fallback to old functions for backward compatibility
     if language == "python":
         return _extract_references_python(tree, source_code, known_symbols)
     elif language in ("typescript", "javascript"):
         return _extract_references_typescript(tree, source_code, known_symbols)
     elif language == "php":
         return _extract_references_php(tree, source_code, known_symbols)
-
-    # For new languages, try plugin registry
-    all_extractors = get_all_extractors()
-    if language in all_extractors:
-        return all_extractors[language].extract_references(tree, source_code, known_symbols)
 
     # Fallback to generic for anything else
     return _extract_references_generic(tree, source_code, known_symbols)
