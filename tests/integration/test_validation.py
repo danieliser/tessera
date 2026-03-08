@@ -378,7 +378,7 @@ class TestPHPValidation:
 
     Expected (hand-verified from parser output):
       8 symbols (7 + 1 <module> pseudo-symbol), 10 refs stored
-      (3 calls, 1 extends, 2 hooks_into, 2 type_reference)
+      (3 calls, 1 extends, 2 registers_on, 2 type_reference)
     """
 
     @pytest.fixture
@@ -434,7 +434,7 @@ class TestPHPValidation:
         assert "track" in targets
 
     def test_stored_ref_count(self, db):
-        """10 refs: 3 calls, 1 extends, 2 hooks_into, 2 type_reference (BaseEvent param, Tracker return)."""
+        """10 refs: 3 calls, 1 extends, 2 registers_on, 2 type_reference (BaseEvent param, Tracker return)."""
         refs = _get_all_refs(db)
         assert len(refs) == 10
 
@@ -460,7 +460,7 @@ class TestPHPValidation:
         assert len(tuples) == len(set(tuples)), f"Duplicate edges: {tuples}"
 
     def test_total_edge_count(self, db):
-        """Parser produces 7 edges from parser, but 2 hooks_into edges target external
+        """Parser produces 7 edges from parser, but 2 registers_on edges target external
         hooks (init, analytics_enabled) that have no symbol IDs, so they can't be stored.
         5 edges stored (3 contains + 2 calls)."""
         edges = _get_edges(db)

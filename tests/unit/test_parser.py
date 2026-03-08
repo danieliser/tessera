@@ -234,7 +234,7 @@ function my_plugin_init() {
 add_action('wp_loaded', 'my_plugin_init');
 """
         refs = extract_references(code, "php")
-        hook_refs = [r for r in refs if r.kind == "hooks_into"]
+        hook_refs = [r for r in refs if r.kind == "registers_on"]
         assert any(r.to_symbol == "wp_loaded" for r in hook_refs)
 
     def test_wordpress_add_filter(self):
@@ -245,7 +245,7 @@ function my_filter($content) {
 add_filter('the_content', 'my_filter');
 """
         refs = extract_references(code, "php")
-        filter_refs = [r for r in refs if r.kind == "hooks_into"]
+        filter_refs = [r for r in refs if r.kind == "registers_on"]
         assert any(r.to_symbol == "the_content" for r in filter_refs)
 
 
