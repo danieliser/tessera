@@ -25,6 +25,25 @@ Tessera indexes everything — code, documents, config files, media assets, bina
 - **File context** — Complete structural overview of any file in one call
 - **Cross-project references** — Track where project A's exports are used in project B
 
+### Event & Hook Analysis
+- **Cross-language event detection** — WordPress hooks (PHP), EventEmitter/DOM (JS/TS), Django signals (Python), `@wordpress/hooks` (JS)
+- **Directional edges** — Distinguish who *registers* a listener from who *fires* an event
+- **Mismatch detection** — Find orphaned listeners (registered, never fired) and unfired events (fired, nobody listening)
+- **Action vs filter classification** — WordPress-specific subtyping preserved without runtime analysis
+- **Wildcard queries** — `events("pum_%")` to explore hook namespaces
+- **Pagination** — Browse large event sets without blowing context windows
+
+```
+# Who listens to this hook?
+events("pum_popup_content", direction="registers_on")
+
+# Find all unfired events (potential dead code)
+events(detect_mismatches=True, mismatch_filter="unfired")
+
+# Explore a hook namespace
+events("pum_%", direction="fires", limit=20)
+```
+
 ### Document & Text Search
 - **Chunked indexing** — Files are split into focused, searchable chunks with metadata (by header, key path, or line group) — not stored as monolithic blobs
 - **Code + docs unified** — Query across everything, or filter by source type (`code`, `asset`, `document`)
@@ -60,7 +79,7 @@ Tessera indexes everything — code, documents, config files, media assets, bina
 
 PHP, TypeScript, JavaScript, Python, Swift — via tree-sitter grammars.
 
-## MCP Tools (18)
+## MCP Tools (19)
 
 ### Search & Navigation
 | Tool | Purpose |
@@ -72,6 +91,7 @@ PHP, TypeScript, JavaScript, Python, Swift — via tree-sitter grammars.
 | `file_context` | Complete context for a file (symbols, refs, structure) |
 | `impact` | Trace downstream impact of changing a symbol |
 | `cross_refs` | Cross-project references to a symbol |
+| `events` | Analyze event/hook registrations, emissions, and mismatches across languages |
 | `collection_map` | Overview of projects in a collection with stats |
 
 ### Administration
@@ -182,7 +202,7 @@ MCP Server (stdio)
 
 ## Project Status
 
-**v0.7.0** — Break-point markdown chunker, PyPI packaging (`pip install tessera-idx`), hybrid search with semantic snippet scoring, PPR graph ranking.
+**v0.10.1** — Event/hook analysis with directional edges, per-language parser plugins, mismatch detection, action/filter subtyping, `@wordpress/hooks` support.
 
 | Phase | Status | What |
 |-------|--------|------|
