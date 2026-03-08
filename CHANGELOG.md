@@ -7,9 +7,16 @@ All notable changes to Tessera are documented in this file.
 ### Added
 - **`events()` MCP tool** — query event/hook registrations and emissions across indexed projects
   - Filter by event name (supports `%` wildcard), direction (`registers_on`, `fires`, or both)
-  - Mismatch detection: `ORPHANED_LISTENER` (registered but never fired), `UNHEARD_HOOK` (fired but no listeners)
+  - Mismatch detection: `ORPHANED_LISTENER` (registered but never fired), `UNFIRED_EVENT` (fired but no listeners)
+  - `mismatch_filter` param: query `"orphaned"` or `"unfired"` independently
+  - `limit`/`offset` pagination (default 50 per page)
   - Multi-project parallel queries with scope-gated access
+- **`event_subtype` field** — optional classification for event types
+  - PHP: `"action"` (add_action/do_action) vs `"filter"` (add_filter/apply_filters)
+  - JS/TS: `@wordpress/hooks` support (addAction/addFilter/doAction/applyFilters) with subtypes
+  - Generic events (EventEmitter, DOM, signals) have no subtype — field omitted from output
 - **`ProjectDB.get_events()` method** — SQL query layer for directional event edges
+- PHP: `do_action_ref_array` and `apply_filters_ref_array` support
 
 ## [0.10.0] — 2026-03-08
 
