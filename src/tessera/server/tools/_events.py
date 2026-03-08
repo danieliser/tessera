@@ -20,6 +20,8 @@ def register_event_tools(mcp: FastMCP) -> None:
         query: str = "",
         direction: str = "all",
         include_unheard: bool = False,
+        limit: int = 50,
+        offset: int = 0,
         session_id: str = "",
     ) -> str:
         """Analyze event/hook registrations and emissions across the codebase.
@@ -34,6 +36,7 @@ def register_event_tools(mcp: FastMCP) -> None:
         - Who fires a hook: events("pum_popup_saved", direction="fires")
         - Find hooks with prefix: events("pum_%")
         - Detect orphaned listeners: events(include_unheard=True)
+        - Page through results: events("pum_%", limit=20, offset=40)
 
         **Direction values:**
         - "all" (default): Show both registrations and emissions
@@ -48,6 +51,8 @@ def register_event_tools(mcp: FastMCP) -> None:
             query: Event/hook name or pattern (supports % wildcard). Empty = all events.
             direction: Filter by direction — "all", "registers_on", or "fires".
             include_unheard: When true, flag events with mismatched registrations/emissions.
+            limit: Max results to return (default 50). Use 0 for unlimited.
+            offset: Skip this many results for pagination (default 0).
         """
         scope, err = _check_session({"session_id": session_id}, "project")
         if err:
@@ -86,6 +91,8 @@ def register_event_tools(mcp: FastMCP) -> None:
                     })
 
             output: dict = {}
+
+            effective_limit = limit if limit > 0 else None
 
             if include_unheard:
                 # Group by event name to detect mismatches
@@ -132,16 +139,25 @@ def register_event_tools(mcp: FastMCP) -> None:
                             ],
                         })
 
-                output["mismatches"] = mismatches
+                total_mismatches = len(mismatches)
+                paged = mismatches[offset:offset + effective_limit] if effective_limit else mismatches[offset:]
+                output["mismatches"] = paged
                 output["summary"] = {
                     "total_events": len(by_event),
+                    "total_mismatches": total_mismatches,
                     "orphaned_listeners": sum(1 for m in mismatches if m["issue"] == "ORPHANED_LISTENER"),
                     "unheard_hooks": sum(1 for m in mismatches if m["issue"] == "UNHEARD_HOOK"),
-                    "healthy": len(by_event) - len(mismatches),
+                    "healthy": len(by_event) - total_mismatches,
+                    "showing": len(paged),
+                    "offset": offset,
                 }
             else:
-                output["events"] = all_events
-                output["total"] = len(all_events)
+                total = len(all_events)
+                paged = all_events[offset:offset + effective_limit] if effective_limit else all_events[offset:]
+                output["events"] = paged
+                output["total"] = total
+                output["showing"] = len(paged)
+                output["offset"] = offset
 
             _log_audit("events", len(all_events), agent_id=agent_id)
             return json.dumps(output, indent=2)
