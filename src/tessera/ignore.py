@@ -69,6 +69,13 @@ class IgnoreFilter:
         ".tessera/",
         ".pytest_cache/",
         ".ruff_cache/",
+        ".webpack-cache/",
+        ".webpack-cache-legacy/",
+        ".nx/",
+        ".cursor/",
+        ".husky/",
+        ".serena/",
+        ".phpstan-cache/",
         "*.log",
         ".gitignore",
     ]
