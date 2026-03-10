@@ -183,6 +183,31 @@ Incremental mode is much faster because it:
 4. Deletes index entries for deleted files
 5. Resolves cross-file edges for changed symbols
 
+### CPU Throttling
+
+Indexing large codebases can peg the CPU and make your machine unresponsive. Use `--nice` to lower the process scheduling priority so the OS deprioritizes tessera when other processes need CPU:
+
+```bash
+# Lowest priority — other processes always get CPU first
+tessera index /path/to/project --nice 19
+
+# Moderate throttle
+tessera index /path/to/project --nice 10
+```
+
+Values range from 1 (slight deprioritization) to 19 (lowest priority). The default is off (normal priority).
+
+You can also set this via the `TESSERA_NICE` environment variable so it applies to every index run without passing the flag:
+
+```bash
+export TESSERA_NICE=19
+tessera index /path/to/project  # automatically runs at nice 19
+```
+
+The `--nice` flag takes precedence over the environment variable if both are set.
+
+**Note:** `--nice` uses `os.nice()` which adjusts kernel scheduling priority. The process can still use 100% CPU if nothing else needs it — it just yields immediately when other processes compete. This is usually the right behavior: index as fast as possible when idle, stay out of the way when busy.
+
 ### Verbose Logging
 
 Enable debug logging to see file-by-file progress:
@@ -605,6 +630,7 @@ Tessera automatically upgrades old schema versions on startup.
 4. **Reindex after major refactors** — Parser behavior may have changed; force reindex to keep index accurate
 5. **Monitor stale warnings** — Upgrade stale indexes promptly with `force=True` reindex
 6. **Backup before major upgrades** — If you're using Tessera in production, back up `~/.tessera` before upgrading to a new major version
+7. **Use `--nice 19` for background indexing** — Keeps your machine responsive when indexing large projects alongside other work. Set `TESSERA_NICE=19` in your shell profile to make it the default
 
 ## FAQ
 
