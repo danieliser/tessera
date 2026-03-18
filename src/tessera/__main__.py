@@ -8,10 +8,33 @@ Supports:
 import argparse
 import asyncio
 import logging
+import os
 import sys
 import time
 
 from .server import run_server
+
+
+def _apply_cpu_priority(nice_value: int | None) -> None:
+    """Lower process CPU priority via os.nice().
+
+    Args:
+        nice_value: Nice increment (1-19). Higher = lower priority.
+                    None means no change. 19 is the lowest priority.
+    """
+    if nice_value is None:
+        return
+    nice_value = max(1, min(19, nice_value))
+    try:
+        actual = os.nice(nice_value)
+        logging.getLogger(__name__).info(f"CPU priority: nice {actual}")
+    except PermissionError:
+        logging.getLogger(__name__).warning(
+            f"Could not set nice value {nice_value} (permission denied). "
+            "Running at normal priority."
+        )
+    except OSError as exc:
+        logging.getLogger(__name__).warning(f"Could not set nice value: {exc}")
 
 
 def _run_index(args) -> int:
@@ -23,6 +46,20 @@ def _run_index(args) -> int:
         logging.basicConfig(level=logging.DEBUG, format="%(levelname)s %(name)s: %(message)s")
     else:
         logging.basicConfig(level=logging.INFO, format="%(message)s")
+
+    # Apply CPU priority before any heavy work.
+    # --nice flag takes precedence, then TESSERA_NICE env var.
+    nice_value = args.nice
+    if nice_value is None:
+        env_nice = os.environ.get("TESSERA_NICE")
+        if env_nice is not None:
+            try:
+                nice_value = int(env_nice)
+            except ValueError:
+                logging.getLogger(__name__).warning(
+                    f"Ignoring invalid TESSERA_NICE={env_nice!r} (must be integer 1-19)"
+                )
+    _apply_cpu_priority(nice_value)
 
     project_path = args.path
 
@@ -92,6 +129,15 @@ def main() -> int:
         "--incremental",
         action="store_true",
         help="Only re-index files changed since last indexed commit"
+    )
+    index_parser.add_argument(
+        "--nice",
+        type=int,
+        default=None,
+        metavar="N",
+        help="Lower CPU scheduling priority (1-19, default: off). "
+             "19 = lowest priority, keeps machine responsive during indexing. "
+             "Equivalent to running `nice -n N tessera index ...`"
     )
     index_parser.add_argument(
         "-v", "--verbose",
