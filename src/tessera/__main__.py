@@ -12,10 +12,11 @@ import os
 import sys
 import time
 
+from .config import load_config
 from .server import run_server
 
 
-def _apply_cpu_priority(nice_value: int | None) -> None:
+def apply_cpu_priority(nice_value: int | None) -> None:
     """Lower process CPU priority via os.nice().
 
     Note: os.nice() is additive — it increments the current nice value, not
@@ -23,9 +24,9 @@ def _apply_cpu_priority(nice_value: int | None) -> None:
 
     Args:
         nice_value: Nice increment (1-19, clamped). Higher = lower priority.
-                    None means no change.
+                    None or 0 means no change.
     """
-    if nice_value is None:
+    if not nice_value:
         return
     nice_value = max(1, min(19, nice_value))
     try:
@@ -40,6 +41,36 @@ def _apply_cpu_priority(nice_value: int | None) -> None:
         logging.getLogger(__name__).warning(f"Could not set nice value: {exc}")
 
 
+def resolve_nice_value(cli_value: int | None) -> int | None:
+    """Resolve nice value from CLI flag → env var → config file → default (10).
+
+    Returns None only if explicitly set to 0 (opt-out).
+    """
+    # CLI flag takes precedence
+    if cli_value is not None:
+        return cli_value if cli_value > 0 else None
+
+    # Env var next
+    env_nice = os.environ.get("TESSERA_NICE")
+    if env_nice is not None:
+        try:
+            val = int(env_nice)
+            return val if val > 0 else None
+        except ValueError:
+            logging.getLogger(__name__).warning(
+                f"Ignoring invalid TESSERA_NICE={env_nice!r} (must be integer 1-19)"
+            )
+
+    # Config file next
+    config = load_config()
+    config_nice = config.get("nice")
+    if config_nice is not None:
+        return int(config_nice) if int(config_nice) > 0 else None
+
+    # Default: nice 10 for CLI indexing
+    return 10
+
+
 def _run_index(args) -> int:
     """Run the indexing pipeline."""
     from .embeddings import create_embedding_client
@@ -51,18 +82,9 @@ def _run_index(args) -> int:
         logging.basicConfig(level=logging.INFO, format="%(message)s")
 
     # Apply CPU priority before any heavy work.
-    # --nice flag takes precedence, then TESSERA_NICE env var.
-    nice_value = args.nice
-    if nice_value is None:
-        env_nice = os.environ.get("TESSERA_NICE")
-        if env_nice is not None:
-            try:
-                nice_value = int(env_nice)
-            except ValueError:
-                logging.getLogger(__name__).warning(
-                    f"Ignoring invalid TESSERA_NICE={env_nice!r} (must be integer 1-19)"
-                )
-    _apply_cpu_priority(nice_value)
+    # Precedence: --nice flag → TESSERA_NICE env → config file → default 10
+    nice_value = resolve_nice_value(args.nice)
+    apply_cpu_priority(nice_value)
 
     project_path = args.path
 
@@ -138,9 +160,9 @@ def main() -> int:
         type=int,
         default=None,
         metavar="N",
-        help="Lower CPU scheduling priority (1-19, default: off). "
-             "19 = lowest priority, keeps machine responsive during indexing. "
-             "Equivalent to running `nice -n N tessera index ...`"
+        help="CPU scheduling priority (1-19, default: 10). "
+             "19 = lowest priority. 0 = disable throttling. "
+             "Also configurable via TESSERA_NICE env var or ~/.tessera/config.toml"
     )
     index_parser.add_argument(
         "-v", "--verbose",

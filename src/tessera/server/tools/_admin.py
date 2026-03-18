@@ -55,6 +55,7 @@ def register_admin_tools(mcp: FastMCP) -> None:
             force: If True, re-index all files even if unchanged (use after parser/extractor changes)
             session_id: Optional session token
         """
+        from ...config import get_nice_value
         from .._state import (
             _db_cache,
             _embedding_client,
@@ -74,6 +75,10 @@ def register_admin_tools(mcp: FastMCP) -> None:
 
         if not _global_db:
             return "Error: Global database not initialized"
+
+        # Apply CPU throttling from env var or config file
+        from ...__main__ import apply_cpu_priority
+        apply_cpu_priority(get_nice_value())
 
         try:
             project = await asyncio.to_thread(_global_db.get_project, project_id)

@@ -185,26 +185,34 @@ Incremental mode is much faster because it:
 
 ### CPU Throttling
 
-Indexing large codebases can peg the CPU and make your machine unresponsive. Use `--nice` to lower the process scheduling priority so the OS deprioritizes tessera when other processes need CPU:
+Tessera defaults to `--nice 10` so indexing stays out of your way. You can tune it:
 
 ```bash
 # Lowest priority — other processes always get CPU first
 tessera index /path/to/project --nice 19
 
-# Moderate throttle
-tessera index /path/to/project --nice 10
+# Disable throttling entirely (full speed)
+tessera index /path/to/project --nice 0
 ```
 
-Values range from 1 (slight deprioritization) to 19 (lowest priority). The default is off (normal priority).
+Values range from 1 (slight deprioritization) to 19 (lowest priority). Default is 10.
 
-You can also set this via the `TESSERA_NICE` environment variable so it applies to every index run without passing the flag:
+**Precedence:** `--nice` flag → `TESSERA_NICE` env var → `~/.tessera/config.toml` → default (10).
+
+Set via environment variable for all runs:
 
 ```bash
 export TESSERA_NICE=19
 tessera index /path/to/project  # automatically runs at nice 19
 ```
 
-The `--nice` flag takes precedence over the environment variable if both are set.
+Or set in config file (`~/.tessera/config.toml`):
+
+```toml
+nice = 19
+```
+
+The MCP `reindex` tool also respects `TESSERA_NICE` and the config file, so agent-triggered reindexing won't starve your machine either.
 
 **Note:** `--nice` uses `os.nice()` which adjusts kernel scheduling priority. The process can still use 100% CPU if nothing else needs it — it just yields immediately when other processes compete. This is usually the right behavior: index as fast as possible when idle, stay out of the way when busy.
 
