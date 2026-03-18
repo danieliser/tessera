@@ -46,6 +46,8 @@ dev = [
     "tree-sitter-typescript",
     "tree-sitter-php",
     "tree-sitter-go",
+    "tree-sitter-swift",
+    "tree-sitter-ruby",
     "networkx",
     "ruff",
     "pyright",
@@ -55,6 +57,8 @@ core-languages = [
     "tree-sitter-typescript",
     "tree-sitter-php",
     "tree-sitter-go",
+    "tree-sitter-swift",
+    "tree-sitter-ruby",
 ]
 embed = ["fastembed>=0.4"]
 all-languages = ["tree-sitter-language-pack"]

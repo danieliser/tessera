@@ -77,7 +77,7 @@ events("pum_%", direction="fires", limit=20)
 
 ## Supported Languages
 
-Go, PHP, TypeScript, JavaScript, Python, Swift — via tree-sitter grammars.
+Go, Ruby, Swift, PHP, TypeScript, JavaScript, Python — via tree-sitter grammars.
 
 ## MCP Tools (19)
 

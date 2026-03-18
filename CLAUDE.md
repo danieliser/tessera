@@ -68,7 +68,7 @@ uv run python -m tessera serve --project /path/to/project
 All CTO conditions from architecture phase documented in `docs/conditions.md`.
 
 ## Languages Supported
-Go, PHP, TypeScript, Python, Swift — via tree-sitter grammars.
+Go, Ruby, Swift, PHP, TypeScript, Python — via tree-sitter grammars.
 
 ## Relationship to Other Projects
 - Consumed by the persistence agent toolkit (`~/Toolkit/`)

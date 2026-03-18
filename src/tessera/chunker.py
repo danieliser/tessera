@@ -42,6 +42,14 @@ def _get_parser(language: str) -> tuple[Parser | None, Language | None]:
             import tree_sitter_go
             go_lang_capsule = tree_sitter_go.language()
             py_lang = Language(go_lang_capsule)
+        elif language == "swift":
+            import tree_sitter_swift
+            swift_lang_capsule = tree_sitter_swift.language()
+            py_lang = Language(swift_lang_capsule)
+        elif language == "ruby":
+            import tree_sitter_ruby
+            ruby_lang_capsule = tree_sitter_ruby.language()
+            py_lang = Language(ruby_lang_capsule)
         else:
             return None, None
 
@@ -67,6 +75,10 @@ def _is_definition_node(node_type: str) -> bool:
         "enum_declaration",
         # Go
         "type_declaration",
+        # Swift
+        "protocol_declaration",
+        # Ruby
+        "module",
     }
     return node_type in definition_types
 
