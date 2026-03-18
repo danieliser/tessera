@@ -70,7 +70,7 @@ class IndexerPipeline:
         self.project_db = project_db or ProjectDB(project_path)
         self.global_db = global_db
         self.embedding_client = embedding_client
-        self.languages = languages or ['php', 'typescript', 'python', 'javascript']
+        self.languages = languages or ['php', 'typescript', 'python', 'javascript', 'go']
         self.project_id = None  # set during register
         self._package_cache: dict[str, str] = {}  # dir → package name
         self.ignore_filter = IgnoreFilter(self.project_path)
@@ -131,6 +131,7 @@ class IndexerPipeline:
             'javascript': ['.js', '.jsx'],
             'python': ['.py'],
             'swift': ['.swift'],
+            'go': ['.go'],
         }
         allowed_exts = set()
         for lang in self.languages:

@@ -36,6 +36,7 @@ _GRAMMAR_MODULES = {
     "javascript": ("tree_sitter_javascript", "language"),
     "typescript": ("tree_sitter_typescript", "language_typescript"),
     "php": ("tree_sitter_php", "language_php"),
+    "go": ("tree_sitter_go", "language"),
 }
 
 

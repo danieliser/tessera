@@ -38,6 +38,10 @@ def _get_parser(language: str) -> tuple[Parser | None, Language | None]:
             import tree_sitter_php
             php_lang_capsule = tree_sitter_php.language_php()
             py_lang = Language(php_lang_capsule)
+        elif language == "go":
+            import tree_sitter_go
+            go_lang_capsule = tree_sitter_go.language()
+            py_lang = Language(go_lang_capsule)
         else:
             return None, None
 
@@ -61,6 +65,8 @@ def _is_definition_node(node_type: str) -> bool:
         "interface_declaration",
         "type_alias_declaration",
         "enum_declaration",
+        # Go
+        "type_declaration",
     }
     return node_type in definition_types
 
