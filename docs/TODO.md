@@ -142,6 +142,34 @@ Microsoft's library converts PDF, DOCX, PPTX, XLSX, images, audio, and more to M
 **Compare against:** current chunker.py markdown/JSON/YAML handling, existing doc indexing pipeline
 **When:** after benchmarking sprint is complete. Do not prioritize over current work.
 
+### Per-project custom event pattern configuration
+
+The event extraction system currently hardcodes event patterns per language (WordPress hooks for PHP, EventEmitter for JS/TS, NotificationCenter for Swift, ActiveSupport for Ruby). Many frameworks define their own event/hook/callback systems that Tessera can't detect without per-project configuration.
+
+**Examples that need this:**
+- Rails callbacks: `before_action`, `after_create`, `after_save` (symbol args, not string args)
+- Custom Ruby pub/sub gems (wisper, dry-events, etc.)
+- Combine publisher/subscriber patterns in Swift
+- Any project-specific hook system
+
+**Proposed approach:** `.tessera.yml` config file in project root:
+```yaml
+events:
+  registers:
+    before_action: { arg: symbol }
+    after_create: { arg: symbol }
+    on_event: { arg: string }
+  fires:
+    run_callbacks: { arg: symbol }
+    trigger: { arg: string }
+```
+
+**Key decisions:**
+- String arg vs symbol arg extraction (Ruby uses `:symbol`, others use `"string"`)
+- How to handle method-style events (receiver.method) vs function-style (function_name)
+- Whether to support regex patterns for event name matching
+- Merge behavior: project config extends language defaults, or overrides?
+
 ### Phase 6: Always-on file watcher
 
 Auto-reindex on file changes instead of manual `reindex` calls. The next major planned phase per the roadmap.

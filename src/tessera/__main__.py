@@ -18,9 +18,12 @@ from .server import run_server
 def _apply_cpu_priority(nice_value: int | None) -> None:
     """Lower process CPU priority via os.nice().
 
+    Note: os.nice() is additive — it increments the current nice value, not
+    sets it absolutely. For CLI usage this is fine (processes start at 0).
+
     Args:
-        nice_value: Nice increment (1-19). Higher = lower priority.
-                    None means no change. 19 is the lowest priority.
+        nice_value: Nice increment (1-19, clamped). Higher = lower priority.
+                    None means no change.
     """
     if nice_value is None:
         return
