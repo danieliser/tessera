@@ -192,6 +192,42 @@ func add(a: Int, b: String) -> Bool {
         assert "Bool" not in type_names
 
 
+class TestSwiftEvents:
+
+    def test_notification_center_string_name(self):
+        code = '''
+func setup() {
+    NotificationCenter.default.addObserver(forName: NSNotification.Name("UserLoggedIn"), object: nil, queue: nil) { _ in }
+}
+'''
+        refs = extract_references(code, "swift")
+        events = [r for r in refs if r.kind == "registers_on"]
+        assert len(events) == 1
+        assert events[0].to_symbol == "UserLoggedIn"
+
+    def test_notification_center_post(self):
+        code = '''
+func notify() {
+    NotificationCenter.default.post(name: NSNotification.Name("UserLoggedIn"), object: nil)
+}
+'''
+        refs = extract_references(code, "swift")
+        events = [r for r in refs if r.kind == "fires"]
+        assert len(events) == 1
+        assert events[0].to_symbol == "UserLoggedIn"
+
+    def test_notification_center_dot_syntax(self):
+        code = '''
+func setup() {
+    NotificationCenter.default.addObserver(forName: .customEvent, object: nil, queue: nil) { _ in }
+}
+'''
+        refs = extract_references(code, "swift")
+        events = [r for r in refs if r.kind == "registers_on"]
+        assert len(events) == 1
+        assert events[0].to_symbol == "customEvent"
+
+
 class TestSwiftGraphEdges:
 
     def test_method_containment_edge(self):

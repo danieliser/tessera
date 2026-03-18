@@ -193,6 +193,44 @@ end
         assert "raise" not in call_names
 
 
+class TestRubyEvents:
+
+    def test_activesupport_subscribe(self):
+        code = '''
+ActiveSupport::Notifications.subscribe("process_action.action_controller") do |*args|
+end
+'''
+        refs = extract_references(code, "ruby")
+        events = [r for r in refs if r.kind == "registers_on"]
+        assert len(events) == 1
+        assert events[0].to_symbol == "process_action.action_controller"
+
+    def test_activesupport_instrument(self):
+        code = '''
+ActiveSupport::Notifications.instrument("render_template.action_view") do
+end
+'''
+        refs = extract_references(code, "ruby")
+        events = [r for r in refs if r.kind == "fires"]
+        assert len(events) == 1
+        assert events[0].to_symbol == "render_template.action_view"
+
+    def test_subscribe_inside_method(self):
+        code = '''
+class Monitor
+  def setup
+    ActiveSupport::Notifications.subscribe("sql.active_record") do |*args|
+    end
+  end
+end
+'''
+        refs = extract_references(code, "ruby")
+        events = [r for r in refs if r.kind == "registers_on"]
+        assert len(events) == 1
+        assert events[0].to_symbol == "sql.active_record"
+        assert events[0].from_symbol == "setup"
+
+
 class TestRubyGraphEdges:
 
     def test_method_containment_edge(self):

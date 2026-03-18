@@ -28,9 +28,13 @@ class RubyExtractor(LanguageExtractor):
     grammar_module = "tree_sitter_ruby"
     grammar_func = "language"
 
-    # Ruby has no standard event/hook system
-    EVENT_REGISTERS: dict[str, str] = {}
-    EVENT_FIRES: dict[str, str] = {}
+    # ActiveSupport::Notifications event patterns
+    EVENT_REGISTERS = {
+        "subscribe": "registers_on",
+    }
+    EVENT_FIRES = {
+        "instrument": "fires",
+    }
 
     # Mixin methods that map to implements references
     _MIXIN_METHODS = frozenset({"include", "extend", "prepend"})
@@ -191,6 +195,55 @@ class RubyExtractor(LanguageExtractor):
                 walk(child, current_function)
 
         walk(tree.root_node)
+
+        # Extract event references (ActiveSupport::Notifications)
+        event_refs = self.extract_events(tree, source_code)
+        references.extend(event_refs)
+
+        return references
+
+    def extract_events(self, tree: tree_sitter.Tree, source_code: str) -> list[Reference]:
+        """Extract Ruby event references (ActiveSupport::Notifications).
+
+        Patterns:
+        - ActiveSupport::Notifications.subscribe("event") → registers_on
+        - ActiveSupport::Notifications.instrument("event") → fires
+
+        Ruby AST: call → [scope_resolution, identifier(method), argument_list → string]
+        """
+        all_event_methods = {**self.EVENT_REGISTERS, **self.EVENT_FIRES}
+        if not all_event_methods:
+            return []
+
+        references = []
+
+        def walk(node, current_function=""):
+            if node.type == "call":
+                # Get the method name (second identifier in the call)
+                method_name = _get_call_name(node)
+                if method_name and method_name in all_event_methods:
+                    # Extract first string argument as event name
+                    event_name = _extract_ruby_first_string_arg(node)
+                    if event_name:
+                        references.append(Reference(
+                            from_symbol=current_function or "<module>",
+                            to_symbol=event_name,
+                            kind=all_event_methods[method_name],
+                            line=node.start_point[0] + 1,
+                        ))
+
+            # Track function scope
+            if node.type == "method":
+                name_node = find_child_by_type(node, "identifier")
+                new_scope = name_node.text.decode("utf-8") if name_node else current_function
+                for child in node.children:
+                    walk(child, new_scope)
+                return
+
+            for child in node.children:
+                walk(child, current_function)
+
+        walk(tree.root_node)
         return references
 
 
@@ -299,3 +352,16 @@ def _extract_call_ref(
     elif const_node and not method_name:
         # Bare constant reference in call context (e.g., Transaction.new)
         pass
+
+
+def _extract_ruby_first_string_arg(call_node: tree_sitter.Node) -> str | None:
+    """Extract the first string literal argument from a Ruby call node."""
+    arg_list = find_child_by_type(call_node, "argument_list")
+    if not arg_list:
+        return None
+    for child in arg_list.children:
+        if child.type == "string":
+            content = find_child_by_type(child, "string_content")
+            if content:
+                return content.text.decode("utf-8")
+    return None

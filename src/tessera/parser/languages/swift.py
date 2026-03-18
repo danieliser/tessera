@@ -29,9 +29,13 @@ class SwiftExtractor(LanguageExtractor):
     grammar_module = "tree_sitter_swift"
     grammar_func = "language"
 
-    # Swift has no standard event/hook system
-    EVENT_REGISTERS: dict[str, str] = {}
-    EVENT_FIRES: dict[str, str] = {}
+    # NotificationCenter event patterns
+    EVENT_REGISTERS = {
+        "addObserver": "registers_on",
+    }
+    EVENT_FIRES = {
+        "post": "fires",
+    }
 
     def extract_symbols(self, tree: tree_sitter.Tree, source_code: str) -> list[Symbol]:
         """Extract Swift symbol definitions."""
@@ -208,6 +212,49 @@ class SwiftExtractor(LanguageExtractor):
                 _extract_func_type_refs(node, func_name or current_function, references)
                 for child in node.children:
                     walk(child, current_function=func_name or current_function)
+                return
+
+            for child in node.children:
+                walk(child, current_function)
+
+        walk(tree.root_node)
+
+        # Extract event references (NotificationCenter)
+        event_refs = self.extract_events(tree, source_code)
+        references.extend(event_refs)
+
+        return references
+
+    def extract_events(self, tree: tree_sitter.Tree, source_code: str) -> list[Reference]:
+        """Extract Swift NotificationCenter event references.
+
+        Patterns:
+        - NotificationCenter.default.addObserver(forName: NSNotification.Name("X"), ...) → registers_on "X"
+        - NotificationCenter.default.post(name: NSNotification.Name("X"), ...) → fires "X"
+        - NotificationCenter.default.addObserver(forName: .customEvent, ...) → registers_on "customEvent"
+        """
+        all_event_methods = {**self.EVENT_REGISTERS, **self.EVENT_FIRES}
+        references = []
+
+        def walk(node, current_function=""):
+            if node.type == "call_expression":
+                method_name = _get_swift_call_method_name(node)
+                if method_name and method_name in all_event_methods:
+                    event_name = _extract_notification_name(node)
+                    if event_name:
+                        references.append(Reference(
+                            from_symbol=current_function or "<module>",
+                            to_symbol=event_name,
+                            kind=all_event_methods[method_name],
+                            line=node.start_point[0] + 1,
+                        ))
+
+            # Track function scope
+            if node.type == "function_declaration":
+                name_node = find_child_by_type(node, "simple_identifier")
+                new_scope = name_node.text.decode("utf-8") if name_node else current_function
+                for child in node.children:
+                    walk(child, new_scope)
                 return
 
             for child in node.children:
@@ -392,3 +439,93 @@ def _collect_optional_type_ref(
     user_type = find_child_by_type(opt_node, "user_type")
     if user_type:
         _collect_type_ref(user_type, from_symbol, references, line)
+
+
+# ---------------------------------------------------------------------------
+# NotificationCenter event helpers
+# ---------------------------------------------------------------------------
+
+def _get_swift_call_method_name(call_node: tree_sitter.Node) -> str | None:
+    """Get the method name from a Swift call_expression (e.g., addObserver, post)."""
+    nav_node = find_child_by_type(call_node, "navigation_expression")
+    if nav_node:
+        nav_suffix = find_child_by_type(nav_node, "navigation_suffix")
+        if nav_suffix:
+            name_node = find_child_by_type(nav_suffix, "simple_identifier")
+            if name_node:
+                return name_node.text.decode("utf-8")
+    return None
+
+
+def _extract_notification_name(call_node: tree_sitter.Node) -> str | None:
+    """Extract the notification name from a NotificationCenter call.
+
+    Handles:
+    - NSNotification.Name("MyEvent") → "MyEvent"
+    - .customEvent → "customEvent"
+    - Notification.Name("MyEvent") → "MyEvent"
+    """
+    # Find call_suffix → value_arguments → first value_argument
+    call_suffix = find_child_by_type(call_node, "call_suffix")
+    if not call_suffix:
+        return None
+
+    value_args = find_child_by_type(call_suffix, "value_arguments")
+    if not value_args:
+        return None
+
+    # Look at first value_argument (forName: or name:)
+    for child in value_args.children:
+        if child.type != "value_argument":
+            continue
+
+        # Check for forName: or name: label
+        label = find_child_by_type(child, "value_argument_label")
+        if label:
+            label_name = find_child_by_type(label, "simple_identifier")
+            if label_name and label_name.text.decode("utf-8") in ("forName", "name"):
+                return _extract_notification_value(child)
+    return None
+
+
+def _extract_notification_value(arg_node: tree_sitter.Node) -> str | None:
+    """Extract notification name from a value_argument node.
+
+    Handles NSNotification.Name("X") and .customEvent shorthand.
+    """
+    for child in arg_node.children:
+        # NSNotification.Name("X") — nested call_expression
+        if child.type == "call_expression":
+            return _extract_string_from_name_call(child)
+
+        # .customEvent — prefix_expression with dot-syntax enum
+        if child.type == "prefix_expression":
+            name_node = find_child_by_type(child, "simple_identifier")
+            if name_node:
+                return name_node.text.decode("utf-8")
+
+    return None
+
+
+def _extract_string_from_name_call(call_node: tree_sitter.Node) -> str | None:
+    """Extract string from NSNotification.Name("X") call."""
+    call_suffix = find_child_by_type(call_node, "call_suffix")
+    if not call_suffix:
+        return None
+
+    value_args = find_child_by_type(call_suffix, "value_arguments")
+    if not value_args:
+        return None
+
+    for child in value_args.children:
+        if child.type == "value_argument":
+            str_lit = find_child_by_type(child, "line_string_literal")
+            if str_lit:
+                text_node = find_child_by_type(str_lit, "line_str_text")
+                if text_node:
+                    return text_node.text.decode("utf-8")
+        elif child.type == "line_string_literal":
+            text_node = find_child_by_type(child, "line_str_text")
+            if text_node:
+                return text_node.text.decode("utf-8")
+    return None
