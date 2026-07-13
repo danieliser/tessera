@@ -85,6 +85,12 @@ class IndexerPipeline:
         self.model_profile = model_profile
         setup_model_hooks(model_profile)
 
+    def _ensure_project_id(self) -> int:
+        """Return the registered project ID, registering standalone projects on demand."""
+        if self.project_id is None:
+            return self.register()
+        return self.project_id
+
     def _track_embedding_dim(self, dim: int) -> None:
         """Store embedding dimension on first call, warn on mismatch."""
         stored = self.project_db.get_meta("embedding_dim")
@@ -254,7 +260,7 @@ class IndexerPipeline:
 
         # Try to get since_commit from GlobalDB if not provided
         if since_commit is None and self.global_db:
-            project = self.global_db.get_project(self.project_id)
+            project = self.global_db.get_project(self._ensure_project_id())
             if project:
                 since_commit = project.get("last_indexed_commit")
 
@@ -292,7 +298,7 @@ class IndexerPipeline:
         # Update last indexed commit
         head = self._get_git_head()
         if head and self.global_db:
-            self.global_db.update_last_indexed_commit(self.project_id, head)
+            self.global_db.update_last_indexed_commit(self._ensure_project_id(), head)
 
         return stats
 
@@ -320,6 +326,8 @@ class IndexerPipeline:
                         "pymupdf4llm not installed. Install with: pip install pymupdf4llm"
                     ) from None
                 markdown_text = pymupdf4llm.to_markdown(file_path)
+                if not isinstance(markdown_text, str):
+                    markdown_text = "\n\n".join(page.get("text", "") for page in markdown_text)
                 chunks = chunk_markdown_breakpoint(markdown_text)
             elif file_path.endswith(('.md', '.mdx')):
                 content = Path(file_path).read_text(encoding='utf-8', errors='replace')
@@ -343,25 +351,21 @@ class IndexerPipeline:
             # Compute file hash
             file_hash = self._file_hash(file_path)
 
+            existing = self.project_db.get_file(path=rel_path)
+            if (
+                existing
+                and existing.get('index_status') == 'indexed'
+                and existing.get('hash') == file_hash
+            ):
+                return {'status': 'skipped', 'reason': 'unchanged'}
+
             # Upsert file record (language='document')
             file_id = self.project_db.upsert_file(
-                project_id=self.project_id,
+                project_id=self._ensure_project_id(),
                 path=rel_path,
                 language='document',
                 file_hash=file_hash
             )
-
-            # Check if file changed
-            old_hash = self.project_db.get_old_hash() if hasattr(self.project_db, 'get_old_hash') else None
-            existing = self.project_db.get_file(file_id=file_id)
-
-            if (
-                existing
-                and existing.get('index_status') == 'indexed'
-                and old_hash is not None
-                and old_hash == file_hash
-            ):
-                return {'status': 'skipped', 'reason': 'unchanged'}
 
             # Clear old data and mark as pending
             with self.project_db.conn:
@@ -423,7 +427,7 @@ class IndexerPipeline:
             logger.error(f"Document extraction error in {file_path}: {e}")
             try:
                 file_id = self.project_db.upsert_file(
-                    project_id=self.project_id,
+                    project_id=self._ensure_project_id(),
                     path=rel_path,
                     language='document',
                     file_hash=self._file_hash(file_path)
@@ -436,7 +440,7 @@ class IndexerPipeline:
             logger.error(f"Failed to index document {file_path}: {e}")
             try:
                 file_id = self.project_db.upsert_file(
-                    project_id=self.project_id,
+                    project_id=self._ensure_project_id(),
                     path=rel_path,
                     language='document',
                     file_hash=self._file_hash(file_path)
@@ -471,23 +475,20 @@ class IndexerPipeline:
 
             file_hash = self._file_hash(file_path)
 
+            existing = self.project_db.get_file(path=rel_path)
+            if (
+                existing
+                and existing.get('index_status') == 'indexed'
+                and existing.get('hash') == file_hash
+            ):
+                return {'status': 'skipped', 'reason': 'unchanged'}
+
             file_id = self.project_db.upsert_file(
-                project_id=self.project_id,
+                project_id=self._ensure_project_id(),
                 path=rel_path,
                 language='asset',
                 file_hash=file_hash,
             )
-
-            old_hash = self.project_db.get_old_hash() if hasattr(self.project_db, 'get_old_hash') else None
-            existing = self.project_db.get_file(file_id=file_id)
-
-            if (
-                existing
-                and existing.get('index_status') == 'indexed'
-                and old_hash is not None
-                and old_hash == file_hash
-            ):
-                return {'status': 'skipped', 'reason': 'unchanged'}
 
             dimensions = metadata['dimensions']
             key_path = f"{dimensions['width']}x{dimensions['height']}" if dimensions else None
@@ -531,7 +532,7 @@ class IndexerPipeline:
             logger.error("Failed to index asset %s: %s", file_path, e)
             try:
                 file_id = self.project_db.upsert_file(
-                    project_id=self.project_id,
+                    project_id=self._ensure_project_id(),
                     path=rel_path,
                     language='asset',
                     file_hash=self._file_hash(file_path),
@@ -601,6 +602,7 @@ class IndexerPipeline:
             Status dict with 'status' and optional 'reason' or metrics
         """
         await self.hooks.do_action(BEFORE_INDEX_FILE, file_path)
+        self._ensure_project_id()
 
         # Route asset files BEFORE document check (some assets like .svg are also documents)
         is_svg = file_path.lower().endswith('.svg')
@@ -631,28 +633,22 @@ class IndexerPipeline:
         # Compute file hash
         file_hash = self._file_hash(file_path)
 
-        # Upsert file record (returns file_id, may be existing file)
-        file_id = self.project_db.upsert_file(
-            project_id=self.project_id,
-            path=rel_path,
-            language=language,
-            file_hash=file_hash
-        )
-
-        # Check if file changed - get the old hash from before upsert
-        old_hash = self.project_db.get_old_hash() if hasattr(self.project_db, 'get_old_hash') else None
-        existing = self.project_db.get_file(file_id=file_id)
-
-        # If file was already indexed with the same hash, skip it
-        # old_hash is not None means this was an existing file
+        existing = self.project_db.get_file(path=rel_path)
         if (
             not force
             and existing
             and existing.get('index_status') == 'indexed'
-            and old_hash is not None  # This was an existing file
-            and old_hash == file_hash  # And the hash is the same
+            and existing.get('hash') == file_hash
         ):
             return {'status': 'skipped', 'reason': 'unchanged'}
+
+        # Upsert file record (returns file_id, may be existing file)
+        file_id = self.project_db.upsert_file(
+            project_id=self._ensure_project_id(),
+            path=rel_path,
+            language=language,
+            file_hash=file_hash
+        )
 
         # Parse FIRST (before clearing old data — if parsing fails, old data preserved)
         try:
@@ -845,7 +841,7 @@ class IndexerPipeline:
         # Create job record for tracking
         job_id = None
         if self.global_db:
-            job_id = self.global_db.create_job(self.project_id)
+            job_id = self.global_db.create_job(self._ensure_project_id())
             self.global_db.start_job(job_id)
 
         try:
@@ -893,7 +889,7 @@ class IndexerPipeline:
             # Store last indexed commit for future incremental reindexing
             head = self._get_git_head()
             if head and self.global_db:
-                self.global_db.update_last_indexed_commit(self.project_id, head)
+                self.global_db.update_last_indexed_commit(self._ensure_project_id(), head)
 
             # Store parser digest so the server can detect stale indexes
             self.project_db.set_meta("parser_digest", compute_parser_digest())
@@ -1227,4 +1223,4 @@ class IndexerPipeline:
             except EmbeddingUnavailableError:
                 pass
 
-        return hybrid_search(query, query_embedding, self.project_db, limit)
+        return hybrid_search(query, query_embedding, self.project_db, graph=None, limit=limit)
