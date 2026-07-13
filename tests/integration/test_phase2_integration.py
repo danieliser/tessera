@@ -60,7 +60,7 @@ class TestServerWiring:
     async def test_server_lists_18_tools(self, wired_server):
         tools = await wired_server.list_tools()
         tool_names = [t.name for t in tools]
-        assert len(tool_names) == 18  # Updated for Phase 4 (doc_search, drift_train)
+        assert len(tool_names) == 19  # Phase 5 added the events tool.
         assert "register_project" in tool_names
         assert "status" in tool_names
         assert "cross_refs" in tool_names

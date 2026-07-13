@@ -25,10 +25,10 @@ from ..document import (
     chunk_xml,
     chunk_yaml,
 )
-from ..markdown_chunker import chunk_markdown_breakpoint
 from ..embeddings import EmbeddingClient, EmbeddingUnavailableError, FastembedClient
 from ..hooks import AFTER_INDEX_FILE, BEFORE_INDEX_FILE, EMBEDDING_TEXTS, get_hooks, setup_model_hooks
 from ..ignore import IgnoreFilter
+from ..markdown_chunker import chunk_markdown_breakpoint
 from ..model_profiles import ModelProfile, resolve_profile
 from ..parser import detect_language, parse_and_extract
 from ..search import hybrid_search
@@ -39,6 +39,7 @@ from ._helpers import (
     _detect_package_name,
     compute_parser_digest,
 )
+from ._imports import ImportBinding, candidate_module_paths, extract_import_bindings
 
 logger = logging.getLogger(__name__)
 
@@ -944,11 +945,11 @@ class IndexerPipeline:
 
         Returns:
             Stats dict with keys: total_unresolved, resolved_strict,
-            resolved_proximity, resolved_suffix, ambiguous_dropped,
+            resolved_import, resolved_proximity, resolved_suffix, ambiguous_dropped,
             no_candidate, edges_created.
         """
         empty_stats: dict[str, int] = {
-            "total_unresolved": 0, "resolved_strict": 0,
+            "total_unresolved": 0, "resolved_strict": 0, "resolved_import": 0,
             "resolved_proximity": 0, "resolved_suffix": 0,
             "ambiguous_dropped": 0, "no_candidate": 0, "edges_created": 0,
         }
@@ -1050,6 +1051,52 @@ class IndexerPipeline:
         # Resolve refs and prepare edges to insert
         edges_to_insert = []
         refs_to_update = []
+        import_bindings_by_file: dict[int, dict[str, ImportBinding]] = {}
+
+        def resolve_import_binding(from_id: int, to_name: str) -> int | None:
+            """Resolve a local import alias to one target in its imported module."""
+            from_file_id = from_symbol_file.get(from_id)
+            if from_file_id is None:
+                return None
+            bindings = import_bindings_by_file.get(from_file_id)
+            if bindings is None:
+                from_path = file_id_to_path.get(from_file_id)
+                if not from_path:
+                    return None
+                source_path = Path(self.project_path) / from_path
+                try:
+                    source = source_path.read_text(encoding="utf-8", errors="replace")
+                except OSError:
+                    bindings = {}
+                else:
+                    suffix = source_path.suffix.lower()
+                    language = {
+                        ".py": "python",
+                        ".ts": "typescript",
+                        ".tsx": "typescript",
+                        ".js": "javascript",
+                        ".jsx": "javascript",
+                    }.get(suffix, "")
+                    bindings = extract_import_bindings(from_path, language, source)
+                import_bindings_by_file[from_file_id] = bindings
+
+            binding = bindings.get(to_name)
+            if binding is None:
+                return None
+            target_paths = candidate_module_paths(binding)
+            target_file_ids = {
+                file_id for file_id, path in file_id_to_path.items() if path in target_paths
+            }
+            candidates = [
+                candidate
+                for candidate in name_to_candidates.get(binding.target_name, [])
+                if candidate[2] in target_file_ids
+            ]
+            if not candidates:
+                return None
+            best_priority = min(candidate[1] for candidate in candidates)
+            best_candidates = [candidate for candidate in candidates if candidate[1] == best_priority]
+            return best_candidates[0][0] if len(best_candidates) == 1 else None
 
         for ref in unresolved_refs:
             to_name = ref['to_symbol_name']
@@ -1059,12 +1106,18 @@ class IndexerPipeline:
             resolved_id = None
             resolution_type = None
 
-            # 1. Strict match (unambiguous name)
-            if to_name in name_to_symbol:
+            # 1. Import-aware resolution. This is more specific than the
+            # project-wide name fallback and therefore wins for aliases.
+            resolved_id = resolve_import_binding(from_id, to_name)
+            if resolved_id is not None:
+                resolution_type = "import"
+
+            # 2. Strict match (unambiguous name)
+            elif to_name in name_to_symbol:
                 resolved_id = name_to_symbol[to_name]
                 resolution_type = "strict"
 
-            # 2. Ambiguous match — use file-proximity tiebreak
+            # 3. Ambiguous match — use file-proximity tiebreak
             elif to_name in ambiguous_names:
                 from_file_id = from_symbol_file.get(from_id)
                 if from_file_id:
@@ -1085,7 +1138,7 @@ class IndexerPipeline:
                 else:
                     stats["ambiguous_dropped"] += 1
 
-            # 3. Suffix match for namespaced symbols
+            # 4. Suffix match for namespaced symbols
             elif to_name in suffix_candidates:
                 suffix_cands = suffix_candidates[to_name]
                 suffix_cands_sorted = sorted(suffix_cands, key=lambda x: x[1])
@@ -1143,10 +1196,10 @@ class IndexerPipeline:
 
         stats["edges_created"] = len(edges_to_insert)
         logger.info(
-            "Cross-file edge resolution: %d unresolved → %d strict, %d proximity, "
+            "Cross-file edge resolution: %d unresolved → %d strict, %d import, %d proximity, "
             "%d suffix, %d ambiguous, %d no-candidate (%d edges created)",
             stats["total_unresolved"], stats["resolved_strict"],
-            stats["resolved_proximity"], stats["resolved_suffix"],
+            stats["resolved_import"], stats["resolved_proximity"], stats["resolved_suffix"],
             stats["ambiguous_dropped"], stats["no_candidate"],
             stats["edges_created"],
         )

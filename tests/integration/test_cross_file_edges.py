@@ -567,7 +567,7 @@ class TestCrossFileEdgeResolution:
         stats = indexer._resolve_cross_file_edges()
 
         expected_keys = {
-            "total_unresolved", "resolved_strict", "resolved_proximity",
+            "total_unresolved", "resolved_strict", "resolved_import", "resolved_proximity",
             "resolved_suffix", "ambiguous_dropped", "no_candidate", "edges_created",
         }
         assert set(stats.keys()) == expected_keys
