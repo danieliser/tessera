@@ -153,7 +153,7 @@ wheels = [
 
 [[package]]
 name = "async-hooks"
-version = "0.1.0"
+version = "0.3.0"
 source = { directory = "../lib/async-hooks" }
 
 [package.metadata]
@@ -2543,7 +2543,7 @@ wheels = [
 
 [[package]]
 name = "tessera-idx"
-version = "0.10.1"
+version = "0.12.1"
 source = { editable = "." }
 dependencies = [
     { name = "async-hooks" },
