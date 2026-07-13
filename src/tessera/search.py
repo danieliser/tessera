@@ -93,7 +93,13 @@ def normalize_bm25_score(raw_score: float) -> float:
 # if >5% of queries return insufficient results (CTO Condition C4).
 SEMANTIC_SEARCH_OVER_FETCH_MULTIPLIER = 3
 
-# BM25 short-circuit thresholds: skip semantic/PPR when keyword match is very confident
+# BM25 short-circuit thresholds: skip semantic/PPR when keyword match is very confident.
+# Known failure mode: in corpora with many similar symbol names (e.g., parseUserInput
+# vs parseUserConfig), the gap can be wide while the top hit is still semantically
+# wrong for the query. Query expansion (camelCase/hyphen variants) reduces but does
+# not eliminate this — if both symbols are common, expansion just makes BM25 more
+# confident in the wrong answer. RRF cannot rescue queries that are lexically
+# ambiguous; this is a precision/latency tradeoff, not a correctness guarantee.
 BM25_STRONG_SIGNAL_THRESHOLD = 0.85
 BM25_STRONG_SIGNAL_GAP = 0.15
 
