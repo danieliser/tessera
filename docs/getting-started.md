@@ -125,7 +125,7 @@ Tessera uses git to detect changed files. Only modified code is re-parsed and re
 
 ## Start the MCP Server
 
-The MCP server exposes 18 tools to search, navigate, and analyze code. You can run it in two modes:
+The MCP server exposes 19 tools to search, navigate, and analyze code. You can run it in two modes:
 
 ### Single-Project Mode (locked to one project)
 
@@ -246,7 +246,7 @@ To query multiple projects, use multi-project mode:
 }
 ```
 
-After saving `.mcp.json`, restart Claude Code (or toggle the MCP server in Settings). The tessera server will load and its 18 tools become available.
+After saving `.mcp.json`, restart Claude Code (or toggle the MCP server in Settings). The tessera server will load and its 19 tools become available.
 
 ## Embedding Server Setup (Optional)
 

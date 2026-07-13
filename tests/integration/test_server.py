@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from fastmcp import Client
+from fastmcp.exceptions import ToolError
 
 from tessera.db import GlobalDB, ProjectDB
 from tessera.indexer import IndexStats
@@ -47,7 +48,8 @@ class TestServerCreation:
         assert "delete_collection_tool" in tool_names
         assert "doc_search_tool" in tool_names
         assert "drift_train" in tool_names
-        assert len(tool_names) == 18
+        assert "events" in tool_names
+        assert len(tool_names) == 19
 
 
 class TestSearchTool:
@@ -95,7 +97,7 @@ class TestReferencesTool:
 
     async def test_references_tool_missing_symbol(self, server):
         """FastMCP validates required params — should error."""
-        with pytest.raises(Exception):
+        with pytest.raises(ToolError):
             await server.call_tool("references", {"kind": "all"})
 
 
@@ -107,7 +109,7 @@ class TestFileContextTool:
         assert len(result.content) > 0
 
     async def test_file_context_tool_missing_path(self, server):
-        with pytest.raises(Exception):
+        with pytest.raises(ToolError):
             await server.call_tool("file_context", {})
 
 
@@ -318,7 +320,7 @@ class TestMultiProjectServerCreation:
             srv = create_server(project_path=None, global_db_path=global_db_path)
             async with Client(srv) as client:
                 tools = await client.list_tools()
-                assert len([t.name for t in tools]) == 18
+                assert len([t.name for t in tools]) == 19
 
     async def test_no_projects_returns_error(self):
         """Multi-project mode with no registered projects returns error."""
