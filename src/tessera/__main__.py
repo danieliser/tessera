@@ -213,6 +213,12 @@ def main() -> int:
         action="store_true",
         help="Disable cross-encoder reranking"
     )
+    serve_parser.add_argument(
+        "--tool-profile",
+        choices=["compact", "advanced"],
+        default="compact",
+        help="MCP tool surface: compact exposes explore only; advanced exposes all tools",
+    )
 
     args = parser.parse_args()
 
@@ -223,7 +229,7 @@ def main() -> int:
             args.project, args.global_db,
             args.embedding_endpoint, args.embedding_model,
             args.embedding_provider, args.reranking_model,
-            args.reranking_endpoint, args.no_reranking,
+            args.reranking_endpoint, args.no_reranking, args.tool_profile,
         ))
     else:
         parser.print_help()

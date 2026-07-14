@@ -28,6 +28,19 @@ async def server():
 class TestServerCreation:
     """Test server initialization and tool registration."""
 
+    async def test_compact_profile_exposes_only_explore(self):
+        """Coding-agent defaults must present one task-oriented entry point."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            srv = create_server(
+                tmpdir,
+                os.path.join(tmpdir, "global.db"),
+                tool_profile="compact",
+            )
+            async with Client(srv) as client:
+                tools = await client.list_tools()
+
+        assert [tool.name for tool in tools] == ["explore"]
+
     async def test_server_creates_tools(self, server):
         """Verify the server registers all tools."""
         tools = await server.list_tools()
@@ -49,7 +62,8 @@ class TestServerCreation:
         assert "doc_search_tool" in tool_names
         assert "drift_train" in tool_names
         assert "events" in tool_names
-        assert len(tool_names) == 19
+        assert "explore" in tool_names
+        assert len(tool_names) == 20
 
 
 class TestSearchTool:
@@ -320,7 +334,7 @@ class TestMultiProjectServerCreation:
             srv = create_server(project_path=None, global_db_path=global_db_path)
             async with Client(srv) as client:
                 tools = await client.list_tools()
-                assert len([t.name for t in tools]) == 19
+                assert len([t.name for t in tools]) == 20
 
     async def test_no_projects_returns_error(self):
         """Multi-project mode with no registered projects returns error."""

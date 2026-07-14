@@ -57,10 +57,11 @@ class TestServerWiring:
         assert isinstance(server_mod._db_cache[server_mod._locked_project], ProjectDB)
         assert isinstance(server_mod._global_db, GlobalDB)
 
-    async def test_server_lists_18_tools(self, wired_server):
+    async def test_server_lists_advanced_tools(self, wired_server):
         tools = await wired_server.list_tools()
         tool_names = [t.name for t in tools]
-        assert len(tool_names) == 19  # Phase 5 added the events tool.
+        assert len(tool_names) == 20
+        assert "explore" in tool_names
         assert "register_project" in tool_names
         assert "status" in tool_names
         assert "cross_refs" in tool_names

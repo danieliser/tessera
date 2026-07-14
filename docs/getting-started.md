@@ -125,7 +125,9 @@ Tessera uses git to detect changed files. Only modified code is re-parsed and re
 
 ## Start the MCP Server
 
-The MCP server exposes 19 tools to search, navigate, and analyze code. You can run it in two modes:
+By default, the MCP server exposes one task-oriented `explore` tool. It returns
+a bounded code-search, file-outline, and reference context pack suited to coding
+agents. Use the advanced profile when an integration needs the full 20-tool API.
 
 ### Single-Project Mode (locked to one project)
 
@@ -133,7 +135,8 @@ The MCP server exposes 19 tools to search, navigate, and analyze code. You can r
 uv run python -m tessera serve --project /path/to/your/project
 ```
 
-This locks the server to a single project. All MCP tools query only that project's index.
+This locks the server to a single project. The default `explore` tool queries only
+that project's index.
 
 ### Multi-Project Mode (no lock)
 
@@ -141,7 +144,17 @@ This locks the server to a single project. All MCP tools query only that project
 uv run python -m tessera serve
 ```
 
-The server can query multiple projects. You must register projects first (via `register_project` tool or from Claude Code).
+The server can query multiple projects. To register projects or use the specialized
+tools, start it with `--tool-profile advanced`.
+
+### Advanced Tool Profile
+
+```bash
+uv run python -m tessera serve --project /path/to/your/project --tool-profile advanced
+```
+
+This exposes `explore` plus the 19 specialized search, symbol, graph, scope, and
+collection tools for existing integrations and targeted investigation.
 
 ### With Embedding Support
 
@@ -246,7 +259,7 @@ To query multiple projects, use multi-project mode:
 }
 ```
 
-After saving `.mcp.json`, restart Claude Code (or toggle the MCP server in Settings). The tessera server will load and its 19 tools become available.
+After saving `.mcp.json`, restart Claude Code (or toggle the MCP server in Settings). The tessera server will load with `explore`; add `--tool-profile advanced` to the args when the full 20-tool API is needed.
 
 ## Embedding Server Setup (Optional)
 
