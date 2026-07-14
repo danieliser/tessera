@@ -10,7 +10,12 @@ from typing import Any
 import numpy as np
 
 from ..exceptions import PathTraversalError
-from ._utils import normalize_and_validate, sanitize_fts5_query
+from ._utils import (
+    build_path_fts_query,
+    build_path_search_fields,
+    normalize_and_validate,
+    sanitize_fts5_query,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +26,7 @@ class ProjectDB:
     # Default base directory for project databases.
     # Override via ProjectDB.base_dir for testing.
     base_dir: str | None = None
+    PATH_BM25_WEIGHTS = (4.0, 6.0, 6.0, 1.0, 2.0, 1.0)
 
     @staticmethod
     def _path_to_slug(project_path: str) -> str:
@@ -44,11 +50,11 @@ class ProjectDB:
         Args:
             project_path: Absolute path to the project root
         """
-        project_path = Path(os.path.abspath(project_path))
-        tessera_dir = self._get_data_dir(str(project_path))
+        project_root = Path(os.path.abspath(project_path))
+        tessera_dir = self._get_data_dir(str(project_root))
         tessera_dir.mkdir(parents=True, exist_ok=True)
 
-        self.project_path = project_path
+        self.project_path = project_root
         self.db_path = str(tessera_dir / "index.db")
         self.conn = sqlite3.connect(self.db_path, check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
@@ -60,7 +66,7 @@ class ProjectDB:
         self._create_schema()
         self._run_migrations()
 
-    CURRENT_SCHEMA_VERSION = 3
+    CURRENT_SCHEMA_VERSION = 4
 
     def _run_migrations(self):
         """Run schema migrations if needed."""
@@ -87,6 +93,9 @@ class ProjectDB:
 
         if current_version < 3:
             self._migrate_to_v3()
+
+        if current_version < 4:
+            self._migrate_to_v4()
 
         cursor.execute(
             "INSERT OR REPLACE INTO _meta (key, value) VALUES (?, ?)",
@@ -129,6 +138,11 @@ class ProjectDB:
             else:
                 raise
         self.conn.commit()
+
+    def _migrate_to_v4(self):
+        """Migrate from schema v3 to v4: backfill searchable file paths."""
+        indexed = self.rebuild_file_path_index()
+        logger.info("Schema migration: indexed %d file paths", indexed)
 
     def get_meta(self, key: str) -> str | None:
         """Read a value from the _meta key-value store."""
@@ -349,6 +363,21 @@ class ProjectDB:
                 )
             """)
 
+            # Independent file-level path index. The chunk FTS path is
+            # intentionally UNINDEXED and cannot supply path-only candidates.
+            self.conn.execute("""
+                CREATE VIRTUAL TABLE IF NOT EXISTS file_paths_fts USING fts5(
+                    path,
+                    basename,
+                    stem,
+                    directories,
+                    module,
+                    aliases,
+                    file_id UNINDEXED,
+                    tokenize = 'unicode61 remove_diacritics 2'
+                )
+            """)
+
             # Embeddings table (BLOBs)
             self.conn.execute("""
                 CREATE TABLE IF NOT EXISTS chunk_embeddings (
@@ -374,6 +403,33 @@ class ProjectDB:
         return str(normalized)
 
     # File operations
+
+    def _searchable_relative_path(self, path: str) -> str:
+        """Return a stable project-relative path for sparse path indexing."""
+        validated = Path(self.validate_path(path))
+        return validated.relative_to(self.project_path.resolve()).as_posix()
+
+    def _replace_file_path_index(self, file_id: int, path: str) -> None:
+        fields = build_path_search_fields(self._searchable_relative_path(path))
+        self.conn.execute("DELETE FROM file_paths_fts WHERE file_id = ?", (file_id,))
+        self.conn.execute(
+            """
+            INSERT INTO file_paths_fts (
+                path, basename, stem, directories, module, aliases, file_id
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (*fields, file_id),
+        )
+
+    def rebuild_file_path_index(self) -> int:
+        """Rebuild derived path-search rows from the authoritative files table."""
+        rows = self.conn.execute("SELECT id, path FROM files ORDER BY id").fetchall()
+        with self.conn:
+            self.conn.execute("DELETE FROM file_paths_fts")
+            for row in rows:
+                self._replace_file_path_index(row["id"], row["path"])
+        return len(rows)
 
     def upsert_file(
         self,
@@ -409,7 +465,9 @@ class ProjectDB:
                 """,
                 (project_id, path, language, file_hash)
             )
-            return cursor.fetchone()[0]
+            file_id = cursor.fetchone()[0]
+            self._replace_file_path_index(file_id, path)
+            return file_id
 
     def get_file(
         self,
@@ -473,6 +531,7 @@ class ProjectDB:
         file_id = row["id"]
         self.clear_file_data(file_id)
         with self.conn:
+            self.conn.execute("DELETE FROM file_paths_fts WHERE file_id = ?", (file_id,))
             self.conn.execute("DELETE FROM files WHERE id = ?", (file_id,))
 
     def get_pending_files(self) -> list[dict[str, Any]]:
@@ -1186,6 +1245,70 @@ class ProjectDB:
                 LIMIT ?
                 """,
                 (query, limit)
+            )
+        return [dict(row) for row in cursor.fetchall()]
+
+    def path_search(
+        self,
+        query: str,
+        limit: int = 10,
+        source_type: list[str] | None = None,
+    ) -> list[dict[str, Any]]:
+        """Search independently indexed file paths and return chunk candidates.
+
+        Each matched file contributes its earliest eligible chunk. This keeps
+        the channel file-diverse while retaining the chunk identity expected by
+        the standard fusion pipeline.
+        """
+        if not query or not query.strip() or limit <= 0:
+            return []
+
+        fts_query = build_path_fts_query(query)
+        if not fts_query:
+            return []
+        bm25_weights = ", ".join(str(weight) for weight in self.PATH_BM25_WEIGHTS)
+
+        if source_type:
+            placeholders = ",".join("?" for _ in source_type)
+            cursor = self.conn.execute(
+                f"""
+                SELECT cm.*, files.path AS file_path,
+                       bm25(file_paths_fts, {bm25_weights}) AS score
+                FROM file_paths_fts
+                JOIN files ON files.id = CAST(file_paths_fts.file_id AS INTEGER)
+                JOIN chunk_meta cm ON cm.id = (
+                    SELECT eligible.id
+                    FROM chunk_meta eligible
+                    WHERE eligible.file_id = files.id
+                      AND COALESCE(eligible.source_type, 'code') IN ({placeholders})
+                    ORDER BY eligible.start_line, eligible.id
+                    LIMIT 1
+                )
+                WHERE file_paths_fts MATCH ?
+                ORDER BY score, files.path COLLATE NOCASE, files.path, cm.id
+                LIMIT ?
+                """,
+                (*source_type, fts_query, limit),
+            )
+        else:
+            cursor = self.conn.execute(
+                f"""
+                SELECT cm.*, files.path AS file_path,
+                       bm25(file_paths_fts, {bm25_weights}) AS score
+                FROM file_paths_fts
+                JOIN files ON files.id = CAST(file_paths_fts.file_id AS INTEGER)
+                JOIN chunk_meta cm ON cm.id = (
+                    SELECT eligible.id
+                    FROM chunk_meta eligible
+                    WHERE eligible.file_id = files.id
+                    ORDER BY eligible.start_line, eligible.id
+                    LIMIT 1
+                )
+                WHERE file_paths_fts MATCH ?
+                ORDER BY score, files.path COLLATE NOCASE, files.path, cm.id
+                LIMIT ?
+                """,
+                (fts_query, limit),
             )
         return [dict(row) for row in cursor.fetchall()]
 

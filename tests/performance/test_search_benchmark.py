@@ -703,9 +703,9 @@ class TestStructuredQueries:
 
         report_lines.append("")
 
-    def test_lex_only_matches_keyword_search(self, db, report_lines):
-        """LEX-only results should match db.keyword_search() exactly."""
-        report_lines.append("**LEX-only vs keyword_search():**")
+    def test_lex_content_control_matches_keyword_search(self, db, report_lines):
+        """The path-disabled LEX control should match content FTS exactly."""
+        report_lines.append("**Path-disabled LEX vs keyword_search():**")
         report_lines.append("")
         report_lines.append("| Query | LEX Top-5 IDs | keyword_search Top-5 IDs | Match? |")
         report_lines.append("|-------|--------------|-------------------------|--------|")
@@ -715,6 +715,7 @@ class TestStructuredQueries:
             lex_results = hybrid_search(
                 query, query_embedding=None, db=db, limit=5,
                 search_types=[SearchType.LEX],
+                enable_path_search=False,
             )
 
             # Direct keyword_search (with same sanitization)

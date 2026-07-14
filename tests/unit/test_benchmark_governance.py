@@ -15,6 +15,7 @@ from scripts.benchmark_governance import (
     load_queries,
     macro_per_repository,
     paired_bootstrap_interval,
+    paired_candidate_recall_interval,
     protected_segment_metrics,
     repositories_for_split,
     validate_labels_against_checkout,
@@ -131,6 +132,33 @@ def test_paired_bootstrap_rejects_unpaired_cases() -> None:
     ]
     with pytest.raises(CorpusValidationError, match="different cases"):
         paired_bootstrap_interval(rows, "baseline", "candidate", iterations=10)
+
+
+def test_paired_candidate_recall_interval_uses_repository_pairs() -> None:
+    rows = []
+    for repository in ("repo-a", "repo-b"):
+        for case_id in ("one", "two"):
+            for engine, recall in (("baseline", 0.0), ("candidate", 1.0)):
+                row = _row(engine, repository, case_id, 1)
+                row["candidate_diagnostics"] = {
+                    "union": {"recall_at_k": {"10": recall}}
+                }
+                rows.append(row)
+
+    result = paired_candidate_recall_interval(
+        rows,
+        "baseline",
+        "candidate",
+        cutoff=10,
+        iterations=500,
+        seed=7,
+    )
+
+    assert result["metric"] == "macro_union_candidate_recall_at_10_delta"
+    assert result["repositories"] == 2
+    assert result["paired_queries"] == 4
+    assert result["delta"] == 1.0
+    assert result["ci_lower"] == 1.0
 
 
 def test_run_metadata_binds_split_manifest_and_revisions() -> None:

@@ -24,7 +24,7 @@ import os
 import re
 from collections.abc import Callable
 from enum import StrEnum
-from typing import Optional
+from typing import Optional, cast
 
 import faiss
 import numpy as np
@@ -111,6 +111,7 @@ BM25_STRONG_SIGNAL_GAP = 0.15
 # Per-list weights for weighted RRF fusion
 DEFAULT_RRF_WEIGHTS = {
     "keyword": 1.0,
+    "path": 1.2,
     "semantic": 1.2,
     "graph": 0.8,
 }
@@ -692,17 +693,19 @@ def hybrid_search(
     depth_penalty: float = 0.0,
     file_dedup: bool = False,
     trace: SearchTrace | None = None,
+    enable_path_search: bool = True,
 ) -> list[dict]:
     """
     Hybrid search combining keyword (FTS5) and semantic (vector) results.
 
     Algorithm:
     1. Run FTS5 keyword search via db.keyword_search()
-    2. If query_embedding provided: run cosine_search on db.get_all_embeddings()
-    3. Merge with weighted RRF
-    4. Apply optional post-merge boosts (filename, symbol, depth)
-    5. Optionally dedup by file (keep best chunk per file)
-    6. Enrich results with file_path, start_line, end_line from chunk_meta
+    2. Run the independently indexed file/path candidate channel when available
+    3. If query_embedding provided: run cosine_search on db.get_all_embeddings()
+    4. Merge with weighted RRF
+    5. Apply optional post-merge boosts (filename, symbol, depth)
+    6. Optionally dedup by file (keep best chunk per file)
+    7. Enrich results with file_path, start_line, end_line from chunk_meta
 
     Args:
         query: Search query string
@@ -716,6 +719,7 @@ def hybrid_search(
         filename_boost: Optional post-merge score per query-token/filename overlap
         file_dedup: Keep only the best-scoring chunk per file
         trace: Optional diagnostic collector; omitted from normal result payloads
+        enable_path_search: Run the path channel when lexical retrieval is routed
     """
     original_query = query
 
@@ -745,6 +749,7 @@ def hybrid_search(
                 "query_expansion": query_expansion,
                 "depth_penalty": depth_penalty,
                 "file_dedup": file_dedup,
+                "enable_path_search": enable_path_search,
                 "graph_available": graph is not None,
             },
         )
@@ -822,7 +827,62 @@ def hybrid_search(
             score_kind="fts5_bm25",
         )
 
-    # 1b. BM25 strong-signal short-circuit: skip expensive operations when
+    # 1b. Independently indexed file/path candidates. Older DB-like adapters
+    # remain valid: an unavailable capability is treated as a skipped channel.
+    path_results: list[dict] = []
+    path_search = getattr(db, "path_search", None)
+    if enable_path_search and run_keyword and callable(path_search):
+        path_limit = limit
+        try:
+            path_results = cast(
+                list[dict],
+                path_search(
+                    query,
+                    limit=path_limit,
+                    source_type=source_type,
+                ),
+            )
+            if trace is not None:
+                trace.record_channel(
+                    "path",
+                    path_results,
+                    score_kind="fts5_path_bm25",
+                    metadata=_trace_candidate_metadata(db, path_results),
+                    normalized_scores={
+                        item["id"]: normalize_bm25_score(item.get("score", 0.0))
+                        for item in path_results
+                    },
+                    requested_limit=path_limit,
+                )
+            if path_results:
+                ranked_lists.append(path_results)
+                list_labels.append("path")
+        except Exception as error:
+            path_results = []
+            if trace is not None:
+                trace.error("path", error)
+                trace.channel_status(
+                    "path",
+                    "error",
+                    reason="path_search_failed",
+                    requested_limit=path_limit,
+                    score_kind="fts5_path_bm25",
+                )
+    elif trace is not None:
+        if not enable_path_search:
+            reason = "disabled"
+        elif not run_keyword:
+            reason = "query_routing"
+        else:
+            reason = "capability_unavailable"
+        trace.channel_status(
+            "path",
+            "skipped",
+            reason=reason,
+            score_kind="fts5_path_bm25",
+        )
+
+    # 1c. BM25 strong-signal short-circuit: skip expensive operations when
     # keyword match is very high confidence (top score >= 0.85 with >= 0.15 gap)
     initial_strong_keyword_signal = bool(
         keyword_results and bm25_strong_signal_check(keyword_results)
@@ -874,10 +934,10 @@ def hybrid_search(
                 reason="bm25_short_circuit",
                 score_kind="ppr",
             )
-        weights = [effective_weights.get("keyword", 1.0)]
+        weights = [effective_weights.get(label, 1.0) for label in list_labels]
         merged = weighted_rrf_merge(ranked_lists, weights=weights)
         if trace is not None:
-            trace.record_fusion(merged, labels=["keyword"], weights=weights)
+            trace.record_fusion(merged, labels=list_labels, weights=weights)
         if file_dedup:
             before_dedup = merged
             merged = _dedupe_ranked_by_file(before_dedup, db)
@@ -906,7 +966,7 @@ def hybrid_search(
                     "end_line": meta.get("end_line", 0),
                     "content": meta.get("content", ""),
                     "score": item.get("rrf_score", item.get("score", 0.0)),
-                    "rank_sources": ["keyword"],
+                    "rank_sources": list_labels,
                     "source_type": chunk_source_type,
                     "trusted": chunk_source_type == "code",
                     "section_heading": meta.get("section_heading", ""),
@@ -924,7 +984,7 @@ def hybrid_search(
                     "end_line": 0,
                     "content": "",
                     "score": item.get("rrf_score", item.get("score", 0.0)),
-                    "rank_sources": ["keyword"],
+                    "rank_sources": list_labels,
                     "source_type": "code",
                     "trusted": True,
                     "section_heading": "",
