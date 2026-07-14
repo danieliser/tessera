@@ -2,7 +2,79 @@
 
 import numpy as np
 
-from tessera.search import cosine_search, rrf_merge
+from tessera.search import SearchType, cosine_search, hybrid_search, rrf_merge
+
+
+def test_bm25_short_circuit_honors_file_dedup() -> None:
+    """High-confidence keyword search must still return unique files when requested."""
+
+    class FakeDB:
+        chunks = {
+            1: {"file_id": 1, "file_path": "docs/first.rst", "content": "first a"},
+            2: {"file_id": 1, "file_path": "docs/first.rst", "content": "first b"},
+            3: {"file_id": 1, "file_path": "docs/first.rst", "content": "first c"},
+            4: {"file_id": 1, "file_path": "docs/first.rst", "content": "first d"},
+            5: {"file_id": 2, "file_path": "docs/second.rst", "content": "second"},
+        }
+
+        def keyword_search(self, *_args, limit, **_kwargs):
+            results = [
+                {"id": 1, "score": -10.0},
+                {"id": 2, "score": -1.0},
+                {"id": 3, "score": -0.9},
+                {"id": 4, "score": -0.8},
+                {"id": 5, "score": -0.7},
+            ]
+            return results[:limit]
+
+        def get_chunk(self, chunk_id):
+            return self.chunks[chunk_id]
+
+    results = hybrid_search(
+        "first",
+        query_embedding=None,
+        db=FakeDB(),
+        limit=2,
+        search_types=[SearchType.LEX],
+        file_dedup=True,
+    )
+
+    assert [result["file_path"] for result in results] == [
+        "docs/first.rst",
+        "docs/second.rst",
+    ]
+
+
+def test_bm25_short_circuit_fills_unique_file_limit_semantically() -> None:
+    """A single keyword hit must not suppress enough semantic file results."""
+
+    class FakeDB:
+        chunks = {
+            1: {"file_id": 1, "file_path": "docs/first.rst", "content": "first"},
+            2: {"file_id": 2, "file_path": "docs/second.rst", "content": "second"},
+        }
+
+        def keyword_search(self, *_args, **_kwargs):
+            return [{"id": 1, "score": -10.0}]
+
+        def get_all_embeddings(self):
+            return [1, 2], np.array([[1.0, 0.0], [0.9, 0.1]], dtype=np.float32)
+
+        def get_chunk(self, chunk_id):
+            return self.chunks[chunk_id]
+
+    results = hybrid_search(
+        "first",
+        query_embedding=np.array([1.0, 0.0], dtype=np.float32),
+        db=FakeDB(),
+        limit=2,
+        file_dedup=True,
+    )
+
+    assert [result["file_path"] for result in results] == [
+        "docs/first.rst",
+        "docs/second.rst",
+    ]
 
 
 class TestRRFMerge:
@@ -332,6 +404,7 @@ class TestExtractSnippet:
     def test_semantic_scoring_finds_try_except(self):
         """Semantic scoring picks try/except over a comment containing query words."""
         import numpy as np
+
         from tessera.search import extract_snippet
 
         # Lines 0-4 are filler, lines 5-7 are the error handling block.
@@ -382,6 +455,7 @@ class TestExtractSnippet:
     def test_semantic_scoring_fallback_on_error(self):
         """Falls back to keyword scoring when embed_fn raises."""
         import numpy as np
+
         from tessera.search import extract_snippet
 
         content = "alpha\nbeta\nerror_handler\ndelta"

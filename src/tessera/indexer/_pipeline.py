@@ -4,6 +4,7 @@ import asyncio
 import hashlib
 import logging
 import os
+import re
 import subprocess
 import time
 from pathlib import Path
@@ -25,10 +26,10 @@ from ..document import (
     chunk_xml,
     chunk_yaml,
 )
-from ..markdown_chunker import chunk_markdown_breakpoint
 from ..embeddings import EmbeddingClient, EmbeddingUnavailableError, FastembedClient
 from ..hooks import AFTER_INDEX_FILE, BEFORE_INDEX_FILE, EMBEDDING_TEXTS, get_hooks, setup_model_hooks
 from ..ignore import IgnoreFilter
+from ..markdown_chunker import chunk_markdown_breakpoint
 from ..model_profiles import ModelProfile, resolve_profile
 from ..parser import detect_language, parse_and_extract
 from ..search import hybrid_search
@@ -39,6 +40,7 @@ from ._helpers import (
     _detect_package_name,
     compute_parser_digest,
 )
+from ._imports import ImportBinding, candidate_module_paths, extract_import_bindings
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +85,12 @@ class IndexerPipeline:
                 model_profile = resolve_profile(model_id=model_name)
         self.model_profile = model_profile
         setup_model_hooks(model_profile)
+
+    def _ensure_project_id(self) -> int:
+        """Return the registered project ID, registering standalone projects on demand."""
+        if self.project_id is None:
+            return self.register()
+        return self.project_id
 
     def _track_embedding_dim(self, dim: int) -> None:
         """Store embedding dimension on first call, warn on mismatch."""
@@ -253,7 +261,7 @@ class IndexerPipeline:
 
         # Try to get since_commit from GlobalDB if not provided
         if since_commit is None and self.global_db:
-            project = self.global_db.get_project(self.project_id)
+            project = self.global_db.get_project(self._ensure_project_id())
             if project:
                 since_commit = project.get("last_indexed_commit")
 
@@ -291,7 +299,7 @@ class IndexerPipeline:
         # Update last indexed commit
         head = self._get_git_head()
         if head and self.global_db:
-            self.global_db.update_last_indexed_commit(self.project_id, head)
+            self.global_db.update_last_indexed_commit(self._ensure_project_id(), head)
 
         return stats
 
@@ -319,6 +327,8 @@ class IndexerPipeline:
                         "pymupdf4llm not installed. Install with: pip install pymupdf4llm"
                     ) from None
                 markdown_text = pymupdf4llm.to_markdown(file_path)
+                if not isinstance(markdown_text, str):
+                    markdown_text = "\n\n".join(page.get("text", "") for page in markdown_text)
                 chunks = chunk_markdown_breakpoint(markdown_text)
             elif file_path.endswith(('.md', '.mdx')):
                 content = Path(file_path).read_text(encoding='utf-8', errors='replace')
@@ -342,25 +352,21 @@ class IndexerPipeline:
             # Compute file hash
             file_hash = self._file_hash(file_path)
 
+            existing = self.project_db.get_file(path=rel_path)
+            if (
+                existing
+                and existing.get('index_status') == 'indexed'
+                and existing.get('hash') == file_hash
+            ):
+                return {'status': 'skipped', 'reason': 'unchanged'}
+
             # Upsert file record (language='document')
             file_id = self.project_db.upsert_file(
-                project_id=self.project_id,
+                project_id=self._ensure_project_id(),
                 path=rel_path,
                 language='document',
                 file_hash=file_hash
             )
-
-            # Check if file changed
-            old_hash = self.project_db.get_old_hash() if hasattr(self.project_db, 'get_old_hash') else None
-            existing = self.project_db.get_file(file_id=file_id)
-
-            if (
-                existing
-                and existing.get('index_status') == 'indexed'
-                and old_hash is not None
-                and old_hash == file_hash
-            ):
-                return {'status': 'skipped', 'reason': 'unchanged'}
 
             # Clear old data and mark as pending
             with self.project_db.conn:
@@ -422,7 +428,7 @@ class IndexerPipeline:
             logger.error(f"Document extraction error in {file_path}: {e}")
             try:
                 file_id = self.project_db.upsert_file(
-                    project_id=self.project_id,
+                    project_id=self._ensure_project_id(),
                     path=rel_path,
                     language='document',
                     file_hash=self._file_hash(file_path)
@@ -435,7 +441,7 @@ class IndexerPipeline:
             logger.error(f"Failed to index document {file_path}: {e}")
             try:
                 file_id = self.project_db.upsert_file(
-                    project_id=self.project_id,
+                    project_id=self._ensure_project_id(),
                     path=rel_path,
                     language='document',
                     file_hash=self._file_hash(file_path)
@@ -470,23 +476,20 @@ class IndexerPipeline:
 
             file_hash = self._file_hash(file_path)
 
+            existing = self.project_db.get_file(path=rel_path)
+            if (
+                existing
+                and existing.get('index_status') == 'indexed'
+                and existing.get('hash') == file_hash
+            ):
+                return {'status': 'skipped', 'reason': 'unchanged'}
+
             file_id = self.project_db.upsert_file(
-                project_id=self.project_id,
+                project_id=self._ensure_project_id(),
                 path=rel_path,
                 language='asset',
                 file_hash=file_hash,
             )
-
-            old_hash = self.project_db.get_old_hash() if hasattr(self.project_db, 'get_old_hash') else None
-            existing = self.project_db.get_file(file_id=file_id)
-
-            if (
-                existing
-                and existing.get('index_status') == 'indexed'
-                and old_hash is not None
-                and old_hash == file_hash
-            ):
-                return {'status': 'skipped', 'reason': 'unchanged'}
 
             dimensions = metadata['dimensions']
             key_path = f"{dimensions['width']}x{dimensions['height']}" if dimensions else None
@@ -530,7 +533,7 @@ class IndexerPipeline:
             logger.error("Failed to index asset %s: %s", file_path, e)
             try:
                 file_id = self.project_db.upsert_file(
-                    project_id=self.project_id,
+                    project_id=self._ensure_project_id(),
                     path=rel_path,
                     language='asset',
                     file_hash=self._file_hash(file_path),
@@ -600,6 +603,7 @@ class IndexerPipeline:
             Status dict with 'status' and optional 'reason' or metrics
         """
         await self.hooks.do_action(BEFORE_INDEX_FILE, file_path)
+        self._ensure_project_id()
 
         # Route asset files BEFORE document check (some assets like .svg are also documents)
         is_svg = file_path.lower().endswith('.svg')
@@ -630,28 +634,22 @@ class IndexerPipeline:
         # Compute file hash
         file_hash = self._file_hash(file_path)
 
-        # Upsert file record (returns file_id, may be existing file)
-        file_id = self.project_db.upsert_file(
-            project_id=self.project_id,
-            path=rel_path,
-            language=language,
-            file_hash=file_hash
-        )
-
-        # Check if file changed - get the old hash from before upsert
-        old_hash = self.project_db.get_old_hash() if hasattr(self.project_db, 'get_old_hash') else None
-        existing = self.project_db.get_file(file_id=file_id)
-
-        # If file was already indexed with the same hash, skip it
-        # old_hash is not None means this was an existing file
+        existing = self.project_db.get_file(path=rel_path)
         if (
             not force
             and existing
             and existing.get('index_status') == 'indexed'
-            and old_hash is not None  # This was an existing file
-            and old_hash == file_hash  # And the hash is the same
+            and existing.get('hash') == file_hash
         ):
             return {'status': 'skipped', 'reason': 'unchanged'}
+
+        # Upsert file record (returns file_id, may be existing file)
+        file_id = self.project_db.upsert_file(
+            project_id=self._ensure_project_id(),
+            path=rel_path,
+            language=language,
+            file_hash=file_hash
+        )
 
         # Parse FIRST (before clearing old data — if parsing fails, old data preserved)
         try:
@@ -844,7 +842,7 @@ class IndexerPipeline:
         # Create job record for tracking
         job_id = None
         if self.global_db:
-            job_id = self.global_db.create_job(self.project_id)
+            job_id = self.global_db.create_job(self._ensure_project_id())
             self.global_db.start_job(job_id)
 
         try:
@@ -892,7 +890,7 @@ class IndexerPipeline:
             # Store last indexed commit for future incremental reindexing
             head = self._get_git_head()
             if head and self.global_db:
-                self.global_db.update_last_indexed_commit(self.project_id, head)
+                self.global_db.update_last_indexed_commit(self._ensure_project_id(), head)
 
             # Store parser digest so the server can detect stale indexes
             self.project_db.set_meta("parser_digest", compute_parser_digest())
@@ -944,11 +942,11 @@ class IndexerPipeline:
 
         Returns:
             Stats dict with keys: total_unresolved, resolved_strict,
-            resolved_proximity, resolved_suffix, ambiguous_dropped,
+            resolved_import, resolved_proximity, resolved_suffix, ambiguous_dropped,
             no_candidate, edges_created.
         """
         empty_stats: dict[str, int] = {
-            "total_unresolved": 0, "resolved_strict": 0,
+            "total_unresolved": 0, "resolved_strict": 0, "resolved_import": 0,
             "resolved_proximity": 0, "resolved_suffix": 0,
             "ambiguous_dropped": 0, "no_candidate": 0, "edges_created": 0,
         }
@@ -958,7 +956,7 @@ class IndexerPipeline:
         # Query all unresolved refs for this project
         cursor = self.project_db.conn.execute(
             """
-            SELECT id, from_symbol_id, to_symbol_name, kind
+            SELECT id, from_symbol_id, to_symbol_name, kind, context
             FROM refs
             WHERE project_id = ? AND to_symbol_id IS NULL AND to_symbol_name IS NOT NULL
             """,
@@ -1050,6 +1048,96 @@ class IndexerPipeline:
         # Resolve refs and prepare edges to insert
         edges_to_insert = []
         refs_to_update = []
+        import_bindings_by_file: dict[int, dict[str, ImportBinding]] = {}
+
+        def load_import_bindings(file_id: int) -> dict[str, ImportBinding]:
+            """Read and cache import bindings for one indexed source file."""
+            bindings = import_bindings_by_file.get(file_id)
+            if bindings is not None:
+                return bindings
+            from_path = file_id_to_path.get(file_id)
+            if not from_path:
+                return {}
+            source_path = Path(self.project_path) / from_path
+            try:
+                source = source_path.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                bindings = {}
+            else:
+                suffix = source_path.suffix.lower()
+                language = {
+                    ".py": "python",
+                    ".ts": "typescript",
+                    ".tsx": "typescript",
+                    ".js": "javascript",
+                    ".jsx": "javascript",
+                }.get(suffix, "")
+                bindings = extract_import_bindings(from_path, language, source)
+            import_bindings_by_file[file_id] = bindings
+            return bindings
+
+        def target_file_ids(binding: ImportBinding) -> set[int]:
+            paths = candidate_module_paths(binding)
+            return {file_id for file_id, path in file_id_to_path.items() if path in paths}
+
+        def direct_symbol(file_ids: set[int], symbol_name: str) -> int | None:
+            candidates = [
+                candidate
+                for candidate in name_to_candidates.get(symbol_name, [])
+                if candidate[2] in file_ids
+            ]
+            if not candidates:
+                return None
+            best_priority = min(candidate[1] for candidate in candidates)
+            best = [candidate for candidate in candidates if candidate[1] == best_priority]
+            return best[0][0] if len(best) == 1 else None
+
+        def resolve_export(
+            file_ids: set[int],
+            export_name: str,
+            seen: set[tuple[int, str]],
+        ) -> int | None:
+            """Resolve a module export, following conservative named re-exports."""
+            direct = direct_symbol(file_ids, export_name)
+            if direct is not None:
+                return direct
+            resolved: set[int] = set()
+            for file_id in file_ids:
+                key = (file_id, export_name)
+                if key in seen:
+                    continue
+                forwarded = load_import_bindings(file_id).get(export_name)
+                if forwarded is None or forwarded.is_module:
+                    continue
+                target = resolve_export(
+                    target_file_ids(forwarded), forwarded.target_name, seen | {key}
+                )
+                if target is not None:
+                    resolved.add(target)
+            return resolved.pop() if len(resolved) == 1 else None
+
+        def module_receiver(context: str, to_name: str) -> str | None:
+            """Return the receiver only for a simple ``module.member()`` expression."""
+            match = re.fullmatch(r"([A-Za-z_]\w*)\.([A-Za-z_]\w*)", context.strip())
+            if match and match.group(2) == to_name:
+                return match.group(1)
+            return None
+
+        def resolve_import_binding(from_id: int, to_name: str, context: str) -> int | None:
+            """Resolve a local import alias to one target in its imported module."""
+            from_file_id = from_symbol_file.get(from_id)
+            if from_file_id is None:
+                return None
+            bindings = load_import_bindings(from_file_id)
+            binding = bindings.get(to_name)
+            if binding is not None and not binding.is_module:
+                return resolve_export(target_file_ids(binding), binding.target_name, set())
+
+            receiver = module_receiver(context, to_name)
+            module_binding = bindings.get(receiver) if receiver else None
+            if module_binding is not None and module_binding.is_module:
+                return resolve_export(target_file_ids(module_binding), to_name, set())
+            return None
 
         for ref in unresolved_refs:
             to_name = ref['to_symbol_name']
@@ -1059,12 +1147,18 @@ class IndexerPipeline:
             resolved_id = None
             resolution_type = None
 
-            # 1. Strict match (unambiguous name)
-            if to_name in name_to_symbol:
+            # 1. Import-aware resolution. This is more specific than the
+            # project-wide name fallback and therefore wins for aliases.
+            resolved_id = resolve_import_binding(from_id, to_name, ref['context'] or "")
+            if resolved_id is not None:
+                resolution_type = "import"
+
+            # 2. Strict match (unambiguous name)
+            elif to_name in name_to_symbol:
                 resolved_id = name_to_symbol[to_name]
                 resolution_type = "strict"
 
-            # 2. Ambiguous match — use file-proximity tiebreak
+            # 3. Ambiguous match — use file-proximity tiebreak
             elif to_name in ambiguous_names:
                 from_file_id = from_symbol_file.get(from_id)
                 if from_file_id:
@@ -1085,7 +1179,7 @@ class IndexerPipeline:
                 else:
                     stats["ambiguous_dropped"] += 1
 
-            # 3. Suffix match for namespaced symbols
+            # 4. Suffix match for namespaced symbols
             elif to_name in suffix_candidates:
                 suffix_cands = suffix_candidates[to_name]
                 suffix_cands_sorted = sorted(suffix_cands, key=lambda x: x[1])
@@ -1143,10 +1237,10 @@ class IndexerPipeline:
 
         stats["edges_created"] = len(edges_to_insert)
         logger.info(
-            "Cross-file edge resolution: %d unresolved → %d strict, %d proximity, "
+            "Cross-file edge resolution: %d unresolved → %d strict, %d import, %d proximity, "
             "%d suffix, %d ambiguous, %d no-candidate (%d edges created)",
             stats["total_unresolved"], stats["resolved_strict"],
-            stats["resolved_proximity"], stats["resolved_suffix"],
+            stats["resolved_import"], stats["resolved_proximity"], stats["resolved_suffix"],
             stats["ambiguous_dropped"], stats["no_candidate"],
             stats["edges_created"],
         )
@@ -1174,4 +1268,4 @@ class IndexerPipeline:
             except EmbeddingUnavailableError:
                 pass
 
-        return hybrid_search(query, query_embedding, self.project_db, limit)
+        return hybrid_search(query, query_embedding, self.project_db, graph=None, limit=limit)

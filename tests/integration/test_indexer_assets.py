@@ -175,17 +175,15 @@ class TestIgnorePatterns:
 class TestChangeDetection:
     """Test that unchanged assets are skipped on re-index."""
 
-    def test_reindex_same_asset_succeeds(self, pipeline, project_dir):
-        """Re-indexing the same asset succeeds (change detection is hash-based in production)."""
+    def test_reindex_same_asset_is_skipped(self, pipeline, project_dir):
+        """An unchanged asset is not parsed and stored again."""
         png_path = str(project_dir / "assets" / "images" / "logo.png")
 
         result1 = pipeline.index_file_sync(png_path)
         assert result1['status'] == 'indexed'
 
-        # Second index still succeeds — ProjectDB.get_old_hash() would enable
-        # skip-unchanged in production, but it's not implemented in all DB layers.
         result2 = pipeline.index_file_sync(png_path)
-        assert result2['status'] in ('indexed', 'skipped')
+        assert result2 == {'status': 'skipped', 'reason': 'unchanged'}
 
     def test_reindex_changed_asset(self, pipeline, project_dir):
         """Modified assets are re-indexed."""

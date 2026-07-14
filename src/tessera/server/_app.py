@@ -23,6 +23,7 @@ def create_server(
     reranking_model: str | None = None,
     reranking_endpoint: str | None = None,
     no_reranking: bool = False,
+    tool_profile: str = "advanced",
 ) -> FastMCP:
     """Create and configure the MCP server (synchronous, for tests and CLI).
 
@@ -34,7 +35,7 @@ def create_server(
         embedding_provider, reranking_model, reranking_endpoint, no_reranking,
     )
     mcp = FastMCP("tessera")
-    register_tools(mcp)
+    register_tools(mcp, tool_profile)
     return mcp
 
 
@@ -76,8 +77,9 @@ def _create_hmr_app() -> FastMCP:
             if not bg_task.done():
                 bg_task.cancel()
 
+    tool_profile = os.environ.get("TESSERA_TOOL_PROFILE", "compact")
     mcp = FastMCP("tessera", lifespan=_lifespan)
-    register_tools(mcp)
+    register_tools(mcp, tool_profile)
     return mcp
 
 
@@ -90,6 +92,7 @@ async def run_server(
     reranking_model: str | None = None,
     reranking_endpoint: str | None = None,
     no_reranking: bool = False,
+    tool_profile: str = "compact",
 ) -> int:
     """Run the MCP server on stdio transport."""
     if not global_db_path:
@@ -99,6 +102,7 @@ async def run_server(
     mcp = create_server(
         project_path, global_db_path, embedding_endpoint, embedding_model,
         embedding_provider, reranking_model, reranking_endpoint, no_reranking,
+        tool_profile,
     )
 
     try:

@@ -132,7 +132,7 @@ STANDARD_DOC = [
         "middleware matching paths configuration",
         ["middleware-route-matcher.ts", "middleware-config.ts"],
         "Find middleware config docs",
-        "doc", "standard",
+        "cross", "standard",
     ),
     (
         "authentication and session management",

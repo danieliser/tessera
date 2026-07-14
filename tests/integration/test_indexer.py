@@ -102,9 +102,13 @@ class MockProjectDB:
         """Get the old hash from the last upsert_file call."""
         return self._old_hash
 
-    def get_file(self, file_id):
-        """Get file record by ID."""
-        return self.files.get(file_id)
+    def get_file(self, file_id=None, path=None):
+        """Get file record by ID or path."""
+        if file_id is not None:
+            return self.files.get(file_id)
+        if path is not None:
+            return next((file for file in self.files.values() if file['path'] == path), None)
+        raise ValueError("Must provide file_id or path")
 
     def insert_symbols(self, symbol_dicts):
         """Insert symbols, return list of symbol IDs."""
@@ -552,8 +556,6 @@ class TestIndexProject:
 
     def test_index_stats_accumulation(self, temp_project_dir, mock_project_db):
         """Test that IndexStats accumulates correctly."""
-        pipeline = IndexerPipeline(str(temp_project_dir), project_db=mock_project_db)
-
         stats = IndexStats()
         stats.files_processed = 3
         stats.symbols_extracted = 10
@@ -608,6 +610,9 @@ class TestSearch:
 
         assert len(results) == 1
         assert results[0]['id'] == 1
+        mock_hybrid.assert_called_once_with(
+            'test query', None, mock_project_db, graph=None, limit=10
+        )
 
     @patch('tessera.indexer._pipeline.hybrid_search')
     def test_search_with_embeddings(self, mock_hybrid, temp_project_dir, mock_project_db):
@@ -626,6 +631,7 @@ class TestSearch:
 
         results = pipeline.search('query', limit=10)
 
+        assert results == []
         assert mock_embedding_client.embed_single.called
 
 

@@ -163,6 +163,7 @@ class PythonExtractor(LanguageExtractor):
                                     to_symbol=method_name,
                                     kind="calls",
                                     line=node.start_point[0] + 1,
+                                    context=func_node.text.decode("utf-8"),
                                 )
                                 references.append(ref)
                             func_name = None  # Don't process again below
