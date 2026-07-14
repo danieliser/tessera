@@ -6,6 +6,7 @@ import pytest
 from scripts.benchmark_competitive import (
     parse_codegraph_files,
     rank_expected,
+    ranker_routing_analysis,
     summarize,
     validate_ground_truth,
 )
@@ -62,3 +63,30 @@ def test_ground_truth_accepts_markdown_document(tmp_path: Path) -> None:
         "expected_files": ["README.md"],
     }
     validate_ground_truth([case], {"fixture": tmp_path})
+
+
+def test_ranker_routing_uses_jina_only_for_code() -> None:
+    rows = [
+        {
+            "engine": engine,
+            "category": category,
+            "supported": True,
+            "rank": rank,
+            "latency_ms": 1.0,
+        }
+        for category, base_rank, reranked_rank in (
+            ("code", 4, 1),
+            ("document", 1, 4),
+            ("cross", 2, 5),
+        )
+        for engine, rank in (
+            ("tessera_bge_small", base_rank),
+            ("tessera_bge_small_jina_tiny", reranked_rank),
+        )
+    ]
+    result = ranker_routing_analysis(rows)
+    assert result["post_hoc"] is True
+    assert result["overall"]["queries_supported"] == 3
+    assert result["categories"]["code"]["mrr_at_10"] == 1.0
+    assert result["categories"]["document"]["mrr_at_10"] == 1.0
+    assert result["categories"]["cross"]["mrr_at_10"] == 0.5

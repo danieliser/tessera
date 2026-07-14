@@ -346,6 +346,28 @@ def aggregate(rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def ranker_routing_analysis(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Score a post-hoc policy that reranks code but preserves base order elsewhere."""
+    routed = [
+        {**row, "engine": "tessera_code_only_rerank"}
+        for row in rows
+        if (
+            row["engine"] == "tessera_bge_small_jina_tiny"
+            if row["category"] == "code"
+            else row["engine"] == "tessera_bge_small"
+        )
+    ]
+    by_category: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for row in routed:
+        by_category[row["category"]].append(row)
+    return {
+        "policy": "Jina-tiny reranking for code; base hybrid order for document and cross queries",
+        "post_hoc": True,
+        "overall": summarize(routed),
+        "categories": {category: summarize(category_rows) for category, category_rows in sorted(by_category.items())},
+    }
+
+
 def run_cross_file_suite(codegraph_cli: Path, node_binary: str) -> dict[str, Any]:
     """Run the exact cross-file target suite and parse its JSON output."""
     completed = subprocess.run(
@@ -377,6 +399,8 @@ def render_report(report: dict[str, Any]) -> str:
     graph = report["graph_resolution"]
     reranked = comparable["tessera_bge_small_jina_tiny"]
     codegraph = comparable["codegraph"]
+    overall = report["summary"]["overall"]
+    routed = report["summary"]["ranker_routing"]["overall"]
     winner = "Tessera" if reranked["mrr_at_10"] >= codegraph["mrr_at_10"] else "CodeGraph"
     lines = [
         "# Tessera vs CodeGraph: Python, TypeScript, and Documentation Benchmark",
@@ -390,6 +414,11 @@ def render_report(report: dict[str, Any]) -> str:
         f"CodeGraph scored {codegraph['mrr_at_10']:.3f} across the same Python and "
         "TypeScript query set. Tessera also covers document and mixed-source queries, "
         "which CodeGraph does not index and which are therefore reported separately.",
+        "",
+        "Across all Tessera-supported content, reranking every query is counterproductive: "
+        f"base hybrid retrieval scored {overall['tessera_bge_small']['mrr_at_10']:.3f}, "
+        f"global Jina-tiny reranking scored {overall['tessera_bge_small_jina_tiny']['mrr_at_10']:.3f}, "
+        f"and the post-hoc code-only reranking policy scored {routed['mrr_at_10']:.3f}.",
         "",
         f"The exact-edge guardrail remains {graph['tessera']['passed']}/{graph['tessera']['total']} "
         f"for Tessera versus {graph['codegraph']['passed']}/{graph['codegraph']['total']} "
@@ -413,6 +442,25 @@ def render_report(report: dict[str, Any]) -> str:
     lines += [
         "",
         "Latency is directional: Tessera uses an in-process cached index, while CodeGraph is invoked as a fresh CLI process for each query.",
+        "",
+        "## Ranker Ablation Across All Content",
+        "",
+        "The routed policy is derived from the same measured rows: use Jina-tiny for code queries and preserve base hybrid ordering for document and mixed queries.",
+        "",
+        "| Tessera policy | Queries | MRR@10 | Top-1 | Top-3 | Top-10 |",
+        "|---|---:|---:|---:|---:|---:|",
+    ]
+    for label, metric in (
+        ("BGE-small hybrid", overall["tessera_bge_small"]),
+        ("BGE-small + Jina-tiny globally", overall["tessera_bge_small_jina_tiny"]),
+        ("BGE-small + Jina-tiny on code only (post-hoc)", routed),
+    ):
+        lines.append(
+            f"| {label} | {metric['queries_supported']} | {metric['mrr_at_10']:.3f} | "
+            f"{_format_pct(metric['top_1'])} | {_format_pct(metric['top_3'])} | "
+            f"{_format_pct(metric['top_10'])} |"
+        )
+    lines += [
         "",
         "## Language and Content Segments",
         "",
@@ -440,6 +488,7 @@ def render_report(report: dict[str, Any]) -> str:
         "- **Top-k:** fraction of supported queries with any expected file in the first k unique file results.",
         "- **Documents:** Markdown, MDX, and reStructuredText are grouped as document retrieval. Unsupported CodeGraph rows are excluded rather than scored as failures.",
         "- **Tessera configuration:** BGE-small embeddings, hybrid retrieval, file deduplication; one run without reranking and one with Jina-tiny reranking.",
+        "- **Routing ablation:** post-hoc selection from measured rows, not a third model execution; it should be confirmed on an independent query set before becoming a default.",
         "- **CodeGraph adapter:** ordered source-code file blocks emitted by `codegraph explore --max-files 10`.",
         "",
         "## Validation Assessment",
@@ -480,7 +529,6 @@ def main() -> int:
         paths[name] = path
         revision = _version(["git", "rev-parse", "HEAD"], cwd=path)
         repositories[name] = {
-            "path": str(path),
             "revision": revision,
             "configured_ref": CODEBASES[name]["ref"],
             "languages": CODEBASES[name]["languages"],
@@ -517,6 +565,8 @@ def main() -> int:
             completed_runs += 1
             print(f"[{completed_runs}/{total_runs}] codegraph: {case['repository']} / {case['description']}")
 
+    summary = aggregate(rows)
+    summary["ranker_routing"] = ranker_routing_analysis(rows)
     output = {
         "metadata": {
             "generated_at": datetime.now(UTC).isoformat(),
@@ -532,7 +582,7 @@ def main() -> int:
             "reranking_model": RERANKER_JINA_TINY,
         },
         "repositories": repositories,
-        "summary": aggregate(rows),
+        "summary": summary,
         "graph_resolution": run_cross_file_suite(args.codegraph_cli, args.node_binary),
         "queries": rows,
         "limitations": [
