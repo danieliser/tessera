@@ -33,6 +33,14 @@ CODEBASES = {
         "ref": "v16.1.6",
         "paths": ["packages/next/src", "docs"],
         "queries": "queries_nextjs",
+        "languages": ["typescript", "javascript"],
+    },
+    "flask": {
+        "git_url": "https://github.com/pallets/flask.git",
+        "ref": "3.1.2",
+        "paths": ["src/flask", "docs"],
+        "queries": "queries_flask",
+        "languages": ["python"],
     },
 }
 
@@ -102,7 +110,7 @@ def index_codebase(name: str, codebase_path: str, embed_client, model_key: str,
         project_path=codebase_path,
         project_db=db,
         embedding_client=embed_client,
-        languages=["typescript", "javascript"],
+        languages=config["languages"],
     )
     stats = indexer.index_project_sync()
 
@@ -154,10 +162,9 @@ def run_queries(queries, db, embed_client, reranker, rerank_pool: int = 40,
         # Use larger pool for code (more candidates needed), smaller for doc
         source_type = None
         pool = rerank_pool
-        if smart_routing:
-            if category == "code":
-                source_type = ["code"]
-                pool = max(rerank_pool, 100)
+        if smart_routing and category == "code":
+            source_type = ["code"]
+            pool = max(rerank_pool, 100)
 
         hits = hybrid_search(
             query_text, query_embedding, db,
@@ -326,11 +333,11 @@ def main():
             reranker = None
 
     # Ensure codebase
-    print(f"\n  Setting up codebase...")
+    print("\n  Setting up codebase...")
     codebase_path = ensure_codebase(args.codebase)
 
     # Index
-    print(f"  Setting up index...")
+    print("  Setting up index...")
     db = index_codebase(
         args.codebase, codebase_path, embed_client,
         model_key=args.model, reindex=args.reindex,

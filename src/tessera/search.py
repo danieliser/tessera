@@ -22,8 +22,8 @@ import json
 import logging
 import os
 import re
-from enum import StrEnum
 from collections.abc import Callable
+from enum import StrEnum
 from typing import Optional
 
 import faiss
@@ -93,6 +93,10 @@ def normalize_bm25_score(raw_score: float) -> float:
 # if >5% of queries return insufficient results (CTO Condition C4).
 SEMANTIC_SEARCH_OVER_FETCH_MULTIPLIER = 3
 
+# File-level results need a larger chunk candidate pool before deduplication;
+# otherwise one long file can consume the entire requested limit.
+FILE_DEDUP_OVER_FETCH_MULTIPLIER = 5
+
 # BM25 short-circuit thresholds: skip semantic/PPR when keyword match is very confident.
 # Known failure mode: in corpora with many similar symbol names (e.g., parseUserInput
 # vs parseUserConfig), the gap can be wide while the top hit is still semantically
@@ -136,11 +140,32 @@ def bm25_strong_signal_check(
     return (top_score - second_score) >= gap
 
 
+def _dedupe_ranked_by_file(items: list[dict], db) -> list[dict]:
+    """Keep the highest-ranked item for each source file."""
+    seen_files: set[str] = set()
+    deduped: list[dict] = []
+    for item in items:
+        chunk_id = item["id"]
+        try:
+            meta = db.get_chunk(chunk_id)
+            file_path = meta.get("file_path", "")
+            if not file_path and meta.get("file_id"):
+                file_rec = db.get_file(file_id=meta["file_id"])
+                if file_rec:
+                    file_path = file_rec.get("path", "")
+        except Exception:
+            file_path = ""
+        if file_path not in seen_files:
+            seen_files.add(file_path)
+            deduped.append(item)
+    return deduped
+
+
 def _find_best_match_line(
     lines: list[str],
     query: str,
-    query_embedding: Optional[np.ndarray] = None,
-    embed_fn: Optional[Callable[..., list]] = None,
+    query_embedding: np.ndarray | None = None,
+    embed_fn: Callable[..., list] | None = None,
 ) -> int:
     """Find the line with the highest relevance to the query.
 
@@ -172,7 +197,7 @@ def _find_best_match_line(
 def _semantic_best_line(
     lines: list[str],
     query_embedding: np.ndarray,
-    embed_fn: callable,
+    embed_fn: Callable[..., list],
     window_size: int = 3,
 ) -> int:
     """Score sliding windows by cosine similarity, return center line of best."""
@@ -220,8 +245,8 @@ def extract_snippet(
     chunk_start_line: int = 0,
     mode: str = "lines",
     max_depth: int | None = None,
-    query_embedding: Optional[np.ndarray] = None,
-    embed_fn: Optional[Callable[..., list]] = None,
+    query_embedding: np.ndarray | None = None,
+    embed_fn: Callable[..., list] | None = None,
 ) -> dict:
     """Extract best-matching snippet from chunk content with optional ancestry.
 
@@ -700,8 +725,14 @@ def hybrid_search(
         try:
             kw_query = expanded_query if query_expansion else query
             kw_advanced = True if query_expansion else advanced_fts
+            keyword_limit = (
+                limit * FILE_DEDUP_OVER_FETCH_MULTIPLIER if file_dedup else limit
+            )
             keyword_results = db.keyword_search(
-                kw_query, limit=limit, source_type=source_type, advanced_fts=kw_advanced
+                kw_query,
+                limit=keyword_limit,
+                source_type=source_type,
+                advanced_fts=kw_advanced,
             )
             if keyword_results:
                 ranked_lists.append(keyword_results)
@@ -711,10 +742,25 @@ def hybrid_search(
 
     # 1b. BM25 strong-signal short-circuit: skip expensive operations when
     # keyword match is very high confidence (top score >= 0.85 with >= 0.15 gap)
-    if keyword_results and bm25_strong_signal_check(keyword_results):
+    strong_keyword_signal = bool(
+        keyword_results and bm25_strong_signal_check(keyword_results)
+    )
+    if strong_keyword_signal and file_dedup:
+        unique_keyword_results = _dedupe_ranked_by_file(keyword_results, db)
+        if len(unique_keyword_results) < limit:
+            logger.debug(
+                "BM25 short-circuit skipped: %d unique files for requested limit %d",
+                len(unique_keyword_results),
+                limit,
+            )
+            strong_keyword_signal = False
+
+    if strong_keyword_signal:
         logger.debug("BM25 short-circuit: strong signal, skipping semantic/PPR")
         weights = [effective_weights.get("keyword", 1.0)]
         merged = weighted_rrf_merge(ranked_lists, weights=weights)
+        if file_dedup:
+            merged = _dedupe_ranked_by_file(merged, db)
         results = []
         for item in merged[:limit]:
             chunk_id = item["id"]
@@ -774,10 +820,13 @@ def hybrid_search(
                 chunk_ids, embedding_vectors = all_embeddings
                 if retrieval_pool:
                     fetch_limit = retrieval_pool
-                elif source_type:
-                    fetch_limit = limit * SEMANTIC_SEARCH_OVER_FETCH_MULTIPLIER
                 else:
-                    fetch_limit = limit
+                    multipliers = [1]
+                    if source_type:
+                        multipliers.append(SEMANTIC_SEARCH_OVER_FETCH_MULTIPLIER)
+                    if file_dedup:
+                        multipliers.append(FILE_DEDUP_OVER_FETCH_MULTIPLIER)
+                    fetch_limit = limit * max(multipliers)
                 semantic_results = cosine_search(
                     query_embedding,
                     chunk_ids,
@@ -791,7 +840,12 @@ def hybrid_search(
                         chunk = db.get_chunk(result["id"])
                         if chunk and (chunk.get("source_type") or "code") in source_type:
                             filtered.append(result)
-                    semantic_results = filtered[:limit]
+                    filtered_limit = (
+                        limit * FILE_DEDUP_OVER_FETCH_MULTIPLIER
+                        if file_dedup
+                        else limit
+                    )
+                    semantic_results = filtered[:filtered_limit]
                 if semantic_results:
                     ranked_lists.append(semantic_results)
                     list_labels.append("semantic")
@@ -928,23 +982,7 @@ def hybrid_search(
 
     # 4d. File-level dedup — keep only the best-scoring chunk per file
     if file_dedup:
-        seen_files = set()
-        deduped = []
-        for item in merged:
-            chunk_id = item["id"]
-            try:
-                meta = db.get_chunk(chunk_id)
-                file_path = meta.get("file_path", "")
-                if not file_path and meta.get("file_id"):
-                    file_rec = db.get_file(file_id=meta["file_id"])
-                    if file_rec:
-                        file_path = file_rec.get("path", "")
-            except Exception:
-                file_path = ""
-            if file_path not in seen_files:
-                seen_files.add(file_path)
-                deduped.append(item)
-        merged = deduped
+        merged = _dedupe_ranked_by_file(merged, db)
 
     # 5. Enrich with chunk metadata
     results = []
