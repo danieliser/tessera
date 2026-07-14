@@ -4,6 +4,7 @@ from tessera.rerank import (
     MAX_RERANK_DOCUMENT_CHARS,
     build_rerank_document,
     rerank_candidate_budget,
+    rerank_document_budget,
     rerank_retrieval_budget,
     select_rerank_candidates,
 )
@@ -36,6 +37,13 @@ def test_candidate_budget_expands_only_for_active_reranker() -> None:
     assert rerank_retrieval_budget(50, reranker_active=True) == 250
     assert rerank_retrieval_budget(100, reranker_active=True) == 250
     assert rerank_retrieval_budget(10, reranker_active=False) == 10
+
+
+def test_document_budget_conserves_visible_page_context() -> None:
+    assert rerank_document_budget(10, 10) == MAX_RERANK_DOCUMENT_CHARS
+    assert rerank_document_budget(10, 30) == 682
+    assert rerank_document_budget(2, 6) == 682
+    assert rerank_document_budget(10, 0) == 0
 
 
 def test_coverage_first_pool_preserves_order_and_then_allows_second_chunks() -> None:

@@ -66,6 +66,7 @@ from tessera.rerank import (  # noqa: E402
     RERANK_POOL_MULTIPLIER,
     build_rerank_documents,
     rerank_candidate_budget,
+    rerank_document_budget,
     rerank_retrieval_budget,
     select_rerank_candidates,
 )
@@ -120,8 +121,14 @@ def _run_case(
         pool = select_rerank_candidates(raw, candidate_budget)
 
     if engine == TREATMENT_ENGINE:
-        documents = build_rerank_documents(pool, {None: database})
+        document_char_budget = rerank_document_budget(TOP_K, len(pool))
+        documents = build_rerank_documents(
+            pool,
+            {None: database},
+            max_chars=document_char_budget,
+        )
     else:
+        document_char_budget = None
         documents = [str(candidate.get("content") or candidate.get("snippet") or "") for candidate in pool]
 
     reranked = reranker.rerank(case["query"], documents, top_k=TOP_K)
@@ -141,6 +148,7 @@ def _run_case(
         "raw_candidates": _candidate_metrics(raw),
         "rerank_pool": _candidate_metrics(pool),
         "max_document_chars": max((len(document) for document in documents), default=0),
+        "document_char_budget": document_char_budget,
     }
 
 
@@ -275,7 +283,7 @@ def main() -> int:
             "treatment_p95_at_most_500_ms": treatment_p95 <= 500.0,
             "added_p95_at_most_300_ms": treatment_p95 - baseline_p95 <= 300.0,
             "max_document_chars_enforced": all(
-                row["max_document_chars"] <= MAX_RERANK_DOCUMENT_CHARS
+                row["max_document_chars"] <= row["document_char_budget"]
                 for row in rows
                 if row["engine"] == TREATMENT_ENGINE
             ),
@@ -301,6 +309,7 @@ def main() -> int:
                 "raw_fetch_multiplier": RERANK_FETCH_MULTIPLIER,
                 "max_raw_fetch_size": MAX_RERANK_FETCH_SIZE,
                 "max_document_chars": MAX_RERANK_DOCUMENT_CHARS,
+                "document_budget_policy": "visible_limit_context_conserving",
             },
         )
         output = {

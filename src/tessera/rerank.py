@@ -9,7 +9,10 @@ RERANK_POOL_MULTIPLIER = 3
 MAX_RERANK_POOL_SIZE = 50
 RERANK_FETCH_MULTIPLIER = 5
 MAX_RERANK_FETCH_SIZE = 250
-MAX_RERANK_DOCUMENT_CHARS = 4096
+# Approximate one 512-token cross-encoder context window at four characters
+# per token. Expanded pools divide a fixed visible-page context budget rather
+# than multiplying inference work by the candidate expansion factor.
+MAX_RERANK_DOCUMENT_CHARS = 2048
 MAX_RERANK_SYMBOLS = 8
 RERANK_POOL_SELECTION = "file_coverage_first"
 
@@ -39,6 +42,14 @@ def rerank_retrieval_budget(candidate_budget: int, *, reranker_active: bool) -> 
         candidate_budget,
         min(candidate_budget * RERANK_FETCH_MULTIPLIER, MAX_RERANK_FETCH_SIZE),
     )
+
+
+def rerank_document_budget(visible_limit: int, pool_size: int) -> int:
+    """Return a per-document cap that conserves total cross-encoder context."""
+    if visible_limit <= 0 or pool_size <= 0:
+        return 0
+    total_chars = visible_limit * MAX_RERANK_DOCUMENT_CHARS
+    return min(MAX_RERANK_DOCUMENT_CHARS, max(1, total_chars // pool_size))
 
 
 def _project_key(result: dict[str, Any]) -> tuple[str, Any]:
@@ -196,6 +207,15 @@ def build_rerank_document(
 def build_rerank_documents(
     results: list[dict[str, Any]],
     db_by_project: dict[Any, Any],
+    *,
+    max_chars: int = MAX_RERANK_DOCUMENT_CHARS,
 ) -> list[str]:
     """Build bounded documents for a federated candidate pool."""
-    return [build_rerank_document(result, db_by_project.get(result.get("project_id"))) for result in results]
+    return [
+        build_rerank_document(
+            result,
+            db_by_project.get(result.get("project_id")),
+            max_chars=max_chars,
+        )
+        for result in results
+    ]

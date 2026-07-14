@@ -1,0 +1,6251 @@
+{
+  "limitations": [
+    "This is a public development treatment, not a sealed holdout result.",
+    "File-level labels do not score snippet usefulness, answer synthesis, or agent task completion.",
+    "The four stages diagnose one predeclared mechanism; they are not a model or pool-size sweep.",
+    "Segment samples are small and are reported as guardrails rather than tuning targets."
+  ],
+  "metadata": {
+    "command": [
+      "scripts/benchmark_two_stage.py",
+      "--tier",
+      "quick",
+      "--output",
+      "benchmarks/development-two-stage-2026-07-14.json"
+    ],
+    "embedding_model": "BAAI/bge-small-en-v1.5",
+    "engine_order_rotated": true,
+    "evaluation_split": "development",
+    "generated_at": "2026-07-14T09:39:08.819016+00:00",
+    "manifest_path": "benchmarks/corpora/v1/manifest.yaml",
+    "manifest_schema_version": 1,
+    "manifest_sha256": "0e84423ee5f116554af104908b0ba845cee25bc69bfecc38cb813e3deab1c701",
+    "max_document_chars": 4096,
+    "max_pool_size": 50,
+    "max_raw_fetch_size": 250,
+    "platform": "macOS-15.5-arm64-arm-64bit-Mach-O",
+    "pool_multiplier": 3,
+    "python": "3.14.3",
+    "query_cases": 30,
+    "random_seed": 1729,
+    "raw_fetch_multiplier": 5,
+    "repository_revisions": {
+      "attrs": "d544dd2dacb4cbd660891e323ad92751ba65b4e0",
+      "dry-configurable": "e5e025dfddb481485affe6bb7363d3cf37f153b5",
+      "fastroute": "1c961398bef1ff6ecd8b273bef651d7afe90312b",
+      "hono": "b2ae3a2204a48ce15a26448fd746d39745eb1837",
+      "pflag": "5fdac2d16c16d60605cb8baa887e8c5c38ef623f",
+      "swift-argument-parser": "e579882f95579e7d7eb8c8068a5925c65d361e91"
+    },
+    "reranking_model": "Xenova/ms-marco-MiniLM-L-6-v2",
+    "selection_allowed": true,
+    "tessera_revision": "c36c093883909945d0e5f2418e7664ffacfe8473",
+    "tier": "quick",
+    "top_k": 10
+  },
+  "queries": [
+    {
+      "candidate_budget": 10,
+      "case_id": "attrs-converter-pipeline",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find optional and piped value converters",
+      "engine": "current_page_content",
+      "expected_files": [
+        "src/attr/converters.py"
+      ],
+      "id": "attrs-converter-pipeline",
+      "language": "python",
+      "latency_ms": 751.78,
+      "max_document_chars": 4343,
+      "query": "normalize optional attribute values through a converter pipeline",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.6,
+        "known_files": 10,
+        "unique_files": 4
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "attrs",
+      "requested_retrieval_budget": 10,
+      "rerank_pool": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.6,
+        "known_files": 10,
+        "unique_files": 4
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/attr/converters.py",
+        "src/attr/_make.py",
+        "src/attr/validators.py",
+        "src/attr/__init__.py"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "attrs-converter-pipeline",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find optional and piped value converters",
+      "engine": "expanded_score_order_content",
+      "expected_files": [
+        "src/attr/converters.py"
+      ],
+      "id": "attrs-converter-pipeline",
+      "language": "python",
+      "latency_ms": 2030.68,
+      "max_document_chars": 9396,
+      "query": "normalize optional attribute values through a converter pipeline",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.866667,
+        "known_files": 150,
+        "unique_files": 20
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "attrs",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.733333,
+        "known_files": 30,
+        "unique_files": 8
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/attr/converters.py",
+        "src/attr/_funcs.py",
+        "src/attr/validators.py",
+        "src/attr/_next_gen.py",
+        "src/attr/_make.py"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "attrs-converter-pipeline",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find optional and piped value converters",
+      "engine": "expanded_coverage_first_content",
+      "expected_files": [
+        "src/attr/converters.py"
+      ],
+      "id": "attrs-converter-pipeline",
+      "language": "python",
+      "latency_ms": 2297.48,
+      "max_document_chars": 7801,
+      "query": "normalize optional attribute values through a converter pipeline",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.866667,
+        "known_files": 150,
+        "unique_files": 20
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "attrs",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.333333,
+        "known_files": 30,
+        "unique_files": 20
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/attr/converters.py",
+        "src/attr/_next_gen.py",
+        "src/attr/_make.py",
+        "src/attr/validators.py",
+        "src/attrs/__init__.py",
+        "src/attr/__init__.py"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "attrs-converter-pipeline",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find optional and piped value converters",
+      "engine": "two_stage_structured",
+      "expected_files": [
+        "src/attr/converters.py"
+      ],
+      "id": "attrs-converter-pipeline",
+      "language": "python",
+      "latency_ms": 2755.63,
+      "max_document_chars": 4096,
+      "query": "normalize optional attribute values through a converter pipeline",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.866667,
+        "known_files": 150,
+        "unique_files": 20
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "attrs",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.333333,
+        "known_files": 30,
+        "unique_files": 20
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/attr/converters.py",
+        "src/attr/_next_gen.py",
+        "src/attr/_make.py",
+        "src/attrs/__init__.py",
+        "src/attr/validators.py",
+        "src/attr/setters.py"
+      ]
+    },
+    {
+      "candidate_budget": 10,
+      "case_id": "attrs-deep-validators",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find deep iterable and optional validators",
+      "engine": "current_page_content",
+      "expected_files": [
+        "src/attr/validators.py"
+      ],
+      "id": "attrs-deep-validators",
+      "language": "python",
+      "latency_ms": 688.74,
+      "max_document_chars": 7076,
+      "query": "validate every item in a nested iterable and allow optional values",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.5,
+        "known_files": 10,
+        "unique_files": 5
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "attrs",
+      "requested_retrieval_budget": 10,
+      "rerank_pool": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.5,
+        "known_files": 10,
+        "unique_files": 5
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/attr/validators.py",
+        "src/attr/_next_gen.py",
+        "src/attr/setters.py",
+        "src/attr/__init__.py",
+        "src/attr/_make.py"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "attrs-deep-validators",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find deep iterable and optional validators",
+      "engine": "expanded_score_order_content",
+      "expected_files": [
+        "src/attr/validators.py"
+      ],
+      "id": "attrs-deep-validators",
+      "language": "python",
+      "latency_ms": 2692.58,
+      "max_document_chars": 7076,
+      "query": "validate every item in a nested iterable and allow optional values",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.866667,
+        "known_files": 150,
+        "unique_files": 20
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "attrs",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.766667,
+        "known_files": 30,
+        "unique_files": 7
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/attr/validators.py",
+        "src/attr/_next_gen.py",
+        "src/attr/_funcs.py"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "attrs-deep-validators",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find deep iterable and optional validators",
+      "engine": "expanded_coverage_first_content",
+      "expected_files": [
+        "src/attr/validators.py"
+      ],
+      "id": "attrs-deep-validators",
+      "language": "python",
+      "latency_ms": 2021.04,
+      "max_document_chars": 7076,
+      "query": "validate every item in a nested iterable and allow optional values",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.866667,
+        "known_files": 150,
+        "unique_files": 20
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "attrs",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.333333,
+        "known_files": 30,
+        "unique_files": 20
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/attr/validators.py",
+        "src/attr/converters.py",
+        "src/attr/_next_gen.py",
+        "src/attr/setters.py"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "attrs-deep-validators",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find deep iterable and optional validators",
+      "engine": "two_stage_structured",
+      "expected_files": [
+        "src/attr/validators.py"
+      ],
+      "id": "attrs-deep-validators",
+      "language": "python",
+      "latency_ms": 4028.84,
+      "max_document_chars": 4096,
+      "query": "validate every item in a nested iterable and allow optional values",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.866667,
+        "known_files": 150,
+        "unique_files": 20
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "attrs",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.333333,
+        "known_files": 30,
+        "unique_files": 20
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/attr/validators.py",
+        "src/attr/_next_gen.py",
+        "src/attr/setters.py",
+        "src/attr/converters.py",
+        "src/attrs/__init__.py"
+      ]
+    },
+    {
+      "candidate_budget": 10,
+      "case_id": "attrs-generated-init",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find generated initializer implementation",
+      "engine": "current_page_content",
+      "expected_files": [
+        "src/attr/_make.py"
+      ],
+      "id": "attrs-generated-init",
+      "language": "python",
+      "latency_ms": 590.96,
+      "max_document_chars": 20352,
+      "query": "generate init methods and attach them to decorated classes",
+      "rank": 3,
+      "raw_candidates": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.6,
+        "known_files": 10,
+        "unique_files": 4
+      },
+      "reciprocal_rank": 0.333333,
+      "repository": "attrs",
+      "requested_retrieval_budget": 10,
+      "rerank_pool": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.6,
+        "known_files": 10,
+        "unique_files": 4
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/attr/_next_gen.py",
+        "src/attr/_funcs.py",
+        "src/attr/_make.py",
+        "src/attr/_compat.py"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "attrs-generated-init",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find generated initializer implementation",
+      "engine": "expanded_score_order_content",
+      "expected_files": [
+        "src/attr/_make.py"
+      ],
+      "id": "attrs-generated-init",
+      "language": "python",
+      "latency_ms": 2207.72,
+      "max_document_chars": 20352,
+      "query": "generate init methods and attach them to decorated classes",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.866667,
+        "known_files": 150,
+        "unique_files": 20
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "attrs",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.766667,
+        "known_files": 30,
+        "unique_files": 7
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/attr/_make.py",
+        "src/attr/_next_gen.py",
+        "src/attr/_funcs.py",
+        "src/attr/_cmp.py"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "attrs-generated-init",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find generated initializer implementation",
+      "engine": "expanded_coverage_first_content",
+      "expected_files": [
+        "src/attr/_make.py"
+      ],
+      "id": "attrs-generated-init",
+      "language": "python",
+      "latency_ms": 2132.56,
+      "max_document_chars": 20352,
+      "query": "generate init methods and attach them to decorated classes",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.866667,
+        "known_files": 150,
+        "unique_files": 20
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "attrs",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.333333,
+        "known_files": 30,
+        "unique_files": 20
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/attr/_make.py",
+        "src/attr/_next_gen.py",
+        "src/attr/_funcs.py",
+        "src/attr/_cmp.py"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "attrs-generated-init",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find generated initializer implementation",
+      "engine": "two_stage_structured",
+      "expected_files": [
+        "src/attr/_make.py"
+      ],
+      "id": "attrs-generated-init",
+      "language": "python",
+      "latency_ms": 1835.43,
+      "max_document_chars": 4096,
+      "query": "generate init methods and attach them to decorated classes",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.866667,
+        "known_files": 150,
+        "unique_files": 20
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "attrs",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.333333,
+        "known_files": 30,
+        "unique_files": 20
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/attr/_make.py",
+        "src/attr/_funcs.py",
+        "src/attr/_next_gen.py",
+        "src/attr/_compat.py",
+        "src/attr/_cmp.py"
+      ]
+    },
+    {
+      "candidate_budget": 10,
+      "case_id": "attrs-dataclasses-comparison",
+      "category": "document",
+      "content_type": "document",
+      "description": "Find the attrs and dataclasses comparison",
+      "engine": "current_page_content",
+      "expected_files": [
+        "docs/why.md"
+      ],
+      "id": "attrs-dataclasses-comparison",
+      "language": "python",
+      "latency_ms": 668.95,
+      "max_document_chars": 3507,
+      "query": "why use attrs instead of standard library dataclasses",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.3,
+        "known_files": 10,
+        "unique_files": 7
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "attrs",
+      "requested_retrieval_budget": 10,
+      "rerank_pool": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.3,
+        "known_files": 10,
+        "unique_files": 7
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "docs/why.md",
+        "docs/names.md",
+        "docs/overview.md",
+        "docs/examples.md",
+        "docs/index.md",
+        "docs/api.rst",
+        "docs/api-attr.rst"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "attrs-dataclasses-comparison",
+      "category": "document",
+      "content_type": "document",
+      "description": "Find the attrs and dataclasses comparison",
+      "engine": "expanded_score_order_content",
+      "expected_files": [
+        "docs/why.md"
+      ],
+      "id": "attrs-dataclasses-comparison",
+      "language": "python",
+      "latency_ms": 1990.96,
+      "max_document_chars": 3533,
+      "query": "why use attrs instead of standard library dataclasses",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 83,
+        "duplicate_file_rate": 0.795181,
+        "known_files": 83,
+        "unique_files": 17
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "attrs",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.5,
+        "known_files": 30,
+        "unique_files": 15
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "docs/why.md",
+        "docs/names.md",
+        "docs/types.md",
+        "docs/how-does-it-work.md",
+        "docs/overview.md",
+        "docs/examples.md",
+        "docs/extending.md"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "attrs-dataclasses-comparison",
+      "category": "document",
+      "content_type": "document",
+      "description": "Find the attrs and dataclasses comparison",
+      "engine": "expanded_coverage_first_content",
+      "expected_files": [
+        "docs/why.md"
+      ],
+      "id": "attrs-dataclasses-comparison",
+      "language": "python",
+      "latency_ms": 7374.25,
+      "max_document_chars": 3533,
+      "query": "why use attrs instead of standard library dataclasses",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 83,
+        "duplicate_file_rate": 0.795181,
+        "known_files": 83,
+        "unique_files": 17
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "attrs",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.433333,
+        "known_files": 30,
+        "unique_files": 17
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "docs/why.md",
+        "docs/names.md",
+        "docs/types.md",
+        "docs/how-does-it-work.md",
+        "docs/overview.md",
+        "docs/examples.md",
+        "docs/extending.md"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "attrs-dataclasses-comparison",
+      "category": "document",
+      "content_type": "document",
+      "description": "Find the attrs and dataclasses comparison",
+      "engine": "two_stage_structured",
+      "expected_files": [
+        "docs/why.md"
+      ],
+      "id": "attrs-dataclasses-comparison",
+      "language": "python",
+      "latency_ms": 2105.44,
+      "max_document_chars": 3653,
+      "query": "why use attrs instead of standard library dataclasses",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 83,
+        "duplicate_file_rate": 0.795181,
+        "known_files": 83,
+        "unique_files": 17
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "attrs",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.433333,
+        "known_files": 30,
+        "unique_files": 17
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "docs/why.md",
+        "docs/names.md",
+        "docs/overview.md",
+        "docs/types.md",
+        "docs/how-does-it-work.md",
+        "docs/extending.md",
+        "docs/glossary.md"
+      ]
+    },
+    {
+      "candidate_budget": 10,
+      "case_id": "attrs-init-lifecycle",
+      "category": "cross",
+      "content_type": "mixed",
+      "description": "Find initialization lifecycle documentation or implementation",
+      "engine": "current_page_content",
+      "expected_files": [
+        "docs/init.md",
+        "src/attr/_make.py"
+      ],
+      "id": "attrs-init-lifecycle",
+      "language": "python",
+      "latency_ms": 1864.4,
+      "max_document_chars": 9764,
+      "query": "how generated initialization orders converters validators and post init hooks",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.4,
+        "known_files": 10,
+        "unique_files": 6
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "attrs",
+      "requested_retrieval_budget": 10,
+      "rerank_pool": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.4,
+        "known_files": 10,
+        "unique_files": 6
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "docs/init.md",
+        "src/attr/_make.py",
+        "docs/api.rst",
+        "docs/index.md",
+        "src/attr/validators.py",
+        "src/attr/setters.py"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "attrs-init-lifecycle",
+      "category": "cross",
+      "content_type": "mixed",
+      "description": "Find initialization lifecycle documentation or implementation",
+      "engine": "expanded_score_order_content",
+      "expected_files": [
+        "docs/init.md",
+        "src/attr/_make.py"
+      ],
+      "id": "attrs-init-lifecycle",
+      "language": "python",
+      "latency_ms": 7204.45,
+      "max_document_chars": 16826,
+      "query": "how generated initialization orders converters validators and post init hooks",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.793333,
+        "known_files": 150,
+        "unique_files": 31
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "attrs",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.6,
+        "known_files": 30,
+        "unique_files": 12
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "docs/init.md",
+        "src/attr/_next_gen.py",
+        "src/attr/_make.py",
+        "docs/examples.md",
+        "README.md",
+        "docs/api.rst"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "attrs-init-lifecycle",
+      "category": "cross",
+      "content_type": "mixed",
+      "description": "Find initialization lifecycle documentation or implementation",
+      "engine": "expanded_coverage_first_content",
+      "expected_files": [
+        "docs/init.md",
+        "src/attr/_make.py"
+      ],
+      "id": "attrs-init-lifecycle",
+      "language": "python",
+      "latency_ms": 12852.15,
+      "max_document_chars": 7076,
+      "query": "how generated initialization orders converters validators and post init hooks",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.793333,
+        "known_files": 150,
+        "unique_files": 31
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "attrs",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.0,
+        "known_files": 30,
+        "unique_files": 30
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "docs/init.md",
+        "src/attr/_next_gen.py",
+        "README.md",
+        "docs/api.rst",
+        "src/attr/_make.py",
+        "docs/how-does-it-work.md",
+        "docs/api-attr.rst",
+        "docs/extending.md",
+        "docs/index.md",
+        "docs/examples.md"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "attrs-init-lifecycle",
+      "category": "cross",
+      "content_type": "mixed",
+      "description": "Find initialization lifecycle documentation or implementation",
+      "engine": "two_stage_structured",
+      "expected_files": [
+        "docs/init.md",
+        "src/attr/_make.py"
+      ],
+      "id": "attrs-init-lifecycle",
+      "language": "python",
+      "latency_ms": 10646.48,
+      "max_document_chars": 4096,
+      "query": "how generated initialization orders converters validators and post init hooks",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.793333,
+        "known_files": 150,
+        "unique_files": 31
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "attrs",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.0,
+        "known_files": 30,
+        "unique_files": 30
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "docs/init.md",
+        "src/attr/_next_gen.py",
+        "README.md",
+        "docs/api.rst",
+        "docs/examples.md",
+        "src/attrs/__init__.py",
+        "docs/api-attr.rst",
+        "src/attr/_make.py",
+        "docs/extending.md",
+        "src/attr/__init__.py"
+      ]
+    },
+    {
+      "candidate_budget": 10,
+      "case_id": "hono-compose-middleware",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find middleware composition",
+      "engine": "current_page_content",
+      "expected_files": [
+        "src/compose.ts"
+      ],
+      "id": "hono-compose-middleware",
+      "language": "typescript",
+      "latency_ms": 5201.48,
+      "max_document_chars": 20131,
+      "query": "compose middleware into a request dispatch chain and call next",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.1,
+        "known_files": 10,
+        "unique_files": 9
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "hono",
+      "requested_retrieval_budget": 10,
+      "rerank_pool": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.1,
+        "known_files": 10,
+        "unique_files": 9
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/compose.ts",
+        "src/compose.test.ts",
+        "src/middleware/combine/index.test.ts",
+        "src/middleware/combine/index.ts",
+        "src/middleware/trailing-slash/index.ts",
+        "src/helper/dev/index.test.ts",
+        "src/middleware/serve-static/index.ts",
+        "src/request.test.ts",
+        "src/client/client.ts"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "hono-compose-middleware",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find middleware composition",
+      "engine": "expanded_score_order_content",
+      "expected_files": [
+        "src/compose.ts"
+      ],
+      "id": "hono-compose-middleware",
+      "language": "typescript",
+      "latency_ms": 20542.83,
+      "max_document_chars": 62576,
+      "query": "compose middleware into a request dispatch chain and call next",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.04,
+        "known_files": 150,
+        "unique_files": 144
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "hono",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.133333,
+        "known_files": 30,
+        "unique_files": 26
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/compose.ts",
+        "src/compose.test.ts",
+        "src/middleware/combine/index.test.ts",
+        "src/middleware/combine/index.ts",
+        "src/middleware/request-id/request-id.ts",
+        "src/middleware/trailing-slash/index.ts",
+        "src/helper/dev/index.test.ts",
+        "src/middleware/trailing-slash/index.test.ts",
+        "src/middleware/context-storage/index.ts"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "hono-compose-middleware",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find middleware composition",
+      "engine": "expanded_coverage_first_content",
+      "expected_files": [
+        "src/compose.ts"
+      ],
+      "id": "hono-compose-middleware",
+      "language": "typescript",
+      "latency_ms": 11352.37,
+      "max_document_chars": 62576,
+      "query": "compose middleware into a request dispatch chain and call next",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.04,
+        "known_files": 150,
+        "unique_files": 144
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "hono",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.0,
+        "known_files": 30,
+        "unique_files": 30
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/compose.ts",
+        "src/compose.test.ts",
+        "src/middleware/combine/index.test.ts",
+        "src/middleware/combine/index.ts",
+        "src/middleware/request-id/request-id.ts",
+        "src/middleware/trailing-slash/index.ts",
+        "src/helper/dev/index.test.ts",
+        "src/middleware/trailing-slash/index.test.ts",
+        "src/middleware/context-storage/index.ts",
+        "src/middleware/request-id/index.test.ts"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "hono-compose-middleware",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find middleware composition",
+      "engine": "two_stage_structured",
+      "expected_files": [
+        "src/compose.ts"
+      ],
+      "id": "hono-compose-middleware",
+      "language": "typescript",
+      "latency_ms": 11756.17,
+      "max_document_chars": 4096,
+      "query": "compose middleware into a request dispatch chain and call next",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.04,
+        "known_files": 150,
+        "unique_files": 144
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "hono",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.0,
+        "known_files": 30,
+        "unique_files": 30
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/compose.ts",
+        "src/middleware/combine/index.test.ts",
+        "src/middleware/request-id/request-id.ts",
+        "src/compose.test.ts",
+        "src/middleware/combine/index.ts",
+        "src/middleware/context-storage/index.ts",
+        "src/helper/dev/index.test.ts",
+        "src/middleware/request-id/index.test.ts",
+        "src/middleware/trailing-slash/index.test.ts",
+        "src/middleware/pretty-json/index.test.ts"
+      ]
+    },
+    {
+      "candidate_budget": 10,
+      "case_id": "hono-signed-cookies",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find signed cookie helpers",
+      "engine": "current_page_content",
+      "expected_files": [
+        "src/utils/cookie.ts",
+        "src/helper/cookie/index.ts"
+      ],
+      "id": "hono-signed-cookies",
+      "language": "typescript",
+      "latency_ms": 664.68,
+      "max_document_chars": 18499,
+      "query": "parse verify and serialize HMAC signed cookies",
+      "rank": 2,
+      "raw_candidates": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.1,
+        "known_files": 10,
+        "unique_files": 9
+      },
+      "reciprocal_rank": 0.5,
+      "repository": "hono",
+      "requested_retrieval_budget": 10,
+      "rerank_pool": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.1,
+        "known_files": 10,
+        "unique_files": 9
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/utils/cookie.test.ts",
+        "src/helper/cookie/index.ts",
+        "src/utils/cookie.ts",
+        "src/utils/jwt/jws.ts",
+        "src/middleware/jwt/jwt.ts",
+        "src/client/client.ts",
+        "src/helper/cookie/index.test.ts",
+        "src/middleware/language/language.ts",
+        "src/middleware/jwk/jwk.ts"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "hono-signed-cookies",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find signed cookie helpers",
+      "engine": "expanded_score_order_content",
+      "expected_files": [
+        "src/utils/cookie.ts",
+        "src/helper/cookie/index.ts"
+      ],
+      "id": "hono-signed-cookies",
+      "language": "typescript",
+      "latency_ms": 1836.55,
+      "max_document_chars": 57250,
+      "query": "parse verify and serialize HMAC signed cookies",
+      "rank": 2,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.08,
+        "known_files": 150,
+        "unique_files": 138
+      },
+      "reciprocal_rank": 0.5,
+      "repository": "hono",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.066667,
+        "known_files": 30,
+        "unique_files": 28
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/utils/cookie.test.ts",
+        "src/helper/cookie/index.ts",
+        "src/utils/cookie.ts",
+        "src/utils/jwt/jws.ts",
+        "src/middleware/jwt/jwt.ts",
+        "src/middleware/jwk/index.test.ts",
+        "src/client/client.ts",
+        "src/adapter/aws-lambda/handler.test.ts"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "hono-signed-cookies",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find signed cookie helpers",
+      "engine": "expanded_coverage_first_content",
+      "expected_files": [
+        "src/utils/cookie.ts",
+        "src/helper/cookie/index.ts"
+      ],
+      "id": "hono-signed-cookies",
+      "language": "typescript",
+      "latency_ms": 17732.25,
+      "max_document_chars": 57250,
+      "query": "parse verify and serialize HMAC signed cookies",
+      "rank": 2,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.08,
+        "known_files": 150,
+        "unique_files": 138
+      },
+      "reciprocal_rank": 0.5,
+      "repository": "hono",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.0,
+        "known_files": 30,
+        "unique_files": 30
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/utils/cookie.test.ts",
+        "src/helper/cookie/index.ts",
+        "src/utils/cookie.ts",
+        "src/utils/jwt/jws.ts",
+        "src/middleware/jwt/jwt.ts",
+        "src/middleware/jwk/index.test.ts",
+        "src/client/client.ts",
+        "src/adapter/aws-lambda/handler.test.ts",
+        "src/helper/cookie/index.test.ts",
+        "src/middleware/language/language.ts"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "hono-signed-cookies",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find signed cookie helpers",
+      "engine": "two_stage_structured",
+      "expected_files": [
+        "src/utils/cookie.ts",
+        "src/helper/cookie/index.ts"
+      ],
+      "id": "hono-signed-cookies",
+      "language": "typescript",
+      "latency_ms": 4871.21,
+      "max_document_chars": 4096,
+      "query": "parse verify and serialize HMAC signed cookies",
+      "rank": 4,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.08,
+        "known_files": 150,
+        "unique_files": 138
+      },
+      "reciprocal_rank": 0.25,
+      "repository": "hono",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.0,
+        "known_files": 30,
+        "unique_files": 30
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/utils/cookie.test.ts",
+        "src/utils/jwt/jws.ts",
+        "src/middleware/jwt/jwt.ts",
+        "src/utils/cookie.ts",
+        "src/helper/cookie/index.ts",
+        "src/helper/cookie/index.test.ts",
+        "src/middleware/jwk/index.test.ts",
+        "src/client/client.ts",
+        "src/middleware/language/language.ts",
+        "src/validator/validator.ts"
+      ]
+    },
+    {
+      "candidate_budget": 10,
+      "case_id": "hono-basic-auth",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find basic authentication middleware",
+      "engine": "current_page_content",
+      "expected_files": [
+        "src/middleware/basic-auth/index.ts"
+      ],
+      "id": "hono-basic-auth",
+      "language": "typescript",
+      "latency_ms": 674.84,
+      "max_document_chars": 57250,
+      "query": "HTTP basic authentication middleware validates username and password",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.0,
+        "known_files": 10,
+        "unique_files": 10
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "hono",
+      "requested_retrieval_budget": 10,
+      "rerank_pool": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.0,
+        "known_files": 10,
+        "unique_files": 10
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/middleware/basic-auth/index.ts",
+        "src/middleware/basic-auth/index.test.ts",
+        "src/utils/basic-auth.test.ts",
+        "src/middleware/jwk/jwk.ts",
+        "src/middleware/jwt/jwt.ts",
+        "src/middleware/bearer-auth/index.ts",
+        "src/middleware/request-id/index.test.ts",
+        "src/client/client.test.ts",
+        "src/utils/basic-auth.ts",
+        "src/utils/headers.ts"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "hono-basic-auth",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find basic authentication middleware",
+      "engine": "expanded_score_order_content",
+      "expected_files": [
+        "src/middleware/basic-auth/index.ts"
+      ],
+      "id": "hono-basic-auth",
+      "language": "typescript",
+      "latency_ms": 2054.75,
+      "max_document_chars": 57250,
+      "query": "HTTP basic authentication middleware validates username and password",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.06,
+        "known_files": 150,
+        "unique_files": 141
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "hono",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.066667,
+        "known_files": 30,
+        "unique_files": 28
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/middleware/basic-auth/index.ts",
+        "src/middleware/basic-auth/index.test.ts",
+        "src/utils/basic-auth.test.ts",
+        "src/middleware/jwk/jwk.ts",
+        "src/middleware/jwt/jwt.ts",
+        "src/middleware/csrf/index.ts",
+        "src/middleware/bearer-auth/index.ts",
+        "src/middleware/request-id/request-id.ts",
+        "src/adapter/aws-lambda/conninfo.test.ts",
+        "src/middleware/request-id/index.test.ts"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "hono-basic-auth",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find basic authentication middleware",
+      "engine": "expanded_coverage_first_content",
+      "expected_files": [
+        "src/middleware/basic-auth/index.ts"
+      ],
+      "id": "hono-basic-auth",
+      "language": "typescript",
+      "latency_ms": 1768.48,
+      "max_document_chars": 57250,
+      "query": "HTTP basic authentication middleware validates username and password",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.06,
+        "known_files": 150,
+        "unique_files": 141
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "hono",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.0,
+        "known_files": 30,
+        "unique_files": 30
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/middleware/basic-auth/index.ts",
+        "src/middleware/basic-auth/index.test.ts",
+        "src/utils/basic-auth.test.ts",
+        "src/middleware/jwk/jwk.ts",
+        "src/middleware/jwt/jwt.ts",
+        "src/middleware/csrf/index.ts",
+        "src/middleware/bearer-auth/index.ts",
+        "src/middleware/request-id/request-id.ts",
+        "src/adapter/aws-lambda/conninfo.test.ts",
+        "src/middleware/request-id/index.test.ts"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "hono-basic-auth",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find basic authentication middleware",
+      "engine": "two_stage_structured",
+      "expected_files": [
+        "src/middleware/basic-auth/index.ts"
+      ],
+      "id": "hono-basic-auth",
+      "language": "typescript",
+      "latency_ms": 2041.39,
+      "max_document_chars": 4096,
+      "query": "HTTP basic authentication middleware validates username and password",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.06,
+        "known_files": 150,
+        "unique_files": 141
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "hono",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.0,
+        "known_files": 30,
+        "unique_files": 30
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/middleware/basic-auth/index.ts",
+        "src/middleware/basic-auth/index.test.ts",
+        "src/utils/basic-auth.test.ts",
+        "src/utils/basic-auth.ts",
+        "src/middleware/jwt/jwt.ts",
+        "src/middleware/request-id/request-id.ts",
+        "src/middleware/bearer-auth/index.test.ts",
+        "src/middleware/jwt/index.test.ts",
+        "src/validator/validator.ts",
+        "src/adapter/aws-lambda/conninfo.test.ts"
+      ]
+    },
+    {
+      "candidate_budget": 1,
+      "case_id": "hono-migration",
+      "category": "document",
+      "content_type": "document",
+      "description": "Find the migration guide",
+      "engine": "current_page_content",
+      "expected_files": [
+        "docs/MIGRATION.md"
+      ],
+      "id": "hono-migration",
+      "language": "typescript",
+      "latency_ms": 87.8,
+      "max_document_chars": 3330,
+      "query": "migrate an application across breaking Hono releases",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 1,
+        "duplicate_file_rate": 0.0,
+        "known_files": 1,
+        "unique_files": 1
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "hono",
+      "requested_retrieval_budget": 10,
+      "rerank_pool": {
+        "candidates": 1,
+        "duplicate_file_rate": 0.0,
+        "known_files": 1,
+        "unique_files": 1
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "docs/MIGRATION.md"
+      ]
+    },
+    {
+      "candidate_budget": 10,
+      "case_id": "hono-migration",
+      "category": "document",
+      "content_type": "document",
+      "description": "Find the migration guide",
+      "engine": "expanded_score_order_content",
+      "expected_files": [
+        "docs/MIGRATION.md"
+      ],
+      "id": "hono-migration",
+      "language": "typescript",
+      "latency_ms": 736.51,
+      "max_document_chars": 3530,
+      "query": "migrate an application across breaking Hono releases",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.5,
+        "known_files": 10,
+        "unique_files": 5
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "hono",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.5,
+        "known_files": 10,
+        "unique_files": 5
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "docs/MIGRATION.md",
+        "docs/CONTRIBUTING.md",
+        "README.md",
+        "src/middleware/jwk/keys.test.json",
+        "docs/CODE_OF_CONDUCT.md"
+      ]
+    },
+    {
+      "candidate_budget": 10,
+      "case_id": "hono-migration",
+      "category": "document",
+      "content_type": "document",
+      "description": "Find the migration guide",
+      "engine": "expanded_coverage_first_content",
+      "expected_files": [
+        "docs/MIGRATION.md"
+      ],
+      "id": "hono-migration",
+      "language": "typescript",
+      "latency_ms": 729.55,
+      "max_document_chars": 3530,
+      "query": "migrate an application across breaking Hono releases",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.5,
+        "known_files": 10,
+        "unique_files": 5
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "hono",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.5,
+        "known_files": 10,
+        "unique_files": 5
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "docs/MIGRATION.md",
+        "docs/CONTRIBUTING.md",
+        "README.md",
+        "src/middleware/jwk/keys.test.json",
+        "docs/CODE_OF_CONDUCT.md"
+      ]
+    },
+    {
+      "candidate_budget": 10,
+      "case_id": "hono-migration",
+      "category": "document",
+      "content_type": "document",
+      "description": "Find the migration guide",
+      "engine": "two_stage_structured",
+      "expected_files": [
+        "docs/MIGRATION.md"
+      ],
+      "id": "hono-migration",
+      "language": "typescript",
+      "latency_ms": 1131.21,
+      "max_document_chars": 3673,
+      "query": "migrate an application across breaking Hono releases",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.5,
+        "known_files": 10,
+        "unique_files": 5
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "hono",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.5,
+        "known_files": 10,
+        "unique_files": 5
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "docs/MIGRATION.md",
+        "docs/CONTRIBUTING.md",
+        "README.md",
+        "src/middleware/jwk/keys.test.json",
+        "docs/CODE_OF_CONDUCT.md"
+      ]
+    },
+    {
+      "candidate_budget": 10,
+      "case_id": "hono-server-sent-events",
+      "category": "cross",
+      "content_type": "mixed",
+      "description": "Find the server-sent event streaming API",
+      "engine": "current_page_content",
+      "expected_files": [
+        "src/helper/streaming/sse.ts",
+        "src/helper/streaming/index.ts"
+      ],
+      "id": "hono-server-sent-events",
+      "language": "typescript",
+      "latency_ms": 727.71,
+      "max_document_chars": 30906,
+      "query": "stream server sent events with event data ids and retry intervals",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.0,
+        "known_files": 10,
+        "unique_files": 10
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "hono",
+      "requested_retrieval_budget": 10,
+      "rerank_pool": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.0,
+        "known_files": 10,
+        "unique_files": 10
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/helper/streaming/sse.ts",
+        "src/helper/streaming/sse.test.tsx",
+        "src/helper/streaming/stream.test.ts",
+        "src/jsx/streaming.test.tsx",
+        "src/helper/streaming/stream.ts",
+        "src/utils/stream.test.ts",
+        "src/utils/stream.ts",
+        "src/adapter/service-worker/types.ts",
+        "src/helper/streaming/text.test.ts",
+        "src/client/utils.ts"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "hono-server-sent-events",
+      "category": "cross",
+      "content_type": "mixed",
+      "description": "Find the server-sent event streaming API",
+      "engine": "expanded_score_order_content",
+      "expected_files": [
+        "src/helper/streaming/sse.ts",
+        "src/helper/streaming/index.ts"
+      ],
+      "id": "hono-server-sent-events",
+      "language": "typescript",
+      "latency_ms": 12607.98,
+      "max_document_chars": 46036,
+      "query": "stream server sent events with event data ids and retry intervals",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.06,
+        "known_files": 150,
+        "unique_files": 141
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "hono",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.066667,
+        "known_files": 30,
+        "unique_files": 28
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/helper/streaming/sse.ts",
+        "src/helper/streaming/sse.test.tsx",
+        "src/adapter/bun/websocket.test.ts",
+        "src/helper/websocket/index.ts",
+        "src/adapter/cloudflare-pages/handler.test.ts",
+        "src/hono-base.ts",
+        "src/adapter/aws-lambda/handler.test.ts",
+        "src/helper/websocket/index.test.ts",
+        "src/helper/streaming/stream.test.ts",
+        "src/jsx/streaming.test.tsx"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "hono-server-sent-events",
+      "category": "cross",
+      "content_type": "mixed",
+      "description": "Find the server-sent event streaming API",
+      "engine": "expanded_coverage_first_content",
+      "expected_files": [
+        "src/helper/streaming/sse.ts",
+        "src/helper/streaming/index.ts"
+      ],
+      "id": "hono-server-sent-events",
+      "language": "typescript",
+      "latency_ms": 2537.63,
+      "max_document_chars": 46036,
+      "query": "stream server sent events with event data ids and retry intervals",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.06,
+        "known_files": 150,
+        "unique_files": 141
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "hono",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.0,
+        "known_files": 30,
+        "unique_files": 30
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/helper/streaming/sse.ts",
+        "src/helper/streaming/sse.test.tsx",
+        "src/adapter/bun/websocket.test.ts",
+        "src/helper/websocket/index.ts",
+        "src/adapter/deno/websocket.ts",
+        "src/adapter/cloudflare-pages/handler.test.ts",
+        "src/hono-base.ts",
+        "src/adapter/aws-lambda/handler.test.ts",
+        "src/helper/websocket/index.test.ts",
+        "src/helper/streaming/stream.test.ts"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "hono-server-sent-events",
+      "category": "cross",
+      "content_type": "mixed",
+      "description": "Find the server-sent event streaming API",
+      "engine": "two_stage_structured",
+      "expected_files": [
+        "src/helper/streaming/sse.ts",
+        "src/helper/streaming/index.ts"
+      ],
+      "id": "hono-server-sent-events",
+      "language": "typescript",
+      "latency_ms": 1931.18,
+      "max_document_chars": 4096,
+      "query": "stream server sent events with event data ids and retry intervals",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.06,
+        "known_files": 150,
+        "unique_files": 141
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "hono",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.0,
+        "known_files": 30,
+        "unique_files": 30
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/helper/streaming/sse.ts",
+        "src/helper/streaming/sse.test.tsx",
+        "src/helper/websocket/index.test.ts",
+        "src/helper/websocket/index.ts",
+        "src/adapter/bun/websocket.test.ts",
+        "src/adapter/deno/websocket.ts",
+        "src/adapter/cloudflare-pages/handler.test.ts",
+        "src/hono-base.ts",
+        "src/helper/streaming/stream.test.ts",
+        "src/helper/streaming/stream.ts"
+      ]
+    },
+    {
+      "candidate_budget": 10,
+      "case_id": "fastroute-route-parser",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find standard route parsing",
+      "engine": "current_page_content",
+      "expected_files": [
+        "src/RouteParser/Std.php"
+      ],
+      "id": "fastroute-route-parser",
+      "language": "php",
+      "latency_ms": 543.44,
+      "max_document_chars": 3724,
+      "query": "parse route placeholders regular expressions and optional trailing segments",
+      "rank": 2,
+      "raw_candidates": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.0,
+        "known_files": 10,
+        "unique_files": 10
+      },
+      "reciprocal_rank": 0.5,
+      "repository": "fastroute",
+      "requested_retrieval_budget": 10,
+      "rerank_pool": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.0,
+        "known_files": 10,
+        "unique_files": 10
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/RouteParser.php",
+        "src/RouteParser/Std.php",
+        "src/Route.php",
+        "src/DataGenerator/RegexBasedAbstract.php",
+        "src/Dispatcher/GroupPosBased.php",
+        "src/Dispatcher/MarkBased.php",
+        "src/DataGenerator/GroupPosBased.php",
+        "src/DataGenerator/CharCountBased.php",
+        "src/Dispatcher/CharCountBased.php",
+        "src/DataGenerator/MarkBased.php"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "fastroute-route-parser",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find standard route parsing",
+      "engine": "expanded_score_order_content",
+      "expected_files": [
+        "src/RouteParser/Std.php"
+      ],
+      "id": "fastroute-route-parser",
+      "language": "php",
+      "latency_ms": 1892.87,
+      "max_document_chars": 3819,
+      "query": "parse route placeholders regular expressions and optional trailing segments",
+      "rank": 2,
+      "raw_candidates": {
+        "candidates": 61,
+        "duplicate_file_rate": 0.491803,
+        "known_files": 61,
+        "unique_files": 31
+      },
+      "reciprocal_rank": 0.5,
+      "repository": "fastroute",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.333333,
+        "known_files": 30,
+        "unique_files": 20
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/RouteParser.php",
+        "src/RouteParser/Std.php",
+        "src/RouteCollector.php",
+        "src/GenerateUri/FromProcessedConfiguration.php",
+        "src/ConfigureRoutes.php",
+        "src/GenerateUri.php",
+        "src/Route.php"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "fastroute-route-parser",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find standard route parsing",
+      "engine": "expanded_coverage_first_content",
+      "expected_files": [
+        "src/RouteParser/Std.php"
+      ],
+      "id": "fastroute-route-parser",
+      "language": "php",
+      "latency_ms": 2403.51,
+      "max_document_chars": 3819,
+      "query": "parse route placeholders regular expressions and optional trailing segments",
+      "rank": 2,
+      "raw_candidates": {
+        "candidates": 61,
+        "duplicate_file_rate": 0.491803,
+        "known_files": 61,
+        "unique_files": 31
+      },
+      "reciprocal_rank": 0.5,
+      "repository": "fastroute",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.0,
+        "known_files": 30,
+        "unique_files": 30
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/RouteParser.php",
+        "src/RouteParser/Std.php",
+        "src/RouteCollector.php",
+        "src/ConfigureRoutes.php",
+        "src/BadRouteException.php",
+        "src/GenerateUri.php",
+        "src/Route.php",
+        "src/GenerateUri/FromProcessedConfiguration.php",
+        "src/functions.php",
+        "src/DataGenerator.php"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "fastroute-route-parser",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find standard route parsing",
+      "engine": "two_stage_structured",
+      "expected_files": [
+        "src/RouteParser/Std.php"
+      ],
+      "id": "fastroute-route-parser",
+      "language": "php",
+      "latency_ms": 1713.39,
+      "max_document_chars": 4096,
+      "query": "parse route placeholders regular expressions and optional trailing segments",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 61,
+        "duplicate_file_rate": 0.491803,
+        "known_files": 61,
+        "unique_files": 31
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "fastroute",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.0,
+        "known_files": 30,
+        "unique_files": 30
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/RouteParser/Std.php",
+        "src/RouteParser.php",
+        "src/RouteCollector.php",
+        "src/BadRouteException.php",
+        "src/Route.php",
+        "src/ConfigureRoutes.php",
+        "src/GenerateUri.php",
+        "src/GenerateUri/FromProcessedConfiguration.php",
+        "src/GenerateUri/UriCouldNotBeGenerated.php",
+        "src/functions.php"
+      ]
+    },
+    {
+      "candidate_budget": 10,
+      "case_id": "fastroute-method-not-allowed",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find method-not-allowed dispatch results",
+      "engine": "current_page_content",
+      "expected_files": [
+        "src/Dispatcher/Result/MethodNotAllowed.php"
+      ],
+      "id": "fastroute-method-not-allowed",
+      "language": "php",
+      "latency_ms": 633.03,
+      "max_document_chars": 3401,
+      "query": "represent a dispatch result when the path matches but HTTP method does not",
+      "rank": null,
+      "raw_candidates": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.3,
+        "known_files": 10,
+        "unique_files": 7
+      },
+      "reciprocal_rank": 0.0,
+      "repository": "fastroute",
+      "requested_retrieval_budget": 10,
+      "rerank_pool": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.3,
+        "known_files": 10,
+        "unique_files": 7
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/Dispatcher.php",
+        "src/Dispatcher/RegexBasedAbstract.php",
+        "src/Dispatcher/MarkBased.php",
+        "src/Dispatcher/CharCountBased.php",
+        "src/Dispatcher/Result/NotMatched.php",
+        "src/Dispatcher/Result/Matched.php",
+        "src/Route.php"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "fastroute-method-not-allowed",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find method-not-allowed dispatch results",
+      "engine": "expanded_score_order_content",
+      "expected_files": [
+        "src/Dispatcher/Result/MethodNotAllowed.php"
+      ],
+      "id": "fastroute-method-not-allowed",
+      "language": "php",
+      "latency_ms": 1835.24,
+      "max_document_chars": 3819,
+      "query": "represent a dispatch result when the path matches but HTTP method does not",
+      "rank": null,
+      "raw_candidates": {
+        "candidates": 61,
+        "duplicate_file_rate": 0.491803,
+        "known_files": 61,
+        "unique_files": 31
+      },
+      "reciprocal_rank": 0.0,
+      "repository": "fastroute",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.3,
+        "known_files": 30,
+        "unique_files": 21
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/Dispatcher.php",
+        "src/Dispatcher/RegexBasedAbstract.php",
+        "src/Dispatcher/MarkBased.php",
+        "src/Dispatcher/GroupCountBased.php",
+        "src/Dispatcher/GroupPosBased.php",
+        "src/RouteParser/Std.php",
+        "src/Dispatcher/CharCountBased.php"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "fastroute-method-not-allowed",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find method-not-allowed dispatch results",
+      "engine": "expanded_coverage_first_content",
+      "expected_files": [
+        "src/Dispatcher/Result/MethodNotAllowed.php"
+      ],
+      "id": "fastroute-method-not-allowed",
+      "language": "php",
+      "latency_ms": 1996.21,
+      "max_document_chars": 5337,
+      "query": "represent a dispatch result when the path matches but HTTP method does not",
+      "rank": 8,
+      "raw_candidates": {
+        "candidates": 61,
+        "duplicate_file_rate": 0.491803,
+        "known_files": 61,
+        "unique_files": 31
+      },
+      "reciprocal_rank": 0.125,
+      "repository": "fastroute",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.0,
+        "known_files": 30,
+        "unique_files": 30
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/Dispatcher.php",
+        "src/Dispatcher/RegexBasedAbstract.php",
+        "src/Dispatcher/MarkBased.php",
+        "src/Dispatcher/GroupCountBased.php",
+        "src/RouteParser/Std.php",
+        "src/Dispatcher/CharCountBased.php",
+        "src/Dispatcher/GroupPosBased.php",
+        "src/Dispatcher/Result/MethodNotAllowed.php",
+        "src/Dispatcher/Result/NotMatched.php",
+        "src/Dispatcher/Result/Matched.php"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "fastroute-method-not-allowed",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find method-not-allowed dispatch results",
+      "engine": "two_stage_structured",
+      "expected_files": [
+        "src/Dispatcher/Result/MethodNotAllowed.php"
+      ],
+      "id": "fastroute-method-not-allowed",
+      "language": "php",
+      "latency_ms": 1718.39,
+      "max_document_chars": 4096,
+      "query": "represent a dispatch result when the path matches but HTTP method does not",
+      "rank": 7,
+      "raw_candidates": {
+        "candidates": 61,
+        "duplicate_file_rate": 0.491803,
+        "known_files": 61,
+        "unique_files": 31
+      },
+      "reciprocal_rank": 0.142857,
+      "repository": "fastroute",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.0,
+        "known_files": 30,
+        "unique_files": 30
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/Dispatcher/RegexBasedAbstract.php",
+        "src/Dispatcher.php",
+        "src/Dispatcher/Result/Matched.php",
+        "src/Dispatcher/MarkBased.php",
+        "src/Dispatcher/CharCountBased.php",
+        "src/Dispatcher/GroupCountBased.php",
+        "src/Dispatcher/Result/MethodNotAllowed.php",
+        "src/Dispatcher/GroupPosBased.php",
+        "src/Dispatcher/Result/NotMatched.php",
+        "src/Route.php"
+      ]
+    },
+    {
+      "candidate_budget": 10,
+      "case_id": "fastroute-file-cache",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find the filesystem route cache",
+      "engine": "current_page_content",
+      "expected_files": [
+        "src/Cache/FileCache.php"
+      ],
+      "id": "fastroute-file-cache",
+      "language": "php",
+      "latency_ms": 636.63,
+      "max_document_chars": 5337,
+      "query": "persist generated route collector data in a filesystem cache",
+      "rank": 2,
+      "raw_candidates": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.1,
+        "known_files": 10,
+        "unique_files": 9
+      },
+      "reciprocal_rank": 0.5,
+      "repository": "fastroute",
+      "requested_retrieval_budget": 10,
+      "rerank_pool": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.1,
+        "known_files": 10,
+        "unique_files": 9
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/FastRoute.php",
+        "src/Cache/FileCache.php",
+        "src/functions.php",
+        "src/GenerateUri/FromProcessedConfiguration.php",
+        "src/DataGenerator/RegexBasedAbstract.php",
+        "src/RouteCollector.php",
+        "src/Cache/Psr16Cache.php",
+        "src/Dispatcher/RegexBasedAbstract.php",
+        "src/Cache.php"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "fastroute-file-cache",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find the filesystem route cache",
+      "engine": "expanded_score_order_content",
+      "expected_files": [
+        "src/Cache/FileCache.php"
+      ],
+      "id": "fastroute-file-cache",
+      "language": "php",
+      "latency_ms": 2047.08,
+      "max_document_chars": 5337,
+      "query": "persist generated route collector data in a filesystem cache",
+      "rank": 2,
+      "raw_candidates": {
+        "candidates": 61,
+        "duplicate_file_rate": 0.491803,
+        "known_files": 61,
+        "unique_files": 31
+      },
+      "reciprocal_rank": 0.5,
+      "repository": "fastroute",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.233333,
+        "known_files": 30,
+        "unique_files": 23
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/FastRoute.php",
+        "src/Cache/FileCache.php",
+        "src/functions.php",
+        "src/GenerateUri/FromProcessedConfiguration.php",
+        "src/DataGenerator.php",
+        "src/DataGenerator/RegexBasedAbstract.php",
+        "src/RouteParser/Std.php",
+        "src/RouteCollector.php",
+        "src/RouteParser.php"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "fastroute-file-cache",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find the filesystem route cache",
+      "engine": "expanded_coverage_first_content",
+      "expected_files": [
+        "src/Cache/FileCache.php"
+      ],
+      "id": "fastroute-file-cache",
+      "language": "php",
+      "latency_ms": 2136.55,
+      "max_document_chars": 5337,
+      "query": "persist generated route collector data in a filesystem cache",
+      "rank": 2,
+      "raw_candidates": {
+        "candidates": 61,
+        "duplicate_file_rate": 0.491803,
+        "known_files": 61,
+        "unique_files": 31
+      },
+      "reciprocal_rank": 0.5,
+      "repository": "fastroute",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.0,
+        "known_files": 30,
+        "unique_files": 30
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/FastRoute.php",
+        "src/Cache/FileCache.php",
+        "src/functions.php",
+        "src/GenerateUri/FromProcessedConfiguration.php",
+        "src/DataGenerator.php",
+        "src/DataGenerator/RegexBasedAbstract.php",
+        "src/RouteParser/Std.php",
+        "src/GenerateUri.php",
+        "src/RouteCollector.php",
+        "src/RouteParser.php"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "fastroute-file-cache",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find the filesystem route cache",
+      "engine": "two_stage_structured",
+      "expected_files": [
+        "src/Cache/FileCache.php"
+      ],
+      "id": "fastroute-file-cache",
+      "language": "php",
+      "latency_ms": 1984.5,
+      "max_document_chars": 4096,
+      "query": "persist generated route collector data in a filesystem cache",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 61,
+        "duplicate_file_rate": 0.491803,
+        "known_files": 61,
+        "unique_files": 31
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "fastroute",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.0,
+        "known_files": 30,
+        "unique_files": 30
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/Cache/FileCache.php",
+        "src/functions.php",
+        "src/FastRoute.php",
+        "src/DataGenerator/RegexBasedAbstract.php",
+        "src/GenerateUri/UriCouldNotBeGenerated.php",
+        "src/GenerateUri/FromProcessedConfiguration.php",
+        "src/GenerateUri.php",
+        "src/RouteParser/Std.php",
+        "src/Cache/Psr16Cache.php",
+        "src/DataGenerator.php"
+      ]
+    },
+    {
+      "candidate_budget": 3,
+      "case_id": "fastroute-route-groups",
+      "category": "document",
+      "content_type": "document",
+      "description": "Find route group documentation",
+      "engine": "current_page_content",
+      "expected_files": [
+        "README.md"
+      ],
+      "id": "fastroute-route-groups",
+      "language": "php",
+      "latency_ms": 190.02,
+      "max_document_chars": 3553,
+      "query": "define route groups with a shared path prefix",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 3,
+        "duplicate_file_rate": 0.666667,
+        "known_files": 3,
+        "unique_files": 1
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "fastroute",
+      "requested_retrieval_budget": 10,
+      "rerank_pool": {
+        "candidates": 3,
+        "duplicate_file_rate": 0.666667,
+        "known_files": 3,
+        "unique_files": 1
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "README.md"
+      ]
+    },
+    {
+      "candidate_budget": 4,
+      "case_id": "fastroute-route-groups",
+      "category": "document",
+      "content_type": "document",
+      "description": "Find route group documentation",
+      "engine": "expanded_score_order_content",
+      "expected_files": [
+        "README.md"
+      ],
+      "id": "fastroute-route-groups",
+      "language": "php",
+      "latency_ms": 277.27,
+      "max_document_chars": 3553,
+      "query": "define route groups with a shared path prefix",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 4,
+        "duplicate_file_rate": 0.75,
+        "known_files": 4,
+        "unique_files": 1
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "fastroute",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 4,
+        "duplicate_file_rate": 0.75,
+        "known_files": 4,
+        "unique_files": 1
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "README.md"
+      ]
+    },
+    {
+      "candidate_budget": 4,
+      "case_id": "fastroute-route-groups",
+      "category": "document",
+      "content_type": "document",
+      "description": "Find route group documentation",
+      "engine": "expanded_coverage_first_content",
+      "expected_files": [
+        "README.md"
+      ],
+      "id": "fastroute-route-groups",
+      "language": "php",
+      "latency_ms": 301.3,
+      "max_document_chars": 3553,
+      "query": "define route groups with a shared path prefix",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 4,
+        "duplicate_file_rate": 0.75,
+        "known_files": 4,
+        "unique_files": 1
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "fastroute",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 4,
+        "duplicate_file_rate": 0.75,
+        "known_files": 4,
+        "unique_files": 1
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "README.md"
+      ]
+    },
+    {
+      "candidate_budget": 4,
+      "case_id": "fastroute-route-groups",
+      "category": "document",
+      "content_type": "document",
+      "description": "Find route group documentation",
+      "engine": "two_stage_structured",
+      "expected_files": [
+        "README.md"
+      ],
+      "id": "fastroute-route-groups",
+      "language": "php",
+      "latency_ms": 229.48,
+      "max_document_chars": 3664,
+      "query": "define route groups with a shared path prefix",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 4,
+        "duplicate_file_rate": 0.75,
+        "known_files": 4,
+        "unique_files": 1
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "fastroute",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 4,
+        "duplicate_file_rate": 0.75,
+        "known_files": 4,
+        "unique_files": 1
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "README.md"
+      ]
+    },
+    {
+      "candidate_budget": 10,
+      "case_id": "fastroute-uri-generation",
+      "category": "cross",
+      "content_type": "mixed",
+      "description": "Find URI generation usage or implementation",
+      "engine": "current_page_content",
+      "expected_files": [
+        "README.md",
+        "src/GenerateUri/FromProcessedConfiguration.php"
+      ],
+      "id": "fastroute-uri-generation",
+      "language": "php",
+      "latency_ms": 690.94,
+      "max_document_chars": 3553,
+      "query": "generate a URI from a named route and placeholder values",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.1,
+        "known_files": 10,
+        "unique_files": 9
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "fastroute",
+      "requested_retrieval_budget": 10,
+      "rerank_pool": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.1,
+        "known_files": 10,
+        "unique_files": 9
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "README.md",
+        "src/GenerateUri/FromProcessedConfiguration.php",
+        "src/GenerateUri.php",
+        "src/GenerateUri/UriCouldNotBeGenerated.php",
+        "src/Dispatcher/CharCountBased.php",
+        "src/Dispatcher/MarkBased.php",
+        "src/Dispatcher/RegexBasedAbstract.php",
+        "src/Route.php",
+        "src/DataGenerator/MarkBased.php"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "fastroute-uri-generation",
+      "category": "cross",
+      "content_type": "mixed",
+      "description": "Find URI generation usage or implementation",
+      "engine": "expanded_score_order_content",
+      "expected_files": [
+        "README.md",
+        "src/GenerateUri/FromProcessedConfiguration.php"
+      ],
+      "id": "fastroute-uri-generation",
+      "language": "php",
+      "latency_ms": 2309.05,
+      "max_document_chars": 3819,
+      "query": "generate a URI from a named route and placeholder values",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 65,
+        "duplicate_file_rate": 0.507692,
+        "known_files": 65,
+        "unique_files": 32
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "fastroute",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.3,
+        "known_files": 30,
+        "unique_files": 21
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "README.md",
+        "src/GenerateUri/FromProcessedConfiguration.php",
+        "src/RouteParser.php",
+        "src/GenerateUri.php",
+        "src/GenerateUri/UriCouldNotBeGenerated.php",
+        "src/RouteCollector.php",
+        "src/ConfigureRoutes.php",
+        "src/RouteParser/Std.php"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "fastroute-uri-generation",
+      "category": "cross",
+      "content_type": "mixed",
+      "description": "Find URI generation usage or implementation",
+      "engine": "expanded_coverage_first_content",
+      "expected_files": [
+        "README.md",
+        "src/GenerateUri/FromProcessedConfiguration.php"
+      ],
+      "id": "fastroute-uri-generation",
+      "language": "php",
+      "latency_ms": 1840.82,
+      "max_document_chars": 3819,
+      "query": "generate a URI from a named route and placeholder values",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 65,
+        "duplicate_file_rate": 0.507692,
+        "known_files": 65,
+        "unique_files": 32
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "fastroute",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.0,
+        "known_files": 30,
+        "unique_files": 30
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "README.md",
+        "src/GenerateUri/FromProcessedConfiguration.php",
+        "src/RouteParser.php",
+        "src/GenerateUri.php",
+        "src/GenerateUri/UriCouldNotBeGenerated.php",
+        "src/RouteCollector.php",
+        "src/BadRouteException.php",
+        "src/ConfigureRoutes.php",
+        "src/Dispatcher/GroupCountBased.php",
+        "src/Dispatcher/CharCountBased.php"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "fastroute-uri-generation",
+      "category": "cross",
+      "content_type": "mixed",
+      "description": "Find URI generation usage or implementation",
+      "engine": "two_stage_structured",
+      "expected_files": [
+        "README.md",
+        "src/GenerateUri/FromProcessedConfiguration.php"
+      ],
+      "id": "fastroute-uri-generation",
+      "language": "php",
+      "latency_ms": 2145.4,
+      "max_document_chars": 4096,
+      "query": "generate a URI from a named route and placeholder values",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 65,
+        "duplicate_file_rate": 0.507692,
+        "known_files": 65,
+        "unique_files": 32
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "fastroute",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.0,
+        "known_files": 30,
+        "unique_files": 30
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "README.md",
+        "src/GenerateUri/UriCouldNotBeGenerated.php",
+        "src/GenerateUri/FromProcessedConfiguration.php",
+        "src/RouteParser.php",
+        "src/GenerateUri.php",
+        "src/RouteCollector.php",
+        "src/BadRouteException.php",
+        "src/Dispatcher/GroupPosBased.php",
+        "src/Dispatcher/MarkBased.php",
+        "src/Dispatcher/RegexBasedAbstract.php"
+      ]
+    },
+    {
+      "candidate_budget": 10,
+      "case_id": "pflag-name-normalization",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find custom flag-name normalization",
+      "engine": "current_page_content",
+      "expected_files": [
+        "flag.go"
+      ],
+      "id": "pflag-name-normalization",
+      "language": "go",
+      "latency_ms": 913.54,
+      "max_document_chars": 1376,
+      "query": "normalize flag names so underscores and hyphens compare as equivalent",
+      "rank": 2,
+      "raw_candidates": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.7,
+        "known_files": 10,
+        "unique_files": 3
+      },
+      "reciprocal_rank": 0.5,
+      "repository": "pflag",
+      "requested_retrieval_budget": 10,
+      "rerank_pool": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.7,
+        "known_files": 10,
+        "unique_files": 3
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "flag_test.go",
+        "flag.go",
+        "bytes.go"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "pflag-name-normalization",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find custom flag-name normalization",
+      "engine": "expanded_score_order_content",
+      "expected_files": [
+        "flag.go"
+      ],
+      "id": "pflag-name-normalization",
+      "language": "go",
+      "latency_ms": 2634.28,
+      "max_document_chars": 4013,
+      "query": "normalize flag names so underscores and hyphens compare as equivalent",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.7,
+        "known_files": 150,
+        "unique_files": 45
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "pflag",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.7,
+        "known_files": 30,
+        "unique_files": 9
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "flag.go",
+        "flag_test.go"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "pflag-name-normalization",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find custom flag-name normalization",
+      "engine": "expanded_coverage_first_content",
+      "expected_files": [
+        "flag.go"
+      ],
+      "id": "pflag-name-normalization",
+      "language": "go",
+      "latency_ms": 2343.34,
+      "max_document_chars": 4444,
+      "query": "normalize flag names so underscores and hyphens compare as equivalent",
+      "rank": 3,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.7,
+        "known_files": 150,
+        "unique_files": 45
+      },
+      "reciprocal_rank": 0.333333,
+      "repository": "pflag",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.0,
+        "known_files": 30,
+        "unique_files": 30
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "string_slice.go",
+        "flag_test.go",
+        "flag.go",
+        "example_test.go",
+        "bool_slice_test.go",
+        "errors.go",
+        "golangflag.go",
+        "bool_test.go",
+        "bytes.go",
+        "string.go"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "pflag-name-normalization",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find custom flag-name normalization",
+      "engine": "two_stage_structured",
+      "expected_files": [
+        "flag.go"
+      ],
+      "id": "pflag-name-normalization",
+      "language": "go",
+      "latency_ms": 3193.98,
+      "max_document_chars": 4096,
+      "query": "normalize flag names so underscores and hyphens compare as equivalent",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.7,
+        "known_files": 150,
+        "unique_files": 45
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "pflag",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.0,
+        "known_files": 30,
+        "unique_files": 30
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "flag.go",
+        "string_slice.go",
+        "flag_test.go",
+        "example_test.go",
+        "bool_slice_test.go",
+        "bytes.go",
+        "errors.go",
+        "golangflag.go",
+        "string.go",
+        "bool.go"
+      ]
+    },
+    {
+      "candidate_budget": 10,
+      "case_id": "pflag-shorthand-parser",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find shorthand flag parsing",
+      "engine": "current_page_content",
+      "expected_files": [
+        "flag.go"
+      ],
+      "id": "pflag-shorthand-parser",
+      "language": "go",
+      "latency_ms": 643.94,
+      "max_document_chars": 7053,
+      "query": "parse combined single-letter shorthand boolean flags",
+      "rank": 4,
+      "raw_candidates": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.5,
+        "known_files": 10,
+        "unique_files": 5
+      },
+      "reciprocal_rank": 0.25,
+      "repository": "pflag",
+      "requested_retrieval_budget": 10,
+      "rerank_pool": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.5,
+        "known_files": 10,
+        "unique_files": 5
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "flag_test.go",
+        "example_test.go",
+        "bool_slice_test.go",
+        "flag.go",
+        "bool.go"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "pflag-shorthand-parser",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find shorthand flag parsing",
+      "engine": "expanded_score_order_content",
+      "expected_files": [
+        "flag.go"
+      ],
+      "id": "pflag-shorthand-parser",
+      "language": "go",
+      "latency_ms": 1960.33,
+      "max_document_chars": 7053,
+      "query": "parse combined single-letter shorthand boolean flags",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.72,
+        "known_files": 150,
+        "unique_files": 42
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "pflag",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.633333,
+        "known_files": 30,
+        "unique_files": 11
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "flag.go",
+        "flag_test.go"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "pflag-shorthand-parser",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find shorthand flag parsing",
+      "engine": "expanded_coverage_first_content",
+      "expected_files": [
+        "flag.go"
+      ],
+      "id": "pflag-shorthand-parser",
+      "language": "go",
+      "latency_ms": 2074.84,
+      "max_document_chars": 4444,
+      "query": "parse combined single-letter shorthand boolean flags",
+      "rank": 7,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.72,
+        "known_files": 150,
+        "unique_files": 42
+      },
+      "reciprocal_rank": 0.142857,
+      "repository": "pflag",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.0,
+        "known_files": 30,
+        "unique_files": 30
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "flag_test.go",
+        "bool_func_go1.21_test.go",
+        "string_to_string.go",
+        "example_test.go",
+        "bool_slice_test.go",
+        "string_to_string_test.go",
+        "flag.go",
+        "errors.go",
+        "bytes.go",
+        "bool_func.go"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "pflag-shorthand-parser",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find shorthand flag parsing",
+      "engine": "two_stage_structured",
+      "expected_files": [
+        "flag.go"
+      ],
+      "id": "pflag-shorthand-parser",
+      "language": "go",
+      "latency_ms": 1945.74,
+      "max_document_chars": 4096,
+      "query": "parse combined single-letter shorthand boolean flags",
+      "rank": 7,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.72,
+        "known_files": 150,
+        "unique_files": 42
+      },
+      "reciprocal_rank": 0.142857,
+      "repository": "pflag",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.0,
+        "known_files": 30,
+        "unique_files": 30
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "flag_test.go",
+        "bool_func_go1.21_test.go",
+        "string_to_string.go",
+        "bool_slice_test.go",
+        "example_test.go",
+        "string_to_string_test.go",
+        "flag.go",
+        "bool_test.go",
+        "bytes.go",
+        "bool_slice.go"
+      ]
+    },
+    {
+      "candidate_budget": 10,
+      "case_id": "pflag-string-slice",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find string-slice flags",
+      "engine": "current_page_content",
+      "expected_files": [
+        "string_slice.go"
+      ],
+      "id": "pflag-string-slice",
+      "language": "go",
+      "latency_ms": 476.44,
+      "max_document_chars": 1039,
+      "query": "implement a repeatable string slice command line flag value",
+      "rank": 2,
+      "raw_candidates": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.3,
+        "known_files": 10,
+        "unique_files": 7
+      },
+      "reciprocal_rank": 0.5,
+      "repository": "pflag",
+      "requested_retrieval_budget": 10,
+      "rerank_pool": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.3,
+        "known_files": 10,
+        "unique_files": 7
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "flag.go",
+        "string_slice.go",
+        "string_to_string.go",
+        "errors.go",
+        "bytes.go",
+        "flag_test.go",
+        "ipnet_slice_test.go"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "pflag-string-slice",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find string-slice flags",
+      "engine": "expanded_score_order_content",
+      "expected_files": [
+        "string_slice.go"
+      ],
+      "id": "pflag-string-slice",
+      "language": "go",
+      "latency_ms": 2021.3,
+      "max_document_chars": 4444,
+      "query": "implement a repeatable string slice command line flag value",
+      "rank": 2,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.646667,
+        "known_files": 150,
+        "unique_files": 53
+      },
+      "reciprocal_rank": 0.5,
+      "repository": "pflag",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.466667,
+        "known_files": 30,
+        "unique_files": 16
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "flag.go",
+        "string_slice.go",
+        "string_to_string.go",
+        "errors.go",
+        "bytes.go",
+        "golangflag.go",
+        "flag_test.go"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "pflag-string-slice",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find string-slice flags",
+      "engine": "expanded_coverage_first_content",
+      "expected_files": [
+        "string_slice.go"
+      ],
+      "id": "pflag-string-slice",
+      "language": "go",
+      "latency_ms": 2339.29,
+      "max_document_chars": 4444,
+      "query": "implement a repeatable string slice command line flag value",
+      "rank": 2,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.646667,
+        "known_files": 150,
+        "unique_files": 53
+      },
+      "reciprocal_rank": 0.5,
+      "repository": "pflag",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.0,
+        "known_files": 30,
+        "unique_files": 30
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "flag.go",
+        "string_slice.go",
+        "string_to_string.go",
+        "errors.go",
+        "uint_slice_test.go",
+        "bytes.go",
+        "duration_slice_test.go",
+        "golangflag.go",
+        "string_slice_test.go",
+        "string_array_test.go"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "pflag-string-slice",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find string-slice flags",
+      "engine": "two_stage_structured",
+      "expected_files": [
+        "string_slice.go"
+      ],
+      "id": "pflag-string-slice",
+      "language": "go",
+      "latency_ms": 2129.76,
+      "max_document_chars": 4096,
+      "query": "implement a repeatable string slice command line flag value",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.646667,
+        "known_files": 150,
+        "unique_files": 53
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "pflag",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.0,
+        "known_files": 30,
+        "unique_files": 30
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "string_slice.go",
+        "flag.go",
+        "string_to_string.go",
+        "string_slice_test.go",
+        "uint_slice_test.go",
+        "uint_slice.go",
+        "int32_slice.go",
+        "int64_slice.go",
+        "duration_slice_test.go",
+        "float32_slice.go"
+      ]
+    },
+    {
+      "candidate_budget": 2,
+      "case_id": "pflag-go-flag-compatibility",
+      "category": "document",
+      "content_type": "document",
+      "description": "Find standard flag compatibility documentation",
+      "engine": "current_page_content",
+      "expected_files": [
+        "README.md"
+      ],
+      "id": "pflag-go-flag-compatibility",
+      "language": "go",
+      "latency_ms": 244.86,
+      "max_document_chars": 3464,
+      "query": "use pflag together with the standard library flag package",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 2,
+        "duplicate_file_rate": 0.5,
+        "known_files": 2,
+        "unique_files": 1
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "pflag",
+      "requested_retrieval_budget": 10,
+      "rerank_pool": {
+        "candidates": 2,
+        "duplicate_file_rate": 0.5,
+        "known_files": 2,
+        "unique_files": 1
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "README.md"
+      ]
+    },
+    {
+      "candidate_budget": 14,
+      "case_id": "pflag-go-flag-compatibility",
+      "category": "document",
+      "content_type": "document",
+      "description": "Find standard flag compatibility documentation",
+      "engine": "expanded_score_order_content",
+      "expected_files": [
+        "README.md"
+      ],
+      "id": "pflag-go-flag-compatibility",
+      "language": "go",
+      "latency_ms": 928.16,
+      "max_document_chars": 3476,
+      "query": "use pflag together with the standard library flag package",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 14,
+        "duplicate_file_rate": 0.642857,
+        "known_files": 14,
+        "unique_files": 5
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "pflag",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 14,
+        "duplicate_file_rate": 0.642857,
+        "known_files": 14,
+        "unique_files": 5
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "README.md",
+        "RELEASING.md",
+        ".golangci.yaml",
+        ".travis.yml"
+      ]
+    },
+    {
+      "candidate_budget": 14,
+      "case_id": "pflag-go-flag-compatibility",
+      "category": "document",
+      "content_type": "document",
+      "description": "Find standard flag compatibility documentation",
+      "engine": "expanded_coverage_first_content",
+      "expected_files": [
+        "README.md"
+      ],
+      "id": "pflag-go-flag-compatibility",
+      "language": "go",
+      "latency_ms": 1652.76,
+      "max_document_chars": 3476,
+      "query": "use pflag together with the standard library flag package",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 14,
+        "duplicate_file_rate": 0.642857,
+        "known_files": 14,
+        "unique_files": 5
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "pflag",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 14,
+        "duplicate_file_rate": 0.642857,
+        "known_files": 14,
+        "unique_files": 5
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "README.md",
+        "RELEASING.md",
+        ".golangci.yaml",
+        ".travis.yml"
+      ]
+    },
+    {
+      "candidate_budget": 14,
+      "case_id": "pflag-go-flag-compatibility",
+      "category": "document",
+      "content_type": "document",
+      "description": "Find standard flag compatibility documentation",
+      "engine": "two_stage_structured",
+      "expected_files": [
+        "README.md"
+      ],
+      "id": "pflag-go-flag-compatibility",
+      "language": "go",
+      "latency_ms": 1465.72,
+      "max_document_chars": 3605,
+      "query": "use pflag together with the standard library flag package",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 14,
+        "duplicate_file_rate": 0.642857,
+        "known_files": 14,
+        "unique_files": 5
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "pflag",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 14,
+        "duplicate_file_rate": 0.642857,
+        "known_files": 14,
+        "unique_files": 5
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "README.md",
+        "RELEASING.md",
+        ".golangci.yaml",
+        ".editorconfig",
+        ".travis.yml"
+      ]
+    },
+    {
+      "candidate_budget": 10,
+      "case_id": "pflag-deprecated-shorthand",
+      "category": "cross",
+      "content_type": "mixed",
+      "description": "Find shorthand deprecation behavior",
+      "engine": "current_page_content",
+      "expected_files": [
+        "README.md",
+        "flag.go"
+      ],
+      "id": "pflag-deprecated-shorthand",
+      "language": "go",
+      "latency_ms": 913.52,
+      "max_document_chars": 3476,
+      "query": "deprecate a flag shorthand hide it from help and print a warning",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.5,
+        "known_files": 10,
+        "unique_files": 5
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "pflag",
+      "requested_retrieval_budget": 10,
+      "rerank_pool": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.5,
+        "known_files": 10,
+        "unique_files": 5
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "flag.go",
+        "README.md",
+        "errors.go",
+        "flag_test.go",
+        "bytes.go"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "pflag-deprecated-shorthand",
+      "category": "cross",
+      "content_type": "mixed",
+      "description": "Find shorthand deprecation behavior",
+      "engine": "expanded_score_order_content",
+      "expected_files": [
+        "README.md",
+        "flag.go"
+      ],
+      "id": "pflag-deprecated-shorthand",
+      "language": "go",
+      "latency_ms": 2022.74,
+      "max_document_chars": 4013,
+      "query": "deprecate a flag shorthand hide it from help and print a warning",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.666667,
+        "known_files": 150,
+        "unique_files": 50
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "pflag",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.666667,
+        "known_files": 30,
+        "unique_files": 10
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "flag.go",
+        "README.md",
+        "flag_test.go"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "pflag-deprecated-shorthand",
+      "category": "cross",
+      "content_type": "mixed",
+      "description": "Find shorthand deprecation behavior",
+      "engine": "expanded_coverage_first_content",
+      "expected_files": [
+        "README.md",
+        "flag.go"
+      ],
+      "id": "pflag-deprecated-shorthand",
+      "language": "go",
+      "latency_ms": 2143.06,
+      "max_document_chars": 3476,
+      "query": "deprecate a flag shorthand hide it from help and print a warning",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.666667,
+        "known_files": 150,
+        "unique_files": 50
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "pflag",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.0,
+        "known_files": 30,
+        "unique_files": 30
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "flag.go",
+        "README.md",
+        "example_test.go",
+        "errors.go",
+        "flag_test.go",
+        "bool_func_test.go",
+        "func_test.go",
+        "golangflag.go",
+        "bool.go",
+        "bytes.go"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "pflag-deprecated-shorthand",
+      "category": "cross",
+      "content_type": "mixed",
+      "description": "Find shorthand deprecation behavior",
+      "engine": "two_stage_structured",
+      "expected_files": [
+        "README.md",
+        "flag.go"
+      ],
+      "id": "pflag-deprecated-shorthand",
+      "language": "go",
+      "latency_ms": 2853.22,
+      "max_document_chars": 3605,
+      "query": "deprecate a flag shorthand hide it from help and print a warning",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.666667,
+        "known_files": 150,
+        "unique_files": 50
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "pflag",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.0,
+        "known_files": 30,
+        "unique_files": 30
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "README.md",
+        "flag.go",
+        "example_test.go",
+        "bool_func_test.go",
+        "errors.go",
+        "func_test.go",
+        "flag_test.go",
+        "bool.go",
+        "ipnet.go",
+        "bytes.go"
+      ]
+    },
+    {
+      "candidate_budget": 10,
+      "case_id": "swift-command-parser",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find subcommand parsing",
+      "engine": "current_page_content",
+      "expected_files": [
+        "Sources/ArgumentParser/Parsing/CommandParser.swift"
+      ],
+      "id": "swift-command-parser",
+      "language": "swift",
+      "latency_ms": 841.77,
+      "max_document_chars": 11728,
+      "query": "parse nested subcommands and select the matching command configuration",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.2,
+        "known_files": 10,
+        "unique_files": 8
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "swift-argument-parser",
+      "requested_retrieval_budget": 10,
+      "rerank_pool": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.2,
+        "known_files": 10,
+        "unique_files": 8
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "Sources/ArgumentParser/Parsing/CommandParser.swift",
+        "Sources/ArgumentParser/Usage/HelpCommand.swift",
+        "Sources/ArgumentParser/Utilities/Tree.swift",
+        "Sources/ArgumentParser/Parsable Types/ParsableCommand.swift",
+        "Sources/ArgumentParser/Parsable Types/ParsableArguments.swift",
+        "Sources/ArgumentParser/Usage/HelpGenerator.swift",
+        "Sources/ArgumentParser/Completions/CompletionsGenerator.swift",
+        "Sources/ArgumentParser/Parsable Properties/ParentCommand.swift"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "swift-command-parser",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find subcommand parsing",
+      "engine": "expanded_score_order_content",
+      "expected_files": [
+        "Sources/ArgumentParser/Parsing/CommandParser.swift"
+      ],
+      "id": "swift-command-parser",
+      "language": "swift",
+      "latency_ms": 2178.26,
+      "max_document_chars": 18364,
+      "query": "parse nested subcommands and select the matching command configuration",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.713333,
+        "known_files": 150,
+        "unique_files": 43
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "swift-argument-parser",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.466667,
+        "known_files": 30,
+        "unique_files": 16
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "Sources/ArgumentParser/Parsing/CommandParser.swift",
+        "Sources/ArgumentParser/Usage/HelpCommand.swift",
+        "Sources/ArgumentParser/Parsing/ArgumentSet.swift",
+        "Sources/ArgumentParser/Usage/DumpHelpGenerator.swift",
+        "Sources/ArgumentParser/Parsable Types/ParsableCommand.swift",
+        "Sources/ArgumentParser/Utilities/Tree.swift",
+        "Sources/ArgumentParser/Parsable Types/CommandConfiguration.swift"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "swift-command-parser",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find subcommand parsing",
+      "engine": "expanded_coverage_first_content",
+      "expected_files": [
+        "Sources/ArgumentParser/Parsing/CommandParser.swift"
+      ],
+      "id": "swift-command-parser",
+      "language": "swift",
+      "latency_ms": 2414.69,
+      "max_document_chars": 18364,
+      "query": "parse nested subcommands and select the matching command configuration",
+      "rank": 3,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.713333,
+        "known_files": 150,
+        "unique_files": 43
+      },
+      "reciprocal_rank": 0.333333,
+      "repository": "swift-argument-parser",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.0,
+        "known_files": 30,
+        "unique_files": 30
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "Sources/ArgumentParser/Usage/HelpCommand.swift",
+        "Sources/ArgumentParser/Parsing/ArgumentSet.swift",
+        "Sources/ArgumentParser/Parsing/CommandParser.swift",
+        "Sources/ArgumentParser/Utilities/Tree.swift",
+        "Sources/ArgumentParser/Parsable Types/CommandConfiguration.swift",
+        "Sources/ArgumentParser/Parsable Types/ParsableCommand.swift",
+        "Sources/ArgumentParser/Parsable Types/CommandGroup.swift",
+        "Sources/ArgumentParser/Parsable Types/ParsableArguments.swift",
+        "Sources/ArgumentParser/Usage/HelpGenerator.swift",
+        "Sources/ArgumentParser/Parsable Properties/Errors.swift"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "swift-command-parser",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find subcommand parsing",
+      "engine": "two_stage_structured",
+      "expected_files": [
+        "Sources/ArgumentParser/Parsing/CommandParser.swift"
+      ],
+      "id": "swift-command-parser",
+      "language": "swift",
+      "latency_ms": 2046.98,
+      "max_document_chars": 4096,
+      "query": "parse nested subcommands and select the matching command configuration",
+      "rank": 4,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.713333,
+        "known_files": 150,
+        "unique_files": 43
+      },
+      "reciprocal_rank": 0.25,
+      "repository": "swift-argument-parser",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.0,
+        "known_files": 30,
+        "unique_files": 30
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "Sources/ArgumentParser/Usage/HelpCommand.swift",
+        "Sources/ArgumentParser/Parsing/ArgumentSet.swift",
+        "Sources/ArgumentParser/Utilities/Tree.swift",
+        "Sources/ArgumentParser/Parsing/CommandParser.swift",
+        "Sources/ArgumentParser/Parsable Types/ParsableCommand.swift",
+        "Sources/ArgumentParser/Parsable Types/CommandGroup.swift",
+        "Sources/ArgumentParser/Parsable Types/ParsableArguments.swift",
+        "Sources/ArgumentParser/Usage/MessageInfo.swift",
+        "Sources/ArgumentParser/Parsable Properties/Errors.swift",
+        "Sources/ArgumentParser/Parsable Types/CommandConfiguration.swift"
+      ]
+    },
+    {
+      "candidate_budget": 10,
+      "case_id": "swift-bash-completions",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find Bash completion generation",
+      "engine": "current_page_content",
+      "expected_files": [
+        "Sources/ArgumentParser/Completions/BashCompletionsGenerator.swift"
+      ],
+      "id": "swift-bash-completions",
+      "language": "swift",
+      "latency_ms": 4667.74,
+      "max_document_chars": 13431,
+      "query": "generate bash completion functions for options arguments and subcommands",
+      "rank": 3,
+      "raw_candidates": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.7,
+        "known_files": 10,
+        "unique_files": 3
+      },
+      "reciprocal_rank": 0.333333,
+      "repository": "swift-argument-parser",
+      "requested_retrieval_budget": 10,
+      "rerank_pool": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.7,
+        "known_files": 10,
+        "unique_files": 3
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "Sources/ArgumentParser/Parsing/CommandParser.swift",
+        "Sources/ArgumentParser/Completions/CompletionsGenerator.swift",
+        "Sources/ArgumentParser/Completions/BashCompletionsGenerator.swift"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "swift-bash-completions",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find Bash completion generation",
+      "engine": "expanded_score_order_content",
+      "expected_files": [
+        "Sources/ArgumentParser/Completions/BashCompletionsGenerator.swift"
+      ],
+      "id": "swift-bash-completions",
+      "language": "swift",
+      "latency_ms": 2489.12,
+      "max_document_chars": 13431,
+      "query": "generate bash completion functions for options arguments and subcommands",
+      "rank": 6,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.72,
+        "known_files": 150,
+        "unique_files": 42
+      },
+      "reciprocal_rank": 0.166667,
+      "repository": "swift-argument-parser",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.5,
+        "known_files": 30,
+        "unique_files": 15
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "Sources/ArgumentParser/Parsing/CommandParser.swift",
+        "Sources/ArgumentParser/Completions/CompletionsGenerator.swift",
+        "Sources/ArgumentParser/Usage/HelpGenerator.swift",
+        "Sources/ArgumentParser/Parsable Properties/CompletionKind.swift",
+        "Sources/ArgumentParser/Usage/UsageGenerator.swift",
+        "Sources/ArgumentParser/Completions/BashCompletionsGenerator.swift"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "swift-bash-completions",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find Bash completion generation",
+      "engine": "expanded_coverage_first_content",
+      "expected_files": [
+        "Sources/ArgumentParser/Completions/BashCompletionsGenerator.swift"
+      ],
+      "id": "swift-bash-completions",
+      "language": "swift",
+      "latency_ms": 2904.83,
+      "max_document_chars": 8947,
+      "query": "generate bash completion functions for options arguments and subcommands",
+      "rank": 8,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.72,
+        "known_files": 150,
+        "unique_files": 42
+      },
+      "reciprocal_rank": 0.125,
+      "repository": "swift-argument-parser",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.0,
+        "known_files": 30,
+        "unique_files": 30
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "Sources/ArgumentParser/Parsing/CommandParser.swift",
+        "Sources/ArgumentParser/Usage/HelpGenerator.swift",
+        "Sources/ArgumentParser/Parsable Properties/CompletionKind.swift",
+        "Sources/ArgumentParser/Completions/CompletionsGenerator.swift",
+        "Sources/ArgumentParser/Usage/HelpCommand.swift",
+        "Sources/ArgumentParser/Usage/DumpHelpGenerator.swift",
+        "Sources/ArgumentParser/Completions/ZshCompletionsGenerator.swift",
+        "Sources/ArgumentParser/Completions/BashCompletionsGenerator.swift",
+        "Sources/ArgumentParser/Parsable Types/ParsableCommand.swift",
+        "Sources/ArgumentParser/Parsable Properties/Argument.swift"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "swift-bash-completions",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find Bash completion generation",
+      "engine": "two_stage_structured",
+      "expected_files": [
+        "Sources/ArgumentParser/Completions/BashCompletionsGenerator.swift"
+      ],
+      "id": "swift-bash-completions",
+      "language": "swift",
+      "latency_ms": 4972.99,
+      "max_document_chars": 4096,
+      "query": "generate bash completion functions for options arguments and subcommands",
+      "rank": 3,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.72,
+        "known_files": 150,
+        "unique_files": 42
+      },
+      "reciprocal_rank": 0.333333,
+      "repository": "swift-argument-parser",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.0,
+        "known_files": 30,
+        "unique_files": 30
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "Sources/ArgumentParser/Completions/CompletionsGenerator.swift",
+        "Sources/ArgumentParser/Completions/FishCompletionsGenerator.swift",
+        "Sources/ArgumentParser/Completions/BashCompletionsGenerator.swift",
+        "Sources/ArgumentParser/Parsing/CommandParser.swift",
+        "Sources/ArgumentParser/Parsable Properties/CompletionKind.swift",
+        "Sources/ArgumentParser/Usage/HelpCommand.swift",
+        "Sources/ArgumentParser/Usage/DumpHelpGenerator.swift",
+        "Sources/ArgumentParser/Completions/ZshCompletionsGenerator.swift",
+        "Sources/ArgumentParser/Parsable Types/ParsableCommand.swift",
+        "Sources/ArgumentParser/Parsing/ParserError.swift"
+      ]
+    },
+    {
+      "candidate_budget": 10,
+      "case_id": "swift-option-strategies",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find option parsing strategies",
+      "engine": "current_page_content",
+      "expected_files": [
+        "Sources/ArgumentParser/Parsable Properties/Option.swift"
+      ],
+      "id": "swift-option-strategies",
+      "language": "swift",
+      "latency_ms": 1368.97,
+      "max_document_chars": 6714,
+      "query": "configure option parsing strategies for arrays and repeated values",
+      "rank": 2,
+      "raw_candidates": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.5,
+        "known_files": 10,
+        "unique_files": 5
+      },
+      "reciprocal_rank": 0.5,
+      "repository": "swift-argument-parser",
+      "requested_retrieval_budget": 10,
+      "rerank_pool": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.5,
+        "known_files": 10,
+        "unique_files": 5
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "Sources/ArgumentParser/Parsable Properties/Argument.swift",
+        "Sources/ArgumentParser/Parsable Properties/Option.swift",
+        "Sources/ArgumentParser/Parsable Properties/OptionGroup.swift",
+        "Sources/ArgumentParser/Parsing/ArgumentDecoder.swift",
+        "Sources/ArgumentParser/Completions/CompletionsGenerator.swift"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "swift-option-strategies",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find option parsing strategies",
+      "engine": "expanded_score_order_content",
+      "expected_files": [
+        "Sources/ArgumentParser/Parsable Properties/Option.swift"
+      ],
+      "id": "swift-option-strategies",
+      "language": "swift",
+      "latency_ms": 3497.25,
+      "max_document_chars": 6714,
+      "query": "configure option parsing strategies for arrays and repeated values",
+      "rank": 2,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.76,
+        "known_files": 150,
+        "unique_files": 36
+      },
+      "reciprocal_rank": 0.5,
+      "repository": "swift-argument-parser",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.533333,
+        "known_files": 30,
+        "unique_files": 14
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "Sources/ArgumentParser/Parsable Properties/Argument.swift",
+        "Sources/ArgumentParser/Parsable Properties/Option.swift",
+        "Sources/ArgumentParser/Parsing/SplitArguments.swift",
+        "Sources/ArgumentParser/Usage/UsageGenerator.swift",
+        "Sources/ArgumentParser/Parsing/ParsedValues.swift",
+        "Sources/ArgumentParser/Parsing/ArgumentDecoder.swift",
+        "Sources/ArgumentParser/Parsing/Parsed.swift"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "swift-option-strategies",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find option parsing strategies",
+      "engine": "expanded_coverage_first_content",
+      "expected_files": [
+        "Sources/ArgumentParser/Parsable Properties/Option.swift"
+      ],
+      "id": "swift-option-strategies",
+      "language": "swift",
+      "latency_ms": 6029.94,
+      "max_document_chars": 8088,
+      "query": "configure option parsing strategies for arrays and repeated values",
+      "rank": 2,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.76,
+        "known_files": 150,
+        "unique_files": 36
+      },
+      "reciprocal_rank": 0.5,
+      "repository": "swift-argument-parser",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.0,
+        "known_files": 30,
+        "unique_files": 30
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "Sources/ArgumentParser/Parsable Properties/Argument.swift",
+        "Sources/ArgumentParser/Parsable Properties/Option.swift",
+        "Sources/ArgumentParser/Validators/PositionalArgumentsValidator.swift",
+        "Sources/ArgumentParser/Parsing/SplitArguments.swift",
+        "Sources/ArgumentParser/Usage/UsageGenerator.swift",
+        "Sources/ArgumentParser/Parsing/ParsedValues.swift",
+        "Sources/ArgumentParser/Validators/UniqueNamesValidator.swift",
+        "Sources/ArgumentParser/Utilities/SequenceExtensions.swift",
+        "Sources/ArgumentParser/Parsable Properties/OptionGroup.swift",
+        "Sources/ArgumentParser/Validators/CodingKeyValidator.swift"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "swift-option-strategies",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find option parsing strategies",
+      "engine": "two_stage_structured",
+      "expected_files": [
+        "Sources/ArgumentParser/Parsable Properties/Option.swift"
+      ],
+      "id": "swift-option-strategies",
+      "language": "swift",
+      "latency_ms": 3275.17,
+      "max_document_chars": 4096,
+      "query": "configure option parsing strategies for arrays and repeated values",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 150,
+        "duplicate_file_rate": 0.76,
+        "known_files": 150,
+        "unique_files": 36
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "swift-argument-parser",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.0,
+        "known_files": 30,
+        "unique_files": 30
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "Sources/ArgumentParser/Parsable Properties/Option.swift",
+        "Sources/ArgumentParser/Parsable Properties/Argument.swift",
+        "Sources/ArgumentParser/Validators/PositionalArgumentsValidator.swift",
+        "Sources/ArgumentParser/Parsing/SplitArguments.swift",
+        "Sources/ArgumentParser/Parsing/InputOrigin.swift",
+        "Sources/ArgumentParser/Parsing/ParserError.swift",
+        "Sources/ArgumentParser/Parsing/ArgumentDefinition.swift",
+        "Sources/ArgumentParser/Parsing/ParsedValues.swift",
+        "Sources/ArgumentParser/Usage/UsageGenerator.swift",
+        "Sources/ArgumentParser/Parsing/ArgumentDecoder.swift"
+      ]
+    },
+    {
+      "candidate_budget": 10,
+      "case_id": "swift-validation-guide",
+      "category": "document",
+      "content_type": "document",
+      "description": "Find argument validation documentation",
+      "engine": "current_page_content",
+      "expected_files": [
+        "Sources/ArgumentParser/Documentation.docc/Articles/Validation.md"
+      ],
+      "id": "swift-validation-guide",
+      "language": "swift",
+      "latency_ms": 1157.04,
+      "max_document_chars": 3320,
+      "query": "validate parsed command line arguments and report validation errors",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.0,
+        "known_files": 10,
+        "unique_files": 10
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "swift-argument-parser",
+      "requested_retrieval_budget": 10,
+      "rerank_pool": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.0,
+        "known_files": 10,
+        "unique_files": 10
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "Sources/ArgumentParser/Documentation.docc/Articles/Validation.md",
+        "Sources/ArgumentParser/Documentation.docc/Extensions/ParsableArguments.md",
+        "Sources/ArgumentParser/Documentation.docc/Articles/ManualParsing.md",
+        "Sources/ArgumentParser/Documentation.docc/Articles/DeclaringArguments.md",
+        "Sources/ArgumentParser/Documentation.docc/Extensions/ArgumentArrayParsingStrategy.md",
+        "Sources/ArgumentParser/Documentation.docc/Extensions/Argument.md",
+        "Sources/ArgumentParser/Documentation.docc/Extensions/Option.md",
+        "Sources/ArgumentParser/Documentation.docc/Extensions/CommandConfiguration.md",
+        "Sources/ArgumentParser/Documentation.docc/Extensions/OptionGroup.md",
+        "Sources/ArgumentParser/Documentation.docc/Extensions/Flag.md"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "swift-validation-guide",
+      "category": "document",
+      "content_type": "document",
+      "description": "Find argument validation documentation",
+      "engine": "expanded_score_order_content",
+      "expected_files": [
+        "Sources/ArgumentParser/Documentation.docc/Articles/Validation.md"
+      ],
+      "id": "swift-validation-guide",
+      "language": "swift",
+      "latency_ms": 2886.23,
+      "max_document_chars": 3587,
+      "query": "validate parsed command line arguments and report validation errors",
+      "rank": 2,
+      "raw_candidates": {
+        "candidates": 45,
+        "duplicate_file_rate": 0.511111,
+        "known_files": 45,
+        "unique_files": 22
+      },
+      "reciprocal_rank": 0.5,
+      "repository": "swift-argument-parser",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.4,
+        "known_files": 30,
+        "unique_files": 18
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "Sources/ArgumentParser/Documentation.docc/Articles/ManualParsing.md",
+        "Sources/ArgumentParser/Documentation.docc/Articles/Validation.md",
+        "Sources/ArgumentParser/Documentation.docc/Extensions/ParsableArguments.md",
+        "Sources/ArgumentParser/Documentation.docc/Articles/DeclaringArguments.md",
+        "README.md",
+        "Sources/ArgumentParser/Documentation.docc/Extensions/ParsableCommand.md",
+        "Sources/ArgumentParser/Documentation.docc/ArgumentParser.md"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "swift-validation-guide",
+      "category": "document",
+      "content_type": "document",
+      "description": "Find argument validation documentation",
+      "engine": "expanded_coverage_first_content",
+      "expected_files": [
+        "Sources/ArgumentParser/Documentation.docc/Articles/Validation.md"
+      ],
+      "id": "swift-validation-guide",
+      "language": "swift",
+      "latency_ms": 2135.37,
+      "max_document_chars": 3587,
+      "query": "validate parsed command line arguments and report validation errors",
+      "rank": 2,
+      "raw_candidates": {
+        "candidates": 45,
+        "duplicate_file_rate": 0.511111,
+        "known_files": 45,
+        "unique_files": 22
+      },
+      "reciprocal_rank": 0.5,
+      "repository": "swift-argument-parser",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.266667,
+        "known_files": 30,
+        "unique_files": 22
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "Sources/ArgumentParser/Documentation.docc/Articles/ManualParsing.md",
+        "Sources/ArgumentParser/Documentation.docc/Articles/Validation.md",
+        "Sources/ArgumentParser/Documentation.docc/Extensions/ParsableArguments.md",
+        "Sources/ArgumentParser/Documentation.docc/Articles/DeclaringArguments.md",
+        "README.md",
+        "Sources/ArgumentParser/Documentation.docc/Extensions/ParsableCommand.md",
+        "Sources/ArgumentParser/Documentation.docc/ArgumentParser.md",
+        "Sources/ArgumentParser/CMakeLists.txt"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "swift-validation-guide",
+      "category": "document",
+      "content_type": "document",
+      "description": "Find argument validation documentation",
+      "engine": "two_stage_structured",
+      "expected_files": [
+        "Sources/ArgumentParser/Documentation.docc/Articles/Validation.md"
+      ],
+      "id": "swift-validation-guide",
+      "language": "swift",
+      "latency_ms": 3822.01,
+      "max_document_chars": 3772,
+      "query": "validate parsed command line arguments and report validation errors",
+      "rank": 2,
+      "raw_candidates": {
+        "candidates": 45,
+        "duplicate_file_rate": 0.511111,
+        "known_files": 45,
+        "unique_files": 22
+      },
+      "reciprocal_rank": 0.5,
+      "repository": "swift-argument-parser",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.266667,
+        "known_files": 30,
+        "unique_files": 22
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "Sources/ArgumentParser/Documentation.docc/Articles/ManualParsing.md",
+        "Sources/ArgumentParser/Documentation.docc/Articles/Validation.md",
+        "Sources/ArgumentParser/Documentation.docc/Extensions/ParsableArguments.md",
+        "Sources/ArgumentParser/Documentation.docc/Articles/DeclaringArguments.md",
+        "README.md",
+        "Sources/ArgumentParser/Documentation.docc/Extensions/ParsableCommand.md",
+        "Sources/ArgumentParser/Documentation.docc/ArgumentParser.md",
+        "Sources/ArgumentParser/CMakeLists.txt"
+      ]
+    },
+    {
+      "candidate_budget": 1,
+      "case_id": "swift-completion-install",
+      "category": "cross",
+      "content_type": "mixed",
+      "description": "Find completion installation documentation or implementation",
+      "engine": "current_page_content",
+      "expected_files": [
+        "Sources/ArgumentParser/Documentation.docc/Articles/InstallingCompletionScripts.md",
+        "Sources/ArgumentParser/Completions/CompletionsGenerator.swift"
+      ],
+      "id": "swift-completion-install",
+      "language": "swift",
+      "latency_ms": 222.96,
+      "max_document_chars": 2084,
+      "query": "generate and install shell completion scripts for a command",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 1,
+        "duplicate_file_rate": 0.0,
+        "known_files": 1,
+        "unique_files": 1
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "swift-argument-parser",
+      "requested_retrieval_budget": 10,
+      "rerank_pool": {
+        "candidates": 1,
+        "duplicate_file_rate": 0.0,
+        "known_files": 1,
+        "unique_files": 1
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "Sources/ArgumentParser/Documentation.docc/Articles/InstallingCompletionScripts.md"
+      ]
+    },
+    {
+      "candidate_budget": 1,
+      "case_id": "swift-completion-install",
+      "category": "cross",
+      "content_type": "mixed",
+      "description": "Find completion installation documentation or implementation",
+      "engine": "expanded_score_order_content",
+      "expected_files": [
+        "Sources/ArgumentParser/Documentation.docc/Articles/InstallingCompletionScripts.md",
+        "Sources/ArgumentParser/Completions/CompletionsGenerator.swift"
+      ],
+      "id": "swift-completion-install",
+      "language": "swift",
+      "latency_ms": 128.13,
+      "max_document_chars": 2084,
+      "query": "generate and install shell completion scripts for a command",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 1,
+        "duplicate_file_rate": 0.0,
+        "known_files": 1,
+        "unique_files": 1
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "swift-argument-parser",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 1,
+        "duplicate_file_rate": 0.0,
+        "known_files": 1,
+        "unique_files": 1
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "Sources/ArgumentParser/Documentation.docc/Articles/InstallingCompletionScripts.md"
+      ]
+    },
+    {
+      "candidate_budget": 1,
+      "case_id": "swift-completion-install",
+      "category": "cross",
+      "content_type": "mixed",
+      "description": "Find completion installation documentation or implementation",
+      "engine": "expanded_coverage_first_content",
+      "expected_files": [
+        "Sources/ArgumentParser/Documentation.docc/Articles/InstallingCompletionScripts.md",
+        "Sources/ArgumentParser/Completions/CompletionsGenerator.swift"
+      ],
+      "id": "swift-completion-install",
+      "language": "swift",
+      "latency_ms": 111.07,
+      "max_document_chars": 2084,
+      "query": "generate and install shell completion scripts for a command",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 1,
+        "duplicate_file_rate": 0.0,
+        "known_files": 1,
+        "unique_files": 1
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "swift-argument-parser",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 1,
+        "duplicate_file_rate": 0.0,
+        "known_files": 1,
+        "unique_files": 1
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "Sources/ArgumentParser/Documentation.docc/Articles/InstallingCompletionScripts.md"
+      ]
+    },
+    {
+      "candidate_budget": 1,
+      "case_id": "swift-completion-install",
+      "category": "cross",
+      "content_type": "mixed",
+      "description": "Find completion installation documentation or implementation",
+      "engine": "two_stage_structured",
+      "expected_files": [
+        "Sources/ArgumentParser/Documentation.docc/Articles/InstallingCompletionScripts.md",
+        "Sources/ArgumentParser/Completions/CompletionsGenerator.swift"
+      ],
+      "id": "swift-completion-install",
+      "language": "swift",
+      "latency_ms": 83.2,
+      "max_document_chars": 2285,
+      "query": "generate and install shell completion scripts for a command",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 1,
+        "duplicate_file_rate": 0.0,
+        "known_files": 1,
+        "unique_files": 1
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "swift-argument-parser",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 1,
+        "duplicate_file_rate": 0.0,
+        "known_files": 1,
+        "unique_files": 1
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "Sources/ArgumentParser/Documentation.docc/Articles/InstallingCompletionScripts.md"
+      ]
+    },
+    {
+      "candidate_budget": 10,
+      "case_id": "dry-configurable-compiler",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find the configuration DSL compiler",
+      "engine": "current_page_content",
+      "expected_files": [
+        "lib/dry/configurable/compiler.rb"
+      ],
+      "id": "dry-configurable-compiler",
+      "language": "ruby",
+      "latency_ms": 1503.31,
+      "max_document_chars": 7651,
+      "query": "compile nested setting abstract syntax tree nodes into configuration settings",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.2,
+        "known_files": 10,
+        "unique_files": 8
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "dry-configurable",
+      "requested_retrieval_budget": 10,
+      "rerank_pool": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.2,
+        "known_files": 10,
+        "unique_files": 8
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "lib/dry/configurable/compiler.rb",
+        "lib/dry/configurable/dsl.rb",
+        "lib/dry/configurable/class_methods.rb",
+        "lib/dry/configurable/config.rb",
+        "lib/dry/configurable/settings.rb",
+        "lib/dry/configurable.rb",
+        "lib/dry/configurable/instance_methods.rb",
+        "lib/dry-configurable.rb"
+      ]
+    },
+    {
+      "candidate_budget": 29,
+      "case_id": "dry-configurable-compiler",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find the configuration DSL compiler",
+      "engine": "expanded_score_order_content",
+      "expected_files": [
+        "lib/dry/configurable/compiler.rb"
+      ],
+      "id": "dry-configurable-compiler",
+      "language": "ruby",
+      "latency_ms": 2553.33,
+      "max_document_chars": 7651,
+      "query": "compile nested setting abstract syntax tree nodes into configuration settings",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 29,
+        "duplicate_file_rate": 0.482759,
+        "known_files": 29,
+        "unique_files": 15
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "dry-configurable",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 29,
+        "duplicate_file_rate": 0.482759,
+        "known_files": 29,
+        "unique_files": 15
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "lib/dry/configurable/compiler.rb",
+        "lib/dry/configurable/dsl.rb",
+        "lib/dry/configurable/class_methods.rb",
+        "lib/dry/configurable/config.rb",
+        "lib/dry/configurable/settings.rb",
+        "lib/dry/configurable.rb",
+        "lib/dry/configurable/setting.rb",
+        "lib/dry/configurable/instance_methods.rb",
+        "lib/dry/configurable/test_interface.rb",
+        "lib/dry/configurable/extension.rb"
+      ]
+    },
+    {
+      "candidate_budget": 29,
+      "case_id": "dry-configurable-compiler",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find the configuration DSL compiler",
+      "engine": "expanded_coverage_first_content",
+      "expected_files": [
+        "lib/dry/configurable/compiler.rb"
+      ],
+      "id": "dry-configurable-compiler",
+      "language": "ruby",
+      "latency_ms": 2454.09,
+      "max_document_chars": 7651,
+      "query": "compile nested setting abstract syntax tree nodes into configuration settings",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 29,
+        "duplicate_file_rate": 0.482759,
+        "known_files": 29,
+        "unique_files": 15
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "dry-configurable",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 29,
+        "duplicate_file_rate": 0.482759,
+        "known_files": 29,
+        "unique_files": 15
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "lib/dry/configurable/compiler.rb",
+        "lib/dry/configurable/dsl.rb",
+        "lib/dry/configurable/class_methods.rb",
+        "lib/dry/configurable/config.rb",
+        "lib/dry/configurable/settings.rb",
+        "lib/dry/configurable.rb",
+        "lib/dry/configurable/setting.rb",
+        "lib/dry/configurable/instance_methods.rb",
+        "lib/dry/configurable/test_interface.rb",
+        "lib/dry/configurable/extension.rb"
+      ]
+    },
+    {
+      "candidate_budget": 29,
+      "case_id": "dry-configurable-compiler",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find the configuration DSL compiler",
+      "engine": "two_stage_structured",
+      "expected_files": [
+        "lib/dry/configurable/compiler.rb"
+      ],
+      "id": "dry-configurable-compiler",
+      "language": "ruby",
+      "latency_ms": 2418.1,
+      "max_document_chars": 4096,
+      "query": "compile nested setting abstract syntax tree nodes into configuration settings",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 29,
+        "duplicate_file_rate": 0.482759,
+        "known_files": 29,
+        "unique_files": 15
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "dry-configurable",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 29,
+        "duplicate_file_rate": 0.482759,
+        "known_files": 29,
+        "unique_files": 15
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "lib/dry/configurable/compiler.rb",
+        "lib/dry/configurable/dsl.rb",
+        "lib/dry/configurable/class_methods.rb",
+        "lib/dry/configurable/settings.rb",
+        "lib/dry/configurable/config.rb",
+        "lib/dry/configurable/setting.rb",
+        "lib/dry/configurable.rb",
+        "lib/dry/configurable/instance_methods.rb",
+        "lib/dry/configurable/extension.rb"
+      ]
+    },
+    {
+      "candidate_budget": 10,
+      "case_id": "dry-configurable-finalize",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find configuration finalization",
+      "engine": "current_page_content",
+      "expected_files": [
+        "lib/dry/configurable/config.rb"
+      ],
+      "id": "dry-configurable-finalize",
+      "language": "ruby",
+      "latency_ms": 580.16,
+      "max_document_chars": 7651,
+      "query": "finalize a configuration recursively and prevent later mutation",
+      "rank": 3,
+      "raw_candidates": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.1,
+        "known_files": 10,
+        "unique_files": 9
+      },
+      "reciprocal_rank": 0.333333,
+      "repository": "dry-configurable",
+      "requested_retrieval_budget": 10,
+      "rerank_pool": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.1,
+        "known_files": 10,
+        "unique_files": 9
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "lib/dry/configurable/instance_methods.rb",
+        "lib/dry/configurable/methods.rb",
+        "lib/dry/configurable/config.rb",
+        "lib/dry/configurable.rb",
+        "lib/dry/configurable/test_interface.rb",
+        "lib/dry/configurable/settings.rb",
+        "lib/dry/configurable/setting.rb",
+        "lib/dry/configurable/compiler.rb",
+        "lib/dry-configurable.rb"
+      ]
+    },
+    {
+      "candidate_budget": 29,
+      "case_id": "dry-configurable-finalize",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find configuration finalization",
+      "engine": "expanded_score_order_content",
+      "expected_files": [
+        "lib/dry/configurable/config.rb"
+      ],
+      "id": "dry-configurable-finalize",
+      "language": "ruby",
+      "latency_ms": 1824.4,
+      "max_document_chars": 7651,
+      "query": "finalize a configuration recursively and prevent later mutation",
+      "rank": 3,
+      "raw_candidates": {
+        "candidates": 29,
+        "duplicate_file_rate": 0.482759,
+        "known_files": 29,
+        "unique_files": 15
+      },
+      "reciprocal_rank": 0.333333,
+      "repository": "dry-configurable",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 29,
+        "duplicate_file_rate": 0.482759,
+        "known_files": 29,
+        "unique_files": 15
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "lib/dry/configurable/instance_methods.rb",
+        "lib/dry/configurable/methods.rb",
+        "lib/dry/configurable/config.rb",
+        "lib/dry/configurable.rb",
+        "lib/dry/configurable/class_methods.rb",
+        "lib/dry/configurable/dsl.rb",
+        "lib/dry/configurable/test_interface.rb",
+        "lib/dry/configurable/settings.rb",
+        "lib/dry/configurable/setting.rb",
+        "lib/dry/configurable/extension.rb"
+      ]
+    },
+    {
+      "candidate_budget": 29,
+      "case_id": "dry-configurable-finalize",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find configuration finalization",
+      "engine": "expanded_coverage_first_content",
+      "expected_files": [
+        "lib/dry/configurable/config.rb"
+      ],
+      "id": "dry-configurable-finalize",
+      "language": "ruby",
+      "latency_ms": 2754.29,
+      "max_document_chars": 7651,
+      "query": "finalize a configuration recursively and prevent later mutation",
+      "rank": 3,
+      "raw_candidates": {
+        "candidates": 29,
+        "duplicate_file_rate": 0.482759,
+        "known_files": 29,
+        "unique_files": 15
+      },
+      "reciprocal_rank": 0.333333,
+      "repository": "dry-configurable",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 29,
+        "duplicate_file_rate": 0.482759,
+        "known_files": 29,
+        "unique_files": 15
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "lib/dry/configurable/instance_methods.rb",
+        "lib/dry/configurable/methods.rb",
+        "lib/dry/configurable/config.rb",
+        "lib/dry/configurable.rb",
+        "lib/dry/configurable/class_methods.rb",
+        "lib/dry/configurable/dsl.rb",
+        "lib/dry/configurable/test_interface.rb",
+        "lib/dry/configurable/settings.rb",
+        "lib/dry/configurable/setting.rb",
+        "lib/dry/configurable/extension.rb"
+      ]
+    },
+    {
+      "candidate_budget": 29,
+      "case_id": "dry-configurable-finalize",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find configuration finalization",
+      "engine": "two_stage_structured",
+      "expected_files": [
+        "lib/dry/configurable/config.rb"
+      ],
+      "id": "dry-configurable-finalize",
+      "language": "ruby",
+      "latency_ms": 1948.08,
+      "max_document_chars": 4096,
+      "query": "finalize a configuration recursively and prevent later mutation",
+      "rank": 6,
+      "raw_candidates": {
+        "candidates": 29,
+        "duplicate_file_rate": 0.482759,
+        "known_files": 29,
+        "unique_files": 15
+      },
+      "reciprocal_rank": 0.166667,
+      "repository": "dry-configurable",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 29,
+        "duplicate_file_rate": 0.482759,
+        "known_files": 29,
+        "unique_files": 15
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "lib/dry/configurable/instance_methods.rb",
+        "lib/dry/configurable.rb",
+        "lib/dry/configurable/methods.rb",
+        "lib/dry/configurable/class_methods.rb",
+        "lib/dry/configurable/settings.rb",
+        "lib/dry/configurable/config.rb",
+        "lib/dry/configurable/dsl.rb",
+        "lib/dry/configurable/setting.rb",
+        "lib/dry/configurable/test_interface.rb",
+        "lib/dry/configurable/extension.rb"
+      ]
+    },
+    {
+      "candidate_budget": 10,
+      "case_id": "dry-configurable-inheritance",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find configurable class inheritance",
+      "engine": "current_page_content",
+      "expected_files": [
+        "lib/dry/configurable/class_methods.rb"
+      ],
+      "id": "dry-configurable-inheritance",
+      "language": "ruby",
+      "latency_ms": 692.86,
+      "max_document_chars": 7651,
+      "query": "duplicate settings and configuration values when a configurable class is inherited",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.1,
+        "known_files": 10,
+        "unique_files": 9
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "dry-configurable",
+      "requested_retrieval_budget": 10,
+      "rerank_pool": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.1,
+        "known_files": 10,
+        "unique_files": 9
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "lib/dry/configurable/class_methods.rb",
+        "lib/dry/configurable/config.rb",
+        "lib/dry/configurable/settings.rb",
+        "lib/dry/configurable/setting.rb",
+        "lib/dry/configurable/instance_methods.rb",
+        "lib/dry/configurable.rb",
+        "lib/dry/configurable/dsl.rb",
+        "lib/dry/configurable/extension.rb",
+        "lib/dry/configurable/errors.rb"
+      ]
+    },
+    {
+      "candidate_budget": 29,
+      "case_id": "dry-configurable-inheritance",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find configurable class inheritance",
+      "engine": "expanded_score_order_content",
+      "expected_files": [
+        "lib/dry/configurable/class_methods.rb"
+      ],
+      "id": "dry-configurable-inheritance",
+      "language": "ruby",
+      "latency_ms": 2381.69,
+      "max_document_chars": 7651,
+      "query": "duplicate settings and configuration values when a configurable class is inherited",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 29,
+        "duplicate_file_rate": 0.482759,
+        "known_files": 29,
+        "unique_files": 15
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "dry-configurable",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 29,
+        "duplicate_file_rate": 0.482759,
+        "known_files": 29,
+        "unique_files": 15
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "lib/dry/configurable/class_methods.rb",
+        "lib/dry/configurable/config.rb",
+        "lib/dry/configurable/settings.rb",
+        "lib/dry/configurable/setting.rb",
+        "lib/dry/configurable/instance_methods.rb",
+        "lib/dry/configurable.rb",
+        "lib/dry/configurable/dsl.rb",
+        "lib/dry/configurable/methods.rb",
+        "lib/dry/configurable/test_interface.rb",
+        "lib/dry/configurable/compiler.rb"
+      ]
+    },
+    {
+      "candidate_budget": 29,
+      "case_id": "dry-configurable-inheritance",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find configurable class inheritance",
+      "engine": "expanded_coverage_first_content",
+      "expected_files": [
+        "lib/dry/configurable/class_methods.rb"
+      ],
+      "id": "dry-configurable-inheritance",
+      "language": "ruby",
+      "latency_ms": 2737.54,
+      "max_document_chars": 7651,
+      "query": "duplicate settings and configuration values when a configurable class is inherited",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 29,
+        "duplicate_file_rate": 0.482759,
+        "known_files": 29,
+        "unique_files": 15
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "dry-configurable",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 29,
+        "duplicate_file_rate": 0.482759,
+        "known_files": 29,
+        "unique_files": 15
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "lib/dry/configurable/class_methods.rb",
+        "lib/dry/configurable/config.rb",
+        "lib/dry/configurable/settings.rb",
+        "lib/dry/configurable/setting.rb",
+        "lib/dry/configurable/instance_methods.rb",
+        "lib/dry/configurable.rb",
+        "lib/dry/configurable/dsl.rb",
+        "lib/dry/configurable/methods.rb",
+        "lib/dry/configurable/test_interface.rb",
+        "lib/dry/configurable/compiler.rb"
+      ]
+    },
+    {
+      "candidate_budget": 29,
+      "case_id": "dry-configurable-inheritance",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find configurable class inheritance",
+      "engine": "two_stage_structured",
+      "expected_files": [
+        "lib/dry/configurable/class_methods.rb"
+      ],
+      "id": "dry-configurable-inheritance",
+      "language": "ruby",
+      "latency_ms": 1736.48,
+      "max_document_chars": 4096,
+      "query": "duplicate settings and configuration values when a configurable class is inherited",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 29,
+        "duplicate_file_rate": 0.482759,
+        "known_files": 29,
+        "unique_files": 15
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "dry-configurable",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 29,
+        "duplicate_file_rate": 0.482759,
+        "known_files": 29,
+        "unique_files": 15
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "lib/dry/configurable/class_methods.rb",
+        "lib/dry/configurable/config.rb",
+        "lib/dry/configurable/instance_methods.rb",
+        "lib/dry/configurable/settings.rb",
+        "lib/dry/configurable/setting.rb",
+        "lib/dry/configurable.rb",
+        "lib/dry/configurable/test_interface.rb",
+        "lib/dry/configurable/dsl.rb",
+        "lib/dry/configurable/compiler.rb",
+        "lib/dry/configurable/methods.rb"
+      ]
+    },
+    {
+      "candidate_budget": 1,
+      "case_id": "dry-configurable-nested-settings",
+      "category": "document",
+      "content_type": "document",
+      "description": "Find nested configuration documentation",
+      "engine": "current_page_content",
+      "expected_files": [
+        "README.md"
+      ],
+      "id": "dry-configurable-nested-settings",
+      "language": "ruby",
+      "latency_ms": 215.63,
+      "max_document_chars": 830,
+      "query": "define nested settings with defaults and constructors",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 1,
+        "duplicate_file_rate": 0.0,
+        "known_files": 1,
+        "unique_files": 1
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "dry-configurable",
+      "requested_retrieval_budget": 10,
+      "rerank_pool": {
+        "candidates": 1,
+        "duplicate_file_rate": 0.0,
+        "known_files": 1,
+        "unique_files": 1
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "README.md"
+      ]
+    },
+    {
+      "candidate_budget": 1,
+      "case_id": "dry-configurable-nested-settings",
+      "category": "document",
+      "content_type": "document",
+      "description": "Find nested configuration documentation",
+      "engine": "expanded_score_order_content",
+      "expected_files": [
+        "README.md"
+      ],
+      "id": "dry-configurable-nested-settings",
+      "language": "ruby",
+      "latency_ms": 65.26,
+      "max_document_chars": 830,
+      "query": "define nested settings with defaults and constructors",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 1,
+        "duplicate_file_rate": 0.0,
+        "known_files": 1,
+        "unique_files": 1
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "dry-configurable",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 1,
+        "duplicate_file_rate": 0.0,
+        "known_files": 1,
+        "unique_files": 1
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "README.md"
+      ]
+    },
+    {
+      "candidate_budget": 1,
+      "case_id": "dry-configurable-nested-settings",
+      "category": "document",
+      "content_type": "document",
+      "description": "Find nested configuration documentation",
+      "engine": "expanded_coverage_first_content",
+      "expected_files": [
+        "README.md"
+      ],
+      "id": "dry-configurable-nested-settings",
+      "language": "ruby",
+      "latency_ms": 39.81,
+      "max_document_chars": 830,
+      "query": "define nested settings with defaults and constructors",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 1,
+        "duplicate_file_rate": 0.0,
+        "known_files": 1,
+        "unique_files": 1
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "dry-configurable",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 1,
+        "duplicate_file_rate": 0.0,
+        "known_files": 1,
+        "unique_files": 1
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "README.md"
+      ]
+    },
+    {
+      "candidate_budget": 1,
+      "case_id": "dry-configurable-nested-settings",
+      "category": "document",
+      "content_type": "document",
+      "description": "Find nested configuration documentation",
+      "engine": "two_stage_structured",
+      "expected_files": [
+        "README.md"
+      ],
+      "id": "dry-configurable-nested-settings",
+      "language": "ruby",
+      "latency_ms": 51.34,
+      "max_document_chars": 939,
+      "query": "define nested settings with defaults and constructors",
+      "rank": 1,
+      "raw_candidates": {
+        "candidates": 1,
+        "duplicate_file_rate": 0.0,
+        "known_files": 1,
+        "unique_files": 1
+      },
+      "reciprocal_rank": 1.0,
+      "repository": "dry-configurable",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 1,
+        "duplicate_file_rate": 0.0,
+        "known_files": 1,
+        "unique_files": 1
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "README.md"
+      ]
+    },
+    {
+      "candidate_budget": 10,
+      "case_id": "dry-configurable-class-and-instance",
+      "category": "cross",
+      "content_type": "mixed",
+      "description": "Find class and instance configuration behavior",
+      "engine": "current_page_content",
+      "expected_files": [
+        "README.md",
+        "lib/dry/configurable/extension.rb",
+        "lib/dry/configurable/instance_methods.rb"
+      ],
+      "id": "dry-configurable-class-and-instance",
+      "language": "ruby",
+      "latency_ms": 910.18,
+      "max_document_chars": 7651,
+      "query": "expose the same configurable settings on classes and instances",
+      "rank": 4,
+      "raw_candidates": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.1,
+        "known_files": 10,
+        "unique_files": 9
+      },
+      "reciprocal_rank": 0.25,
+      "repository": "dry-configurable",
+      "requested_retrieval_budget": 10,
+      "rerank_pool": {
+        "candidates": 10,
+        "duplicate_file_rate": 0.1,
+        "known_files": 10,
+        "unique_files": 9
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "lib/dry/configurable/class_methods.rb",
+        "lib/dry/configurable/config.rb",
+        "lib/dry/configurable/settings.rb",
+        "lib/dry/configurable/instance_methods.rb",
+        "lib/dry/configurable/dsl.rb",
+        "lib/dry/configurable/setting.rb",
+        "lib/dry/configurable.rb",
+        "lib/dry/configurable/extension.rb",
+        "lib/dry/configurable/test_interface.rb"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "dry-configurable-class-and-instance",
+      "category": "cross",
+      "content_type": "mixed",
+      "description": "Find class and instance configuration behavior",
+      "engine": "expanded_score_order_content",
+      "expected_files": [
+        "README.md",
+        "lib/dry/configurable/extension.rb",
+        "lib/dry/configurable/instance_methods.rb"
+      ],
+      "id": "dry-configurable-class-and-instance",
+      "language": "ruby",
+      "latency_ms": 1780.33,
+      "max_document_chars": 7651,
+      "query": "expose the same configurable settings on classes and instances",
+      "rank": 5,
+      "raw_candidates": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.466667,
+        "known_files": 30,
+        "unique_files": 16
+      },
+      "reciprocal_rank": 0.2,
+      "repository": "dry-configurable",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.466667,
+        "known_files": 30,
+        "unique_files": 16
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "lib/dry/configurable/class_methods.rb",
+        "lib/dry/configurable/config.rb",
+        "lib/dry/configurable/settings.rb",
+        "lib/dry/configurable/methods.rb",
+        "lib/dry/configurable/instance_methods.rb",
+        "lib/dry/configurable/dsl.rb",
+        "lib/dry/configurable/setting.rb",
+        "lib/dry/configurable.rb",
+        "lib/dry/configurable/extension.rb",
+        "lib/dry/configurable/compiler.rb"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "dry-configurable-class-and-instance",
+      "category": "cross",
+      "content_type": "mixed",
+      "description": "Find class and instance configuration behavior",
+      "engine": "expanded_coverage_first_content",
+      "expected_files": [
+        "README.md",
+        "lib/dry/configurable/extension.rb",
+        "lib/dry/configurable/instance_methods.rb"
+      ],
+      "id": "dry-configurable-class-and-instance",
+      "language": "ruby",
+      "latency_ms": 2473.82,
+      "max_document_chars": 7651,
+      "query": "expose the same configurable settings on classes and instances",
+      "rank": 5,
+      "raw_candidates": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.466667,
+        "known_files": 30,
+        "unique_files": 16
+      },
+      "reciprocal_rank": 0.2,
+      "repository": "dry-configurable",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.466667,
+        "known_files": 30,
+        "unique_files": 16
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "lib/dry/configurable/class_methods.rb",
+        "lib/dry/configurable/config.rb",
+        "lib/dry/configurable/settings.rb",
+        "lib/dry/configurable/methods.rb",
+        "lib/dry/configurable/instance_methods.rb",
+        "lib/dry/configurable/dsl.rb",
+        "lib/dry/configurable/setting.rb",
+        "lib/dry/configurable.rb",
+        "lib/dry/configurable/extension.rb",
+        "lib/dry/configurable/compiler.rb"
+      ]
+    },
+    {
+      "candidate_budget": 30,
+      "case_id": "dry-configurable-class-and-instance",
+      "category": "cross",
+      "content_type": "mixed",
+      "description": "Find class and instance configuration behavior",
+      "engine": "two_stage_structured",
+      "expected_files": [
+        "README.md",
+        "lib/dry/configurable/extension.rb",
+        "lib/dry/configurable/instance_methods.rb"
+      ],
+      "id": "dry-configurable-class-and-instance",
+      "language": "ruby",
+      "latency_ms": 1705.46,
+      "max_document_chars": 4096,
+      "query": "expose the same configurable settings on classes and instances",
+      "rank": 4,
+      "raw_candidates": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.466667,
+        "known_files": 30,
+        "unique_files": 16
+      },
+      "reciprocal_rank": 0.25,
+      "repository": "dry-configurable",
+      "requested_retrieval_budget": 150,
+      "rerank_pool": {
+        "candidates": 30,
+        "duplicate_file_rate": 0.466667,
+        "known_files": 30,
+        "unique_files": 16
+      },
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "lib/dry/configurable/config.rb",
+        "lib/dry/configurable/class_methods.rb",
+        "lib/dry/configurable/settings.rb",
+        "lib/dry/configurable/instance_methods.rb",
+        "lib/dry/configurable/dsl.rb",
+        "lib/dry/configurable/methods.rb",
+        "lib/dry/configurable/setting.rb",
+        "lib/dry/configurable/compiler.rb",
+        "lib/dry/configurable.rb",
+        "lib/dry/configurable/extension.rb"
+      ]
+    }
+  ],
+  "repositories": {
+    "attrs": {
+      "content_types": [
+        "code",
+        "markdown",
+        "rst"
+      ],
+      "index": {
+        "cached": false,
+        "chunks_created": 245,
+        "files_processed": 52,
+        "index_ms": 14895.27
+      },
+      "languages": [
+        "python"
+      ],
+      "license": "MIT",
+      "repository_url": "https://github.com/python-attrs/attrs.git",
+      "revision": "d544dd2dacb4cbd660891e323ad92751ba65b4e0"
+    },
+    "dry-configurable": {
+      "content_types": [
+        "code",
+        "markdown"
+      ],
+      "index": {
+        "cached": false,
+        "chunks_created": 30,
+        "files_processed": 16,
+        "index_ms": 4376.8
+      },
+      "languages": [
+        "ruby"
+      ],
+      "license": "MIT",
+      "repository_url": "https://github.com/dry-rb/dry-configurable.git",
+      "revision": "e5e025dfddb481485affe6bb7363d3cf37f153b5"
+    },
+    "fastroute": {
+      "content_types": [
+        "code",
+        "markdown"
+      ],
+      "index": {
+        "cached": false,
+        "chunks_created": 65,
+        "files_processed": 32,
+        "index_ms": 17375.97
+      },
+      "languages": [
+        "php"
+      ],
+      "license": "BSD-3-Clause",
+      "repository_url": "https://github.com/nikic/FastRoute.git",
+      "revision": "1c961398bef1ff6ecd8b273bef651d7afe90312b"
+    },
+    "hono": {
+      "content_types": [
+        "code",
+        "markdown"
+      ],
+      "index": {
+        "cached": false,
+        "chunks_created": 356,
+        "files_processed": 315,
+        "index_ms": 67467.09
+      },
+      "languages": [
+        "typescript",
+        "javascript"
+      ],
+      "license": "MIT",
+      "repository_url": "https://github.com/honojs/hono.git",
+      "revision": "b2ae3a2204a48ce15a26448fd746d39745eb1837"
+    },
+    "pflag": {
+      "content_types": [
+        "code",
+        "markdown"
+      ],
+      "index": {
+        "cached": false,
+        "chunks_created": 1576,
+        "files_processed": 79,
+        "index_ms": 104658.22
+      },
+      "languages": [
+        "go"
+      ],
+      "license": "BSD-3-Clause",
+      "repository_url": "https://github.com/spf13/pflag.git",
+      "revision": "5fdac2d16c16d60605cb8baa887e8c5c38ef623f"
+    },
+    "swift-argument-parser": {
+      "content_types": [
+        "code",
+        "markdown",
+        "docc"
+      ],
+      "index": {
+        "cached": false,
+        "chunks_created": 447,
+        "files_processed": 75,
+        "index_ms": 58707.93
+      },
+      "languages": [
+        "swift"
+      ],
+      "license": "Apache-2.0",
+      "repository_url": "https://github.com/apple/swift-argument-parser.git",
+      "revision": "e579882f95579e7d7eb8c8068a5925c65d361e91"
+    }
+  },
+  "summary": {
+    "candidate_pool": {
+      "current_page_content": {
+        "max_document_chars": 57250,
+        "mean_pool_candidates": 8.6,
+        "mean_pool_duplicate_file_rate": 0.272222,
+        "mean_pool_unique_files": 6.166667,
+        "mean_raw_candidates": 8.6
+      },
+      "expanded_coverage_first_content": {
+        "max_document_chars": 62576,
+        "mean_pool_candidates": 25.9,
+        "mean_pool_duplicate_file_rate": 0.183593,
+        "mean_pool_unique_files": 21.766667,
+        "mean_raw_candidates": 92.433333
+      },
+      "expanded_score_order_content": {
+        "max_document_chars": 62576,
+        "mean_pool_candidates": 25.9,
+        "mean_pool_duplicate_file_rate": 0.434704,
+        "mean_pool_unique_files": 14.233333,
+        "mean_raw_candidates": 92.433333
+      },
+      "two_stage_structured": {
+        "max_document_chars": 4096,
+        "mean_pool_candidates": 25.9,
+        "mean_pool_duplicate_file_rate": 0.183593,
+        "mean_pool_unique_files": 21.766667,
+        "mean_raw_candidates": 92.433333
+      }
+    },
+    "latency": {
+      "current_page_content": {
+        "mean_ms": 998.94,
+        "p50_ms": 681.79,
+        "p95_ms": 3406.24
+      },
+      "expanded_coverage_first_content": {
+        "mean_ms": 3469.5,
+        "p50_ms": 2318.39,
+        "p95_ms": 12177.25
+      },
+      "expanded_score_order_content": {
+        "mean_ms": 3053.91,
+        "p50_ms": 2038.88,
+        "p95_ms": 10176.39
+      },
+      "two_stage_structured": {
+        "mean_ms": 2818.08,
+        "p50_ms": 2044.18,
+        "p95_ms": 8093.41
+      }
+    },
+    "paired_macro_mrr": {
+      "expanded_coverage_first_content": {
+        "baseline": 0.75,
+        "baseline_engine": "current_page_content",
+        "bootstrap_unit": "repository",
+        "ci_lower": -0.14246,
+        "ci_upper": 0.056944,
+        "confidence": 0.95,
+        "delta": -0.030238,
+        "iterations": 10000,
+        "metric": "macro_mrr_at_10_delta",
+        "paired_queries": 30,
+        "repositories": 6,
+        "seed": 1729,
+        "treatment": 0.719762,
+        "treatment_engine": "expanded_coverage_first_content"
+      },
+      "expanded_score_order_content": {
+        "baseline": 0.75,
+        "baseline_engine": "current_page_content",
+        "bootstrap_unit": "repository",
+        "ci_lower": -0.047778,
+        "ci_upper": 0.145556,
+        "confidence": 0.95,
+        "delta": 0.04,
+        "iterations": 10000,
+        "metric": "macro_mrr_at_10_delta",
+        "paired_queries": 30,
+        "repositories": 6,
+        "seed": 1729,
+        "treatment": 0.79,
+        "treatment_engine": "expanded_score_order_content"
+      },
+      "two_stage_structured": {
+        "baseline": 0.75,
+        "baseline_engine": "current_page_content",
+        "bootstrap_unit": "repository",
+        "ci_lower": -0.058353,
+        "ci_upper": 0.157937,
+        "confidence": 0.95,
+        "delta": 0.05119,
+        "iterations": 10000,
+        "metric": "macro_mrr_at_10_delta",
+        "paired_queries": 30,
+        "repositories": 6,
+        "seed": 1729,
+        "treatment": 0.80119,
+        "treatment_engine": "two_stage_structured"
+      }
+    },
+    "per_repository": {
+      "attrs": {
+        "current_page_content": {
+          "mrr_at_10": 0.866667,
+          "queries_supported": 5,
+          "top_1": 0.8,
+          "top_10": 1.0,
+          "top_3": 1.0,
+          "top_5": 1.0
+        },
+        "expanded_coverage_first_content": {
+          "mrr_at_10": 1.0,
+          "queries_supported": 5,
+          "top_1": 1.0,
+          "top_10": 1.0,
+          "top_3": 1.0,
+          "top_5": 1.0
+        },
+        "expanded_score_order_content": {
+          "mrr_at_10": 1.0,
+          "queries_supported": 5,
+          "top_1": 1.0,
+          "top_10": 1.0,
+          "top_3": 1.0,
+          "top_5": 1.0
+        },
+        "two_stage_structured": {
+          "mrr_at_10": 1.0,
+          "queries_supported": 5,
+          "top_1": 1.0,
+          "top_10": 1.0,
+          "top_3": 1.0,
+          "top_5": 1.0
+        }
+      },
+      "dry-configurable": {
+        "current_page_content": {
+          "mrr_at_10": 0.716667,
+          "queries_supported": 5,
+          "top_1": 0.6,
+          "top_10": 1.0,
+          "top_3": 0.8,
+          "top_5": 1.0
+        },
+        "expanded_coverage_first_content": {
+          "mrr_at_10": 0.706667,
+          "queries_supported": 5,
+          "top_1": 0.6,
+          "top_10": 1.0,
+          "top_3": 0.8,
+          "top_5": 1.0
+        },
+        "expanded_score_order_content": {
+          "mrr_at_10": 0.706667,
+          "queries_supported": 5,
+          "top_1": 0.6,
+          "top_10": 1.0,
+          "top_3": 0.8,
+          "top_5": 1.0
+        },
+        "two_stage_structured": {
+          "mrr_at_10": 0.683333,
+          "queries_supported": 5,
+          "top_1": 0.6,
+          "top_10": 1.0,
+          "top_3": 0.6,
+          "top_5": 0.8
+        }
+      },
+      "fastroute": {
+        "current_page_content": {
+          "mrr_at_10": 0.6,
+          "queries_supported": 5,
+          "top_1": 0.4,
+          "top_10": 0.8,
+          "top_3": 0.8,
+          "top_5": 0.8
+        },
+        "expanded_coverage_first_content": {
+          "mrr_at_10": 0.625,
+          "queries_supported": 5,
+          "top_1": 0.4,
+          "top_10": 1.0,
+          "top_3": 0.8,
+          "top_5": 0.8
+        },
+        "expanded_score_order_content": {
+          "mrr_at_10": 0.6,
+          "queries_supported": 5,
+          "top_1": 0.4,
+          "top_10": 0.8,
+          "top_3": 0.8,
+          "top_5": 0.8
+        },
+        "two_stage_structured": {
+          "mrr_at_10": 0.828571,
+          "queries_supported": 5,
+          "top_1": 0.8,
+          "top_10": 1.0,
+          "top_3": 0.8,
+          "top_5": 0.8
+        }
+      },
+      "hono": {
+        "current_page_content": {
+          "mrr_at_10": 0.9,
+          "queries_supported": 5,
+          "top_1": 0.8,
+          "top_10": 1.0,
+          "top_3": 1.0,
+          "top_5": 1.0
+        },
+        "expanded_coverage_first_content": {
+          "mrr_at_10": 0.9,
+          "queries_supported": 5,
+          "top_1": 0.8,
+          "top_10": 1.0,
+          "top_3": 1.0,
+          "top_5": 1.0
+        },
+        "expanded_score_order_content": {
+          "mrr_at_10": 0.9,
+          "queries_supported": 5,
+          "top_1": 0.8,
+          "top_10": 1.0,
+          "top_3": 1.0,
+          "top_5": 1.0
+        },
+        "two_stage_structured": {
+          "mrr_at_10": 0.85,
+          "queries_supported": 5,
+          "top_1": 0.8,
+          "top_10": 1.0,
+          "top_3": 0.8,
+          "top_5": 1.0
+        }
+      },
+      "pflag": {
+        "current_page_content": {
+          "mrr_at_10": 0.65,
+          "queries_supported": 5,
+          "top_1": 0.4,
+          "top_10": 1.0,
+          "top_3": 0.8,
+          "top_5": 1.0
+        },
+        "expanded_coverage_first_content": {
+          "mrr_at_10": 0.595238,
+          "queries_supported": 5,
+          "top_1": 0.4,
+          "top_10": 1.0,
+          "top_3": 0.8,
+          "top_5": 0.8
+        },
+        "expanded_score_order_content": {
+          "mrr_at_10": 0.9,
+          "queries_supported": 5,
+          "top_1": 0.8,
+          "top_10": 1.0,
+          "top_3": 1.0,
+          "top_5": 1.0
+        },
+        "two_stage_structured": {
+          "mrr_at_10": 0.828571,
+          "queries_supported": 5,
+          "top_1": 0.8,
+          "top_10": 1.0,
+          "top_3": 0.8,
+          "top_5": 0.8
+        }
+      },
+      "swift-argument-parser": {
+        "current_page_content": {
+          "mrr_at_10": 0.766667,
+          "queries_supported": 5,
+          "top_1": 0.6,
+          "top_10": 1.0,
+          "top_3": 1.0,
+          "top_5": 1.0
+        },
+        "expanded_coverage_first_content": {
+          "mrr_at_10": 0.491667,
+          "queries_supported": 5,
+          "top_1": 0.2,
+          "top_10": 1.0,
+          "top_3": 0.8,
+          "top_5": 0.8
+        },
+        "expanded_score_order_content": {
+          "mrr_at_10": 0.633333,
+          "queries_supported": 5,
+          "top_1": 0.4,
+          "top_10": 1.0,
+          "top_3": 0.8,
+          "top_5": 0.8
+        },
+        "two_stage_structured": {
+          "mrr_at_10": 0.616667,
+          "queries_supported": 5,
+          "top_1": 0.4,
+          "top_10": 1.0,
+          "top_3": 0.8,
+          "top_5": 1.0
+        }
+      }
+    },
+    "pooled": {
+      "current_page_content": {
+        "mrr_at_10": 0.75,
+        "queries_supported": 30,
+        "top_1": 0.6,
+        "top_10": 0.966667,
+        "top_3": 0.9,
+        "top_5": 0.966667
+      },
+      "expanded_coverage_first_content": {
+        "mrr_at_10": 0.719762,
+        "queries_supported": 30,
+        "top_1": 0.566667,
+        "top_10": 1.0,
+        "top_3": 0.866667,
+        "top_5": 0.9
+      },
+      "expanded_score_order_content": {
+        "mrr_at_10": 0.79,
+        "queries_supported": 30,
+        "top_1": 0.666667,
+        "top_10": 0.966667,
+        "top_3": 0.9,
+        "top_5": 0.933333
+      },
+      "two_stage_structured": {
+        "mrr_at_10": 0.80119,
+        "queries_supported": 30,
+        "top_1": 0.733333,
+        "top_10": 1.0,
+        "top_3": 0.8,
+        "top_5": 0.9
+      }
+    },
+    "predeclared_gates": {
+      "added_p95_at_most_300_ms": false,
+      "macro_mrr_non_negative": true,
+      "max_document_chars_enforced": true,
+      "passed": false,
+      "treatment_p95_at_most_500_ms": false
+    },
+    "primary_macro_per_repository": {
+      "current_page_content": {
+        "mrr_at_10": 0.75,
+        "per_repository": {
+          "attrs": {
+            "mrr_at_10": 0.866667,
+            "queries_supported": 5,
+            "top_1": 0.8,
+            "top_10": 1.0,
+            "top_3": 1.0,
+            "top_5": 1.0
+          },
+          "dry-configurable": {
+            "mrr_at_10": 0.716667,
+            "queries_supported": 5,
+            "top_1": 0.6,
+            "top_10": 1.0,
+            "top_3": 0.8,
+            "top_5": 1.0
+          },
+          "fastroute": {
+            "mrr_at_10": 0.6,
+            "queries_supported": 5,
+            "top_1": 0.4,
+            "top_10": 0.8,
+            "top_3": 0.8,
+            "top_5": 0.8
+          },
+          "hono": {
+            "mrr_at_10": 0.9,
+            "queries_supported": 5,
+            "top_1": 0.8,
+            "top_10": 1.0,
+            "top_3": 1.0,
+            "top_5": 1.0
+          },
+          "pflag": {
+            "mrr_at_10": 0.65,
+            "queries_supported": 5,
+            "top_1": 0.4,
+            "top_10": 1.0,
+            "top_3": 0.8,
+            "top_5": 1.0
+          },
+          "swift-argument-parser": {
+            "mrr_at_10": 0.766667,
+            "queries_supported": 5,
+            "top_1": 0.6,
+            "top_10": 1.0,
+            "top_3": 1.0,
+            "top_5": 1.0
+          }
+        },
+        "queries_supported": 30,
+        "repositories": 6,
+        "top_1": 0.6,
+        "top_10": 0.966667,
+        "top_3": 0.9,
+        "top_5": 0.966667
+      },
+      "expanded_coverage_first_content": {
+        "mrr_at_10": 0.719762,
+        "per_repository": {
+          "attrs": {
+            "mrr_at_10": 1.0,
+            "queries_supported": 5,
+            "top_1": 1.0,
+            "top_10": 1.0,
+            "top_3": 1.0,
+            "top_5": 1.0
+          },
+          "dry-configurable": {
+            "mrr_at_10": 0.706667,
+            "queries_supported": 5,
+            "top_1": 0.6,
+            "top_10": 1.0,
+            "top_3": 0.8,
+            "top_5": 1.0
+          },
+          "fastroute": {
+            "mrr_at_10": 0.625,
+            "queries_supported": 5,
+            "top_1": 0.4,
+            "top_10": 1.0,
+            "top_3": 0.8,
+            "top_5": 0.8
+          },
+          "hono": {
+            "mrr_at_10": 0.9,
+            "queries_supported": 5,
+            "top_1": 0.8,
+            "top_10": 1.0,
+            "top_3": 1.0,
+            "top_5": 1.0
+          },
+          "pflag": {
+            "mrr_at_10": 0.595238,
+            "queries_supported": 5,
+            "top_1": 0.4,
+            "top_10": 1.0,
+            "top_3": 0.8,
+            "top_5": 0.8
+          },
+          "swift-argument-parser": {
+            "mrr_at_10": 0.491667,
+            "queries_supported": 5,
+            "top_1": 0.2,
+            "top_10": 1.0,
+            "top_3": 0.8,
+            "top_5": 0.8
+          }
+        },
+        "queries_supported": 30,
+        "repositories": 6,
+        "top_1": 0.566667,
+        "top_10": 1.0,
+        "top_3": 0.866667,
+        "top_5": 0.9
+      },
+      "expanded_score_order_content": {
+        "mrr_at_10": 0.79,
+        "per_repository": {
+          "attrs": {
+            "mrr_at_10": 1.0,
+            "queries_supported": 5,
+            "top_1": 1.0,
+            "top_10": 1.0,
+            "top_3": 1.0,
+            "top_5": 1.0
+          },
+          "dry-configurable": {
+            "mrr_at_10": 0.706667,
+            "queries_supported": 5,
+            "top_1": 0.6,
+            "top_10": 1.0,
+            "top_3": 0.8,
+            "top_5": 1.0
+          },
+          "fastroute": {
+            "mrr_at_10": 0.6,
+            "queries_supported": 5,
+            "top_1": 0.4,
+            "top_10": 0.8,
+            "top_3": 0.8,
+            "top_5": 0.8
+          },
+          "hono": {
+            "mrr_at_10": 0.9,
+            "queries_supported": 5,
+            "top_1": 0.8,
+            "top_10": 1.0,
+            "top_3": 1.0,
+            "top_5": 1.0
+          },
+          "pflag": {
+            "mrr_at_10": 0.9,
+            "queries_supported": 5,
+            "top_1": 0.8,
+            "top_10": 1.0,
+            "top_3": 1.0,
+            "top_5": 1.0
+          },
+          "swift-argument-parser": {
+            "mrr_at_10": 0.633333,
+            "queries_supported": 5,
+            "top_1": 0.4,
+            "top_10": 1.0,
+            "top_3": 0.8,
+            "top_5": 0.8
+          }
+        },
+        "queries_supported": 30,
+        "repositories": 6,
+        "top_1": 0.666667,
+        "top_10": 0.966667,
+        "top_3": 0.9,
+        "top_5": 0.933333
+      },
+      "two_stage_structured": {
+        "mrr_at_10": 0.80119,
+        "per_repository": {
+          "attrs": {
+            "mrr_at_10": 1.0,
+            "queries_supported": 5,
+            "top_1": 1.0,
+            "top_10": 1.0,
+            "top_3": 1.0,
+            "top_5": 1.0
+          },
+          "dry-configurable": {
+            "mrr_at_10": 0.683333,
+            "queries_supported": 5,
+            "top_1": 0.6,
+            "top_10": 1.0,
+            "top_3": 0.6,
+            "top_5": 0.8
+          },
+          "fastroute": {
+            "mrr_at_10": 0.828571,
+            "queries_supported": 5,
+            "top_1": 0.8,
+            "top_10": 1.0,
+            "top_3": 0.8,
+            "top_5": 0.8
+          },
+          "hono": {
+            "mrr_at_10": 0.85,
+            "queries_supported": 5,
+            "top_1": 0.8,
+            "top_10": 1.0,
+            "top_3": 0.8,
+            "top_5": 1.0
+          },
+          "pflag": {
+            "mrr_at_10": 0.828571,
+            "queries_supported": 5,
+            "top_1": 0.8,
+            "top_10": 1.0,
+            "top_3": 0.8,
+            "top_5": 0.8
+          },
+          "swift-argument-parser": {
+            "mrr_at_10": 0.616667,
+            "queries_supported": 5,
+            "top_1": 0.4,
+            "top_10": 1.0,
+            "top_3": 0.8,
+            "top_5": 1.0
+          }
+        },
+        "queries_supported": 30,
+        "repositories": 6,
+        "top_1": 0.733333,
+        "top_10": 1.0,
+        "top_3": 0.8,
+        "top_5": 0.9
+      }
+    },
+    "protected_segments": {
+      "content_type": {
+        "current_page_content/code": {
+          "mrr_at_10": 0.625,
+          "queries_supported": 18,
+          "top_1": 0.388889,
+          "top_10": 0.944444,
+          "top_3": 0.888889,
+          "top_5": 0.944444
+        },
+        "current_page_content/document": {
+          "mrr_at_10": 1.0,
+          "queries_supported": 6,
+          "top_1": 1.0,
+          "top_10": 1.0,
+          "top_3": 1.0,
+          "top_5": 1.0
+        },
+        "current_page_content/mixed": {
+          "mrr_at_10": 0.875,
+          "queries_supported": 6,
+          "top_1": 0.833333,
+          "top_10": 1.0,
+          "top_3": 0.833333,
+          "top_5": 1.0
+        },
+        "expanded_coverage_first_content/code": {
+          "mrr_at_10": 0.605159,
+          "queries_supported": 18,
+          "top_1": 0.388889,
+          "top_10": 1.0,
+          "top_3": 0.833333,
+          "top_5": 0.833333
+        },
+        "expanded_coverage_first_content/document": {
+          "mrr_at_10": 0.916667,
+          "queries_supported": 6,
+          "top_1": 0.833333,
+          "top_10": 1.0,
+          "top_3": 1.0,
+          "top_5": 1.0
+        },
+        "expanded_coverage_first_content/mixed": {
+          "mrr_at_10": 0.866667,
+          "queries_supported": 6,
+          "top_1": 0.833333,
+          "top_10": 1.0,
+          "top_3": 0.833333,
+          "top_5": 1.0
+        },
+        "expanded_score_order_content/code": {
+          "mrr_at_10": 0.722222,
+          "queries_supported": 18,
+          "top_1": 0.555556,
+          "top_10": 0.944444,
+          "top_3": 0.888889,
+          "top_5": 0.888889
+        },
+        "expanded_score_order_content/document": {
+          "mrr_at_10": 0.916667,
+          "queries_supported": 6,
+          "top_1": 0.833333,
+          "top_10": 1.0,
+          "top_3": 1.0,
+          "top_5": 1.0
+        },
+        "expanded_score_order_content/mixed": {
+          "mrr_at_10": 0.866667,
+          "queries_supported": 6,
+          "top_1": 0.833333,
+          "top_10": 1.0,
+          "top_3": 0.833333,
+          "top_5": 1.0
+        },
+        "two_stage_structured/code": {
+          "mrr_at_10": 0.738095,
+          "queries_supported": 18,
+          "top_1": 0.666667,
+          "top_10": 1.0,
+          "top_3": 0.722222,
+          "top_5": 0.833333
+        },
+        "two_stage_structured/document": {
+          "mrr_at_10": 0.916667,
+          "queries_supported": 6,
+          "top_1": 0.833333,
+          "top_10": 1.0,
+          "top_3": 1.0,
+          "top_5": 1.0
+        },
+        "two_stage_structured/mixed": {
+          "mrr_at_10": 0.875,
+          "queries_supported": 6,
+          "top_1": 0.833333,
+          "top_10": 1.0,
+          "top_3": 0.833333,
+          "top_5": 1.0
+        }
+      },
+      "language": {
+        "current_page_content/go": {
+          "mrr_at_10": 0.65,
+          "queries_supported": 5,
+          "top_1": 0.4,
+          "top_10": 1.0,
+          "top_3": 0.8,
+          "top_5": 1.0
+        },
+        "current_page_content/php": {
+          "mrr_at_10": 0.6,
+          "queries_supported": 5,
+          "top_1": 0.4,
+          "top_10": 0.8,
+          "top_3": 0.8,
+          "top_5": 0.8
+        },
+        "current_page_content/python": {
+          "mrr_at_10": 0.866667,
+          "queries_supported": 5,
+          "top_1": 0.8,
+          "top_10": 1.0,
+          "top_3": 1.0,
+          "top_5": 1.0
+        },
+        "current_page_content/ruby": {
+          "mrr_at_10": 0.716667,
+          "queries_supported": 5,
+          "top_1": 0.6,
+          "top_10": 1.0,
+          "top_3": 0.8,
+          "top_5": 1.0
+        },
+        "current_page_content/swift": {
+          "mrr_at_10": 0.766667,
+          "queries_supported": 5,
+          "top_1": 0.6,
+          "top_10": 1.0,
+          "top_3": 1.0,
+          "top_5": 1.0
+        },
+        "current_page_content/typescript": {
+          "mrr_at_10": 0.9,
+          "queries_supported": 5,
+          "top_1": 0.8,
+          "top_10": 1.0,
+          "top_3": 1.0,
+          "top_5": 1.0
+        },
+        "expanded_coverage_first_content/go": {
+          "mrr_at_10": 0.595238,
+          "queries_supported": 5,
+          "top_1": 0.4,
+          "top_10": 1.0,
+          "top_3": 0.8,
+          "top_5": 0.8
+        },
+        "expanded_coverage_first_content/php": {
+          "mrr_at_10": 0.625,
+          "queries_supported": 5,
+          "top_1": 0.4,
+          "top_10": 1.0,
+          "top_3": 0.8,
+          "top_5": 0.8
+        },
+        "expanded_coverage_first_content/python": {
+          "mrr_at_10": 1.0,
+          "queries_supported": 5,
+          "top_1": 1.0,
+          "top_10": 1.0,
+          "top_3": 1.0,
+          "top_5": 1.0
+        },
+        "expanded_coverage_first_content/ruby": {
+          "mrr_at_10": 0.706667,
+          "queries_supported": 5,
+          "top_1": 0.6,
+          "top_10": 1.0,
+          "top_3": 0.8,
+          "top_5": 1.0
+        },
+        "expanded_coverage_first_content/swift": {
+          "mrr_at_10": 0.491667,
+          "queries_supported": 5,
+          "top_1": 0.2,
+          "top_10": 1.0,
+          "top_3": 0.8,
+          "top_5": 0.8
+        },
+        "expanded_coverage_first_content/typescript": {
+          "mrr_at_10": 0.9,
+          "queries_supported": 5,
+          "top_1": 0.8,
+          "top_10": 1.0,
+          "top_3": 1.0,
+          "top_5": 1.0
+        },
+        "expanded_score_order_content/go": {
+          "mrr_at_10": 0.9,
+          "queries_supported": 5,
+          "top_1": 0.8,
+          "top_10": 1.0,
+          "top_3": 1.0,
+          "top_5": 1.0
+        },
+        "expanded_score_order_content/php": {
+          "mrr_at_10": 0.6,
+          "queries_supported": 5,
+          "top_1": 0.4,
+          "top_10": 0.8,
+          "top_3": 0.8,
+          "top_5": 0.8
+        },
+        "expanded_score_order_content/python": {
+          "mrr_at_10": 1.0,
+          "queries_supported": 5,
+          "top_1": 1.0,
+          "top_10": 1.0,
+          "top_3": 1.0,
+          "top_5": 1.0
+        },
+        "expanded_score_order_content/ruby": {
+          "mrr_at_10": 0.706667,
+          "queries_supported": 5,
+          "top_1": 0.6,
+          "top_10": 1.0,
+          "top_3": 0.8,
+          "top_5": 1.0
+        },
+        "expanded_score_order_content/swift": {
+          "mrr_at_10": 0.633333,
+          "queries_supported": 5,
+          "top_1": 0.4,
+          "top_10": 1.0,
+          "top_3": 0.8,
+          "top_5": 0.8
+        },
+        "expanded_score_order_content/typescript": {
+          "mrr_at_10": 0.9,
+          "queries_supported": 5,
+          "top_1": 0.8,
+          "top_10": 1.0,
+          "top_3": 1.0,
+          "top_5": 1.0
+        },
+        "two_stage_structured/go": {
+          "mrr_at_10": 0.828571,
+          "queries_supported": 5,
+          "top_1": 0.8,
+          "top_10": 1.0,
+          "top_3": 0.8,
+          "top_5": 0.8
+        },
+        "two_stage_structured/php": {
+          "mrr_at_10": 0.828571,
+          "queries_supported": 5,
+          "top_1": 0.8,
+          "top_10": 1.0,
+          "top_3": 0.8,
+          "top_5": 0.8
+        },
+        "two_stage_structured/python": {
+          "mrr_at_10": 1.0,
+          "queries_supported": 5,
+          "top_1": 1.0,
+          "top_10": 1.0,
+          "top_3": 1.0,
+          "top_5": 1.0
+        },
+        "two_stage_structured/ruby": {
+          "mrr_at_10": 0.683333,
+          "queries_supported": 5,
+          "top_1": 0.6,
+          "top_10": 1.0,
+          "top_3": 0.6,
+          "top_5": 0.8
+        },
+        "two_stage_structured/swift": {
+          "mrr_at_10": 0.616667,
+          "queries_supported": 5,
+          "top_1": 0.4,
+          "top_10": 1.0,
+          "top_3": 0.8,
+          "top_5": 1.0
+        },
+        "two_stage_structured/typescript": {
+          "mrr_at_10": 0.85,
+          "queries_supported": 5,
+          "top_1": 0.8,
+          "top_10": 1.0,
+          "top_3": 0.8,
+          "top_5": 1.0
+        }
+      }
+    }
+  }
+}

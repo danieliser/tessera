@@ -7,10 +7,10 @@ from fastmcp import FastMCP
 
 from ...embeddings import EmbeddingUnavailableError
 from ...rerank import (
-    MAX_RERANK_DOCUMENT_CHARS,
     RERANK_POOL_SELECTION,
     build_rerank_documents,
     rerank_candidate_budget,
+    rerank_document_budget,
     rerank_retrieval_budget,
     select_rerank_candidates,
 )
@@ -216,18 +216,20 @@ def register_search_tools(mcp: FastMCP) -> None:
             if _reranker and all_results:
                 try:
                     rerank_pool = select_rerank_candidates(all_results, candidate_limit)
+                    document_char_limit = rerank_document_budget(limit, len(rerank_pool))
                     if federated_trace is not None:
                         federated_trace.record_rerank_pool(
                             rerank_pool,
                             requested_size=candidate_limit,
                             retrieval_size=retrieval_limit,
                             selection_policy=RERANK_POOL_SELECTION,
-                            document_char_limit=MAX_RERANK_DOCUMENT_CHARS,
+                            document_char_limit=document_char_limit,
                         )
                     docs = await asyncio.to_thread(
                         build_rerank_documents,
                         rerank_pool,
                         db_by_pid,
+                        max_chars=document_char_limit,
                     )
                     reranked = await asyncio.to_thread(_reranker.rerank, query, docs, limit)
                     all_results = [rerank_pool[idx] for idx, _score in reranked]
