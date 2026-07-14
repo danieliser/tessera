@@ -16,6 +16,7 @@ class ImportBinding:
     target_name: str
     module_path: PurePosixPath
     language: str
+    is_module: bool = False
 
 
 _TYPESCRIPT_NAMED_IMPORT = re.compile(
@@ -32,9 +33,8 @@ def extract_import_bindings(
 ) -> dict[str, ImportBinding]:
     """Return local names that can be resolved to an in-project import target.
 
-    Only named imports are included. Namespace/default imports need receiver-aware
-    call extraction, and are intentionally left to the existing conservative
-    name-based fallback rather than being guessed here.
+    Named imports and Python module imports are included. Python module imports
+    are only used when a parser records a simple ``module.member()`` receiver.
     """
     if language == "python":
         return _extract_python_bindings(file_path, source)
@@ -68,21 +68,40 @@ def _extract_python_bindings(file_path: str, source: str) -> dict[str, ImportBin
 
     bindings: dict[str, ImportBinding] = {}
     for node in tree.body:
-        if not isinstance(node, ast.ImportFrom):
-            continue
-        module_path = _python_module_path(file_path, node.module, node.level)
-        if module_path is None:
-            continue
-        for imported in node.names:
-            if imported.name == "*":
+        if isinstance(node, ast.ImportFrom):
+            module_path = _python_module_path(file_path, node.module, node.level)
+            if module_path is None:
                 continue
-            local_name = imported.asname or imported.name
-            bindings[local_name] = ImportBinding(
-                local_name=local_name,
-                target_name=imported.name,
-                module_path=module_path,
-                language="python",
-            )
+            for imported in node.names:
+                if imported.name == "*":
+                    continue
+                local_name = imported.asname or imported.name
+                bindings[local_name] = ImportBinding(
+                    local_name=local_name,
+                    target_name=imported.name,
+                    module_path=module_path,
+                    language="python",
+                )
+        elif isinstance(node, ast.Import):
+            for imported in node.names:
+                # Without ``as``, ``import package.module`` binds ``package``.
+                # Do not pretend that it binds the nested module; that would
+                # turn uncertain resolution into a false-positive edge.
+                if imported.asname:
+                    local_name = imported.asname
+                    module_name = imported.name
+                elif "." not in imported.name:
+                    local_name = imported.name
+                    module_name = imported.name
+                else:
+                    continue
+                bindings[local_name] = ImportBinding(
+                    local_name=local_name,
+                    target_name="",
+                    module_path=PurePosixPath(*module_name.split(".")),
+                    language="python",
+                    is_module=True,
+                )
     return bindings
 
 

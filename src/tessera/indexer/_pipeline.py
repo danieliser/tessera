@@ -4,6 +4,7 @@ import asyncio
 import hashlib
 import logging
 import os
+import re
 import subprocess
 import time
 from pathlib import Path
@@ -955,7 +956,7 @@ class IndexerPipeline:
         # Query all unresolved refs for this project
         cursor = self.project_db.conn.execute(
             """
-            SELECT id, from_symbol_id, to_symbol_name, kind
+            SELECT id, from_symbol_id, to_symbol_name, kind, context
             FROM refs
             WHERE project_id = ? AND to_symbol_id IS NULL AND to_symbol_name IS NOT NULL
             """,
@@ -1049,50 +1050,94 @@ class IndexerPipeline:
         refs_to_update = []
         import_bindings_by_file: dict[int, dict[str, ImportBinding]] = {}
 
-        def resolve_import_binding(from_id: int, to_name: str) -> int | None:
-            """Resolve a local import alias to one target in its imported module."""
-            from_file_id = from_symbol_file.get(from_id)
-            if from_file_id is None:
-                return None
-            bindings = import_bindings_by_file.get(from_file_id)
-            if bindings is None:
-                from_path = file_id_to_path.get(from_file_id)
-                if not from_path:
-                    return None
-                source_path = Path(self.project_path) / from_path
-                try:
-                    source = source_path.read_text(encoding="utf-8", errors="replace")
-                except OSError:
-                    bindings = {}
-                else:
-                    suffix = source_path.suffix.lower()
-                    language = {
-                        ".py": "python",
-                        ".ts": "typescript",
-                        ".tsx": "typescript",
-                        ".js": "javascript",
-                        ".jsx": "javascript",
-                    }.get(suffix, "")
-                    bindings = extract_import_bindings(from_path, language, source)
-                import_bindings_by_file[from_file_id] = bindings
+        def load_import_bindings(file_id: int) -> dict[str, ImportBinding]:
+            """Read and cache import bindings for one indexed source file."""
+            bindings = import_bindings_by_file.get(file_id)
+            if bindings is not None:
+                return bindings
+            from_path = file_id_to_path.get(file_id)
+            if not from_path:
+                return {}
+            source_path = Path(self.project_path) / from_path
+            try:
+                source = source_path.read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                bindings = {}
+            else:
+                suffix = source_path.suffix.lower()
+                language = {
+                    ".py": "python",
+                    ".ts": "typescript",
+                    ".tsx": "typescript",
+                    ".js": "javascript",
+                    ".jsx": "javascript",
+                }.get(suffix, "")
+                bindings = extract_import_bindings(from_path, language, source)
+            import_bindings_by_file[file_id] = bindings
+            return bindings
 
-            binding = bindings.get(to_name)
-            if binding is None:
-                return None
-            target_paths = candidate_module_paths(binding)
-            target_file_ids = {
-                file_id for file_id, path in file_id_to_path.items() if path in target_paths
-            }
+        def target_file_ids(binding: ImportBinding) -> set[int]:
+            paths = candidate_module_paths(binding)
+            return {file_id for file_id, path in file_id_to_path.items() if path in paths}
+
+        def direct_symbol(file_ids: set[int], symbol_name: str) -> int | None:
             candidates = [
                 candidate
-                for candidate in name_to_candidates.get(binding.target_name, [])
-                if candidate[2] in target_file_ids
+                for candidate in name_to_candidates.get(symbol_name, [])
+                if candidate[2] in file_ids
             ]
             if not candidates:
                 return None
             best_priority = min(candidate[1] for candidate in candidates)
-            best_candidates = [candidate for candidate in candidates if candidate[1] == best_priority]
-            return best_candidates[0][0] if len(best_candidates) == 1 else None
+            best = [candidate for candidate in candidates if candidate[1] == best_priority]
+            return best[0][0] if len(best) == 1 else None
+
+        def resolve_export(
+            file_ids: set[int],
+            export_name: str,
+            seen: set[tuple[int, str]],
+        ) -> int | None:
+            """Resolve a module export, following conservative named re-exports."""
+            direct = direct_symbol(file_ids, export_name)
+            if direct is not None:
+                return direct
+            resolved: set[int] = set()
+            for file_id in file_ids:
+                key = (file_id, export_name)
+                if key in seen:
+                    continue
+                forwarded = load_import_bindings(file_id).get(export_name)
+                if forwarded is None or forwarded.is_module:
+                    continue
+                target = resolve_export(
+                    target_file_ids(forwarded), forwarded.target_name, seen | {key}
+                )
+                if target is not None:
+                    resolved.add(target)
+            return resolved.pop() if len(resolved) == 1 else None
+
+        def module_receiver(context: str, to_name: str) -> str | None:
+            """Return the receiver only for a simple ``module.member()`` expression."""
+            match = re.fullmatch(r"([A-Za-z_]\w*)\.([A-Za-z_]\w*)", context.strip())
+            if match and match.group(2) == to_name:
+                return match.group(1)
+            return None
+
+        def resolve_import_binding(from_id: int, to_name: str, context: str) -> int | None:
+            """Resolve a local import alias to one target in its imported module."""
+            from_file_id = from_symbol_file.get(from_id)
+            if from_file_id is None:
+                return None
+            bindings = load_import_bindings(from_file_id)
+            binding = bindings.get(to_name)
+            if binding is not None and not binding.is_module:
+                return resolve_export(target_file_ids(binding), binding.target_name, set())
+
+            receiver = module_receiver(context, to_name)
+            module_binding = bindings.get(receiver) if receiver else None
+            if module_binding is not None and module_binding.is_module:
+                return resolve_export(target_file_ids(module_binding), to_name, set())
+            return None
 
         for ref in unresolved_refs:
             to_name = ref['to_symbol_name']
@@ -1104,7 +1149,7 @@ class IndexerPipeline:
 
             # 1. Import-aware resolution. This is more specific than the
             # project-wide name fallback and therefore wins for aliases.
-            resolved_id = resolve_import_binding(from_id, to_name)
+            resolved_id = resolve_import_binding(from_id, to_name, ref['context'] or "")
             if resolved_id is not None:
                 resolution_type = "import"
 

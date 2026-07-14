@@ -59,3 +59,56 @@ def test_import_alias_call_resolves_to_symbol_in_imported_file(
     refs = db.get_refs(symbol_id=caller["id"])
     execute_ref = next(ref for ref in refs if ref["to_symbol_name"] == "execute")
     assert execute_ref["to_symbol_id"] == service_run[0]
+
+
+def test_python_module_import_call_resolves_to_symbol_in_imported_file(
+    tmp_path: Path,
+) -> None:
+    """A module-qualified call must not resolve to an unrelated global symbol."""
+    (tmp_path / "service.py").write_text("def run() -> str:\n    return 'service'\n")
+    (tmp_path / "caller.py").write_text(
+        "import service\n\ndef caller() -> str:\n    return service.run()\n"
+    )
+    (tmp_path / "unrelated.py").write_text("def run() -> str:\n    return 'unrelated'\n")
+
+    pipeline = IndexerPipeline(str(tmp_path), languages=["python"])
+    pipeline.index_project_sync()
+
+    db = pipeline.project_db
+    caller = db.lookup_symbols("caller", kind="function")[0]
+    service_file = db.get_file(path="service.py")
+    assert service_file is not None
+    service_run = db.conn.execute(
+        "SELECT id FROM symbols WHERE file_id = ? AND name = 'run'",
+        (service_file["id"],),
+    ).fetchone()
+    assert service_run is not None
+
+    run_ref = next(ref for ref in db.get_refs(symbol_id=caller["id"]) if ref["to_symbol_name"] == "run")
+    assert run_ref["to_symbol_id"] == service_run[0]
+
+
+def test_python_one_hop_reexport_resolves_to_original_symbol(tmp_path: Path) -> None:
+    """A named import forwarded once through an in-project facade stays precise."""
+    (tmp_path / "service.py").write_text("def run() -> str:\n    return 'service'\n")
+    (tmp_path / "facade.py").write_text("from service import run\n")
+    (tmp_path / "caller.py").write_text(
+        "from facade import run\n\ndef caller() -> str:\n    return run()\n"
+    )
+    (tmp_path / "unrelated.py").write_text("def run() -> str:\n    return 'unrelated'\n")
+
+    pipeline = IndexerPipeline(str(tmp_path), languages=["python"])
+    pipeline.index_project_sync()
+
+    db = pipeline.project_db
+    caller = db.lookup_symbols("caller", kind="function")[0]
+    service_file = db.get_file(path="service.py")
+    assert service_file is not None
+    service_run = db.conn.execute(
+        "SELECT id FROM symbols WHERE file_id = ? AND name = 'run'",
+        (service_file["id"],),
+    ).fetchone()
+    assert service_run is not None
+
+    run_ref = next(ref for ref in db.get_refs(symbol_id=caller["id"]) if ref["to_symbol_name"] == "run")
+    assert run_ref["to_symbol_id"] == service_run[0]
