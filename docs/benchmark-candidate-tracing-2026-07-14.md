@@ -34,6 +34,14 @@ ranks and every ordered top-file list.
 The predeclared limits were +25 ms, 1.5x p95, and 250 KiB per query trace.
 Tracing remains disabled by default and does not enter normal search payloads.
 
+Focused validation passed 544 unit, graph-search, server, and federation tests,
+plus strict documentation and lint. An additional default-suite run reached
+255 passes and one skip before a large real-repository fixture exhausted the
+host volume (`sqlite3.OperationalError: database or disk is full`). The 674
+subsequent errors were fixture setup failures because pytest could no longer
+create temporary directories; there were no assertion failures. Its generated
+1.7 GiB pytest directory was removed after the run.
+
 ## Candidate findings
 
 The primary values below are macro-averaged across repositories.

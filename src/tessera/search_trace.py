@@ -431,6 +431,63 @@ class FederatedSearchTrace:
     def record_final(self, results: list[dict[str, Any]]) -> None:
         self._record_results("final", results)
 
+    def candidate_attribution(self) -> list[dict[str, Any]]:
+        """Resolve global candidates to pool/final ranks and exclusion reasons."""
+        pool_ranks = {
+            entry["key"]: entry["rank"]
+            for entry in self.stages.get("rerank_pool", [])
+        }
+        reranked = {
+            entry["key"]: entry
+            for entry in self.reranker.get("results", [])
+        }
+        final_ranks = {
+            entry["key"]: entry["rank"]
+            for entry in self.stages.get("final", [])
+        }
+        local_ranks = {
+            key: candidate.get("final_rank")
+            for project in self.projects
+            for key, candidate in project.candidates.items()
+        }
+        reranker_status = self.reranker.get("status", "skipped")
+
+        output = []
+        for entry in self.stages.get("project_union", []):
+            key = entry["key"]
+            item = {
+                **entry,
+                "project_local_rank": local_ranks.get(key),
+                "rerank_pool_rank": pool_ranks.get(key),
+                "reranker_input_rank": reranked.get(key, {}).get("input_rank"),
+                "reranker_output_rank": reranked.get(key, {}).get("output_rank"),
+                "reranker_score": reranked.get(key, {}).get("reranker_score"),
+                "final_rank": final_ranks.get(key),
+                "exclusion_reason": None,
+            }
+            if item["final_rank"] is None:
+                if reranker_status == "used":
+                    item["exclusion_reason"] = (
+                        "rerank_pool_limit"
+                        if item["rerank_pool_rank"] is None
+                        else "reranker_not_selected"
+                    )
+                elif reranker_status == "error":
+                    item["exclusion_reason"] = "reranker_error_fallback_limit"
+                else:
+                    item["exclusion_reason"] = "global_result_limit"
+            output.append(item)
+        return output
+
+    def validate_complete_attribution(self) -> list[str]:
+        problems = []
+        for candidate in self.candidate_attribution():
+            if candidate["final_rank"] is None and not candidate["exclusion_reason"]:
+                problems.append(f"candidate {candidate['key']} lacks an exclusion reason")
+            if candidate.get("project_id") is None and not candidate.get("project_name"):
+                problems.append(f"candidate {candidate['key']} lacks project attribution")
+        return problems
+
     def error(self, stage: str, error: BaseException) -> None:
         self.errors.append({
             "stage": stage,
@@ -445,9 +502,11 @@ class FederatedSearchTrace:
             "limit": self.limit,
             "projects": [trace.to_dict() for trace in self.projects],
             "stages": self.stages,
+            "candidates": self.candidate_attribution(),
             "reranker": self.reranker,
             "cross_project_diagnostics": cross_project_diagnostics(self),
             "errors": self.errors,
+            "attribution_complete": not self.validate_complete_attribution(),
         }
 
     def to_json(self) -> str:

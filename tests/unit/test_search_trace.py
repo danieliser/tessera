@@ -276,6 +276,14 @@ def test_federated_trace_attributes_projects_scores_and_rerank_pool() -> None:
         "output_rank": 1,
         "reranker_score": 0.9,
     }
+    candidate_attribution = {
+        candidate["key"]: candidate
+        for candidate in trace.candidate_attribution()
+    }
+    assert candidate_attribution["20:1"]["rerank_pool_rank"] == 2
+    assert candidate_attribution["20:1"]["final_rank"] == 1
+    assert candidate_attribution["10:2"]["exclusion_reason"] == "rerank_pool_limit"
+    assert trace.validate_complete_attribution() == []
 
     metrics = federated_candidate_diagnostics(
         trace,
@@ -285,4 +293,6 @@ def test_federated_trace_attributes_projects_scores_and_rerank_pool() -> None:
     assert metrics["project_union"]["recall_at_k"] == {"1": 0.0, "2": 1.0}
     assert metrics["rerank_pool"]["recall_at_k"] == {"1": 0.0, "2": 1.0}
     assert metrics["final"]["recall_at_k"] == {"1": 1.0, "2": 1.0}
-    assert json.loads(trace.to_json())["reranker"]["status"] == "used"
+    serialized = json.loads(trace.to_json())
+    assert serialized["reranker"]["status"] == "used"
+    assert serialized["attribution_complete"] is True
