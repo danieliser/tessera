@@ -2,6 +2,14 @@
 
 Reproducible benchmark results and scripts for Tessera search quality evaluation.
 
+Evaluation splits, exact repository revisions, licenses, and label provenance
+are defined in [`corpora/v1/manifest.yaml`](corpora/v1/manifest.yaml). Existing
+Flask/Next.js, PM20, and mixed-media results are retained as
+`legacy_regression`: useful for diagnostics and regression detection, but not
+eligible to select new product behavior. Public selection experiments use the
+repository-separated `development` corpus; milestone promotion uses a single
+sealed holdout that is not present in this repository.
+
 ## CodeSearchNet (CoIR Protocol)
 
 **Dataset:** [code-search-net/code_search_net](https://huggingface.co/datasets/code-search-net/code_search_net) Python test split  
@@ -48,6 +56,8 @@ This is intentional — chunking improves real-world retrieval for partial/sub-f
 
 ## Dual-Model Fan-Out Benchmark
 
+**Evaluation class:** `legacy_regression` (selection prohibited).
+
 Source-type routing with reranker fusion. SMARTv2 routing: fan-out both models for code+cross, BGE-small only for docs, reranker picks winners.
 
 **Embedding:** BGE-small (67MB, 384d)
@@ -80,6 +90,8 @@ See `scripts/benchmark_fanout.py`.
 
 ## Mixed-Media Benchmark (PM20 Codebase)
 
+**Evaluation class:** `legacy_regression` (selection prohibited).
+
 Internal benchmark across code, documentation, and cross-media queries on a real WordPress plugin codebase.
 
 See `scripts/benchmark_mixed.py` and CSV outputs in this directory.
@@ -87,6 +99,10 @@ See `scripts/benchmark_mixed.py` and CSV outputs in this directory.
 ## Running Benchmarks
 
 ```bash
+# Repository-separated development baseline (all supported language families)
+uv run python scripts/benchmark_development.py \
+  --tier quick --output benchmarks/development-baseline.json
+
 # CoIR-comparable (no-chunk, whole-function vectors)
 uv run python scripts/benchmark_csn.py --model bge-base --no-chunk --samples 500
 
@@ -108,3 +124,9 @@ uv run python scripts/aggregate_mixed.py
 ```
 
 Corpus files and indexes are cached at `~/.tessera/benchmarks/csn/` — first run is slow, subsequent runs are instant.
+
+The development runner caches pinned checkouts at
+`~/.tessera/benchmarks/corpora/` and indexes by manifest digest plus Tessera
+revision. Its primary result is macro-averaged per repository; pooled query
+metrics are secondary. See [`corpora/README.md`](corpora/README.md) for the
+holdout and rotation policy.

@@ -1,0 +1,192 @@
+schema_version: 1
+manifest_id: tessera-retrieval-corpora-v1
+created_at: 2026-07-14
+evaluation_policy:
+  primary_aggregation: macro_per_repository
+  confidence_interval: paired_repository_bootstrap_95
+  legacy_regression_selection_allowed: false
+  development_selection_allowed: true
+  sealed_holdout_selection_allowed: false
+
+repositories:
+  - id: nextjs
+    split: legacy_regression
+    repository_url: https://github.com/vercel/next.js.git
+    revision: adf8c612adddd103647c90ff0f511ea35c57076e
+    configured_ref: v16.1.6
+    license: MIT
+    languages: [typescript, javascript]
+    content_types: [code, markdown, mdx]
+    paths: [packages/next/src, docs]
+    labels:
+      format: python
+      location: scripts/benchmark_validation/queries_nextjs.py
+      provenance: project-authored and verified against the pinned checkout
+      public: true
+    selection_allowed: false
+
+  - id: flask
+    split: legacy_regression
+    repository_url: https://github.com/pallets/flask.git
+    revision: 2c1b30d0503cfb064f1cb252e6614a06915a362a
+    configured_ref: 3.1.2
+    license: BSD-3-Clause
+    languages: [python]
+    content_types: [code, markdown, rst]
+    paths: [src/flask, docs]
+    labels:
+      format: python
+      location: scripts/benchmark_validation/queries_flask.py
+      provenance: project-authored and verified against the pinned checkout
+      public: true
+    selection_allowed: false
+
+  - id: attrs
+    split: development
+    repository_url: https://github.com/python-attrs/attrs.git
+    revision: d544dd2dacb4cbd660891e323ad92751ba65b4e0
+    license: MIT
+    languages: [python]
+    content_types: [code, markdown, rst]
+    paths: [src, docs, README.md]
+    labels:
+      format: yaml
+      location: benchmarks/corpora/v1/development-queries.yaml
+      selector: attrs
+      provenance: authored from the pinned repository before retrieval changes
+      public: true
+    selection_allowed: true
+
+  - id: hono
+    split: development
+    repository_url: https://github.com/honojs/hono.git
+    revision: b2ae3a2204a48ce15a26448fd746d39745eb1837
+    license: MIT
+    languages: [typescript, javascript]
+    content_types: [code, markdown]
+    paths: [src, docs, README.md]
+    labels:
+      format: yaml
+      location: benchmarks/corpora/v1/development-queries.yaml
+      selector: hono
+      provenance: authored from the pinned repository before retrieval changes
+      public: true
+    selection_allowed: true
+
+  - id: fastroute
+    split: development
+    repository_url: https://github.com/nikic/FastRoute.git
+    revision: 1c961398bef1ff6ecd8b273bef651d7afe90312b
+    license: BSD-3-Clause
+    languages: [php]
+    content_types: [code, markdown]
+    paths: [src, README.md]
+    labels:
+      format: yaml
+      location: benchmarks/corpora/v1/development-queries.yaml
+      selector: fastroute
+      provenance: authored from the pinned repository before retrieval changes
+      public: true
+    selection_allowed: true
+
+  - id: pflag
+    split: development
+    repository_url: https://github.com/spf13/pflag.git
+    revision: 5fdac2d16c16d60605cb8baa887e8c5c38ef623f
+    license: BSD-3-Clause
+    languages: [go]
+    content_types: [code, markdown]
+    paths: ['.']
+    labels:
+      format: yaml
+      location: benchmarks/corpora/v1/development-queries.yaml
+      selector: pflag
+      provenance: authored from the pinned repository before retrieval changes
+      public: true
+    selection_allowed: true
+
+  - id: swift-argument-parser
+    split: development
+    repository_url: https://github.com/apple/swift-argument-parser.git
+    revision: e579882f95579e7d7eb8c8068a5925c65d361e91
+    license: Apache-2.0
+    languages: [swift]
+    content_types: [code, markdown, docc]
+    paths: [Sources/ArgumentParser, README.md]
+    labels:
+      format: yaml
+      location: benchmarks/corpora/v1/development-queries.yaml
+      selector: swift-argument-parser
+      provenance: authored from the pinned repository before retrieval changes
+      public: true
+    selection_allowed: true
+
+  - id: dry-configurable
+    split: development
+    repository_url: https://github.com/dry-rb/dry-configurable.git
+    revision: e5e025dfddb481485affe6bb7363d3cf37f153b5
+    license: MIT
+    languages: [ruby]
+    content_types: [code, markdown]
+    paths: [lib, README.md]
+    labels:
+      format: yaml
+      location: benchmarks/corpora/v1/development-queries.yaml
+      selector: dry-configurable
+      provenance: authored from the pinned repository before retrieval changes
+      public: true
+    selection_allowed: true
+
+external_suites:
+  - id: popup-maker-pm20
+    split: legacy_regression
+    selection_allowed: false
+    availability: authorized_sources_required
+    languages: [php]
+    content_types: [code]
+    labels:
+      location: scripts/benchmark_pm.py
+      provenance: historical project-authored PM20 labels
+      public: true
+    repositories:
+      - id: core
+        repository_url: https://github.com/PopupMaker/Popup-Maker.git
+        revision: c5a0227f4158ac7a70f0cb6bff97719f19092f6b
+        license: GPL-2.0-or-later
+      - id: pro
+        repository_url: private://PopupMaker/Pro
+        revision: dfd3f12c2bf08365c11c70addf0da518600a6886
+        license: proprietary
+
+  - id: popup-maker-mixed-media
+    split: legacy_regression
+    selection_allowed: false
+    availability: authorized_sources_required
+    languages: [php]
+    content_types: [code, markdown, mixed]
+    labels:
+      location: scripts/benchmark_mixed.py
+      provenance: historical project-authored mixed-media labels
+      public: true
+    repositories:
+      - id: core
+        repository_url: https://github.com/PopupMaker/Popup-Maker.git
+        revision: c5a0227f4158ac7a70f0cb6bff97719f19092f6b
+        license: GPL-2.0-or-later
+      - id: pro
+        repository_url: private://PopupMaker/Pro
+        revision: dfd3f12c2bf08365c11c70addf0da518600a6886
+        license: proprietary
+      - id: docs
+        repository_url: private://PopupMaker/content
+        revision: a4cd10a3f70eedad268f75bdd5c48bbe45b73913
+        license: proprietary
+
+sealed_holdout:
+  split: sealed_holdout
+  manifest_path_env: TESSERA_SEALED_HOLDOUT_MANIFEST
+  storage_requirement: private-or-encrypted and inaccessible to implementation agents
+  public_labels: false
+  selection_allowed: false
+  opening_policy: once for a frozen milestone candidate
+  rotation_policy: retire the opened corpus into legacy_regression and commission a new sealed corpus

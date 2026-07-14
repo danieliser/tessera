@@ -1,6 +1,6 @@
 # Tessera vs CodeGraph: Python, TypeScript, and Documentation Benchmark
 
-*Generated 2026-07-14T05:10:25.144042+00:00 from pinned Flask and Next.js revisions.*
+*Generated 2026-07-14T05:10:25.144042+00:00 from pinned Flask and Next.js revisions. Evaluation class: `legacy_regression`; selection from this artifact is prohibited.*
 
 ## Technical Summary
 
@@ -85,6 +85,6 @@ The Flask document subset improved from 0/2 to 2/2 Top-10 under both configurati
 
 ## Validation Assessment
 
-**Share with caveats.** File-level relevance labels and calculations are deterministic and machine-readable. The sample is broad enough to guide engineering priorities, but it is curated rather than independently blinded, and latency is not a process-normalized performance comparison.
+**Regression and diagnosis only.** File-level relevance labels and calculations are deterministic and machine-readable, but this suite has already influenced implementation hypotheses. It cannot select production constants, rankers, models, or routing, and latency is not a process-normalized performance comparison.
 
 Recommended next step: classify misses into general failure modes, build independent synthetic invariants and different-repository development cases, then measure structural candidate improvements before changing models or ranker weights.

@@ -93,17 +93,42 @@
     "CodeGraph does not index Markdown/document content; unsupported rows are excluded.",
     "Tessera runs in-process while CodeGraph launches a CLI process per query; latency is directional.",
     "Ground truth is curated and file-level; it does not score answer synthesis or snippet quality.",
-    "Cached indexes are used unless --reindex is supplied, so setup_ms is not a cold-index benchmark."
+    "Cached indexes are used unless --reindex is supplied, so setup_ms is not a cold-index benchmark.",
+    "This legacy_regression corpus has influenced implementation hypotheses and cannot select product behavior."
   ],
   "metadata": {
     "codegraph_version": "1.4.1",
+    "command": [
+      "uv",
+      "run",
+      "python",
+      "scripts/benchmark_competitive.py",
+      "--codegraph-cli",
+      "/tmp/codegraph-review/dist/bin/codegraph.js",
+      "--tier",
+      "full",
+      "--output",
+      "benchmarks/competitive-2026-07-14.json",
+      "--report",
+      "docs/benchmark-competitive-2026-07-14.md"
+    ],
     "embedding_model": "BAAI/bge-small-en-v1.5",
+    "evaluation_split": "legacy_regression",
     "generated_at": "2026-07-14T05:10:25.144042+00:00",
+    "manifest_path": "benchmarks/corpora/v1/manifest.yaml",
+    "manifest_schema_version": 1,
+    "manifest_sha256": "0e84423ee5f116554af104908b0ba845cee25bc69bfecc38cb813e3deab1c701",
     "measured_query_runs": 139,
+    "metadata_status": "historical_backfill",
     "platform": "macOS-15.5-arm64-arm-64bit-Mach-O",
     "python": "3.14.3",
     "query_cases": 58,
+    "repository_revisions": {
+      "flask": "2c1b30d0503cfb064f1cb252e6614a06915a362a",
+      "nextjs": "adf8c612adddd103647c90ff0f511ea35c57076e"
+    },
     "reranking_model": "jinaai/jina-reranker-v1-tiny-en",
+    "selection_allowed": false,
     "tessera_revision": "e71e684579128e172fd3f65202852806b4a1c248",
     "tier": "full",
     "top_k": 10
@@ -4639,9 +4664,12 @@
         "setup_ms": 0.0
       },
       "configured_ref": "3.1.2",
+      "evaluation_split": "legacy_regression",
       "languages": [
         "python"
       ],
+      "license": "BSD-3-Clause",
+      "repository_url": "https://github.com/pallets/flask.git",
       "revision": "2c1b30d0503cfb064f1cb252e6614a06915a362a"
     },
     "nextjs": {
@@ -4650,10 +4678,13 @@
         "setup_ms": 0.0
       },
       "configured_ref": "v16.1.6",
+      "evaluation_split": "legacy_regression",
       "languages": [
         "typescript",
         "javascript"
       ],
+      "license": "MIT",
+      "repository_url": "https://github.com/vercel/next.js.git",
       "revision": "adf8c612adddd103647c90ff0f511ea35c57076e"
     }
   },

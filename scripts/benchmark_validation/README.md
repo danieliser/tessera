@@ -1,6 +1,10 @@
-# Tessera Validation Test Set
+# Tessera Legacy Validation Test Set
 
-Multi-tier benchmark for evaluating search quality across diverse codebases.
+Multi-tier benchmark retained as `legacy_regression`. Flask and Next.js have
+already influenced implementation hypotheses, so these queries are useful for
+diagnosis and regression detection but cannot select product behavior. New
+experiments use `scripts/benchmark_development.py` and the versioned corpus in
+`benchmarks/corpora/v1/manifest.yaml`.
 
 ## Target Codebases
 
@@ -50,6 +54,10 @@ QUERIES = [
 ## Running
 
 ```bash
+# Repository-separated development baseline (preferred for new experiments)
+uv run python scripts/benchmark_development.py --tier quick \
+  --output benchmarks/development-baseline.json
+
 # Quick comparison
 uv run python scripts/benchmark_validation/run.py --tier quick
 

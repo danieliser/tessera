@@ -4,6 +4,8 @@ from pathlib import Path
 
 import pytest
 from scripts.benchmark_competitive import (
+    aggregate,
+    load_cases,
     parse_codegraph_files,
     rank_expected,
     ranker_routing_analysis,
@@ -65,10 +67,48 @@ def test_ground_truth_accepts_markdown_document(tmp_path: Path) -> None:
     validate_ground_truth([case], {"fixture": tmp_path})
 
 
+def test_manifest_backed_cases_include_stable_identity_and_content_type() -> None:
+    cases = load_cases("flask", "quick")
+    assert len(cases) == 7
+    assert all(case["case_id"].startswith("queries_flask-") for case in cases)
+    assert {case["content_type"] for case in cases} == {"code", "document", "mixed"}
+
+
+def test_aggregate_reports_macro_and_protected_segments() -> None:
+    rows = [
+        {
+            "engine": "candidate",
+            "repository": "repo-a",
+            "category": "code",
+            "content_type": "code",
+            "language": "python",
+            "supported": True,
+            "rank": 1,
+            "latency_ms": 1.0,
+        },
+        {
+            "engine": "candidate",
+            "repository": "repo-b",
+            "category": "document",
+            "content_type": "document",
+            "language": "ruby",
+            "supported": True,
+            "rank": None,
+            "latency_ms": 1.0,
+        },
+    ]
+    result = aggregate(rows)
+    assert result["macro_per_repository"]["candidate"]["mrr_at_10"] == 0.5
+    assert result["protected_segments"]["language"]["candidate/python"]["top_1"] == 1.0
+    assert result["protected_segments"]["content_type"]["candidate/document"]["top_10"] == 0.0
+
+
 def test_ranker_routing_uses_jina_only_for_code() -> None:
     rows = [
         {
             "engine": engine,
+            "repository": "fixture",
+            "case_id": category,
             "category": category,
             "supported": True,
             "rank": rank,
@@ -86,6 +126,9 @@ def test_ranker_routing_uses_jina_only_for_code() -> None:
     ]
     result = ranker_routing_analysis(rows)
     assert result["post_hoc"] is True
+    assert result["diagnostic_oracle"] is True
+    assert result["selection_allowed"] is False
+    assert "policy" not in result
     assert result["overall"]["queries_supported"] == 3
     assert result["categories"]["code"]["mrr_at_10"] == 1.0
     assert result["categories"]["document"]["mrr_at_10"] == 1.0

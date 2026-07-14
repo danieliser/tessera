@@ -2,6 +2,12 @@
 
 Real-world search quality measurements on a production PHP codebase: [Popup Maker](https://wppopupmaker.com/) core + Pro (611 files, 2,574 chunks across two repositories).
 
+> **Evaluation class: `legacy_regression`.** The PM20 and mixed-media suites
+> have already influenced Tessera's implementation and defaults. Retain them as
+> regression/diagnostic evidence, but do not use them to select new ranking
+> constants, models, or routing policies. New selection work uses the
+> repository-separated corpus in `benchmarks/corpora/v1/manifest.yaml`.
+
 ## Test Suite
 
 20 ground-truth queries spanning the full codebase — popup lifecycle, trigger system, conditions, cookies, forms, REST API, admin, DI architecture, and Pro features. Each query has 1-2 expected files that a developer would navigate to when investigating that topic.
