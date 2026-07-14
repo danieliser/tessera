@@ -30,6 +30,7 @@ import faiss
 import numpy as np
 
 from .graph import ProjectGraph, ppr_to_ranked_list
+from .search_trace import SearchTrace
 
 logger = logging.getLogger(__name__)
 
@@ -159,6 +160,28 @@ def _dedupe_ranked_by_file(items: list[dict], db) -> list[dict]:
             seen_files.add(file_path)
             deduped.append(item)
     return deduped
+
+
+def _trace_candidate_metadata(db, items: list[dict]) -> dict[int, dict]:
+    """Resolve candidate metadata only when an explicit trace was requested."""
+    metadata: dict[int, dict] = {}
+    for item in items:
+        chunk_id = item["id"]
+        try:
+            chunk = db.get_chunk(chunk_id) or {}
+            file_path = chunk.get("file_path", "")
+            if not file_path and chunk.get("file_id"):
+                file_rec = db.get_file(file_id=chunk["file_id"])
+                if file_rec:
+                    file_path = file_rec.get("path", "")
+            metadata[chunk_id] = {
+                "file_id": chunk.get("file_id"),
+                "file_path": file_path,
+                "source_type": chunk.get("source_type") or "code",
+            }
+        except Exception:
+            metadata[chunk_id] = {}
+    return metadata
 
 
 def _find_best_match_line(
@@ -668,6 +691,7 @@ def hybrid_search(
     query_expansion: bool = False,
     depth_penalty: float = 0.0,
     file_dedup: bool = False,
+    trace: SearchTrace | None = None,
 ) -> list[dict]:
     """
     Hybrid search combining keyword (FTS5) and semantic (vector) results.
@@ -691,7 +715,10 @@ def hybrid_search(
         advanced_fts: If True, allow FTS5 operators (phrases, NOT, *, NEAR).
         filename_boost: Optional post-merge score per query-token/filename overlap
         file_dedup: Keep only the best-scoring chunk per file
+        trace: Optional diagnostic collector; omitted from normal result payloads
     """
+    original_query = query
+
     # Parse structured query prefix if search_types not explicitly provided
     if search_types is None:
         query, search_types = parse_structured_query(query)
@@ -701,6 +728,26 @@ def hybrid_search(
         effective_weights["keyword"] = keyword_weight
     run_keyword = SearchType.LEX in search_types
     run_semantic = SearchType.VEC in search_types or SearchType.HYDE in search_types
+
+    if trace is not None:
+        trace.start(
+            original_query=original_query,
+            query=query,
+            limit=limit,
+            config={
+                "search_types": [search_type.value for search_type in search_types],
+                "source_type": source_type,
+                "advanced_fts": advanced_fts,
+                "rrf_weights": effective_weights,
+                "filename_boost": filename_boost,
+                "symbol_boost": symbol_boost,
+                "retrieval_pool": retrieval_pool,
+                "query_expansion": query_expansion,
+                "depth_penalty": depth_penalty,
+                "file_dedup": file_dedup,
+                "graph_available": graph is not None,
+            },
+        )
 
     ranked_lists = []
     list_labels = []
@@ -718,35 +765,73 @@ def hybrid_search(
             # Add snake_case: "webpack config" → "webpack_config"
             snake = "_".join(t.lower() for t in tokens)
             expanded_query = f'{query} OR "{hyphenated}" OR "{camel}" OR "{snake}"'
+    if trace is not None:
+        trace.decision(
+            "query_expansion",
+            enabled=query_expansion and run_keyword,
+            changed=expanded_query != query,
+            expanded_query=expanded_query,
+        )
 
     # 1. Keyword search (SQL-level filtering when source_type is active)
     keyword_results = []
     if run_keyword:
+        keyword_limit = (
+            limit * FILE_DEDUP_OVER_FETCH_MULTIPLIER if file_dedup else limit
+        )
         try:
             kw_query = expanded_query if query_expansion else query
             kw_advanced = True if query_expansion else advanced_fts
-            keyword_limit = (
-                limit * FILE_DEDUP_OVER_FETCH_MULTIPLIER if file_dedup else limit
-            )
             keyword_results = db.keyword_search(
                 kw_query,
                 limit=keyword_limit,
                 source_type=source_type,
                 advanced_fts=kw_advanced,
             )
+            if trace is not None:
+                trace.record_channel(
+                    "keyword",
+                    keyword_results,
+                    score_kind="fts5_bm25",
+                    metadata=_trace_candidate_metadata(db, keyword_results),
+                    normalized_scores={
+                        item["id"]: normalize_bm25_score(item.get("score", 0.0))
+                        for item in keyword_results
+                    },
+                    requested_limit=keyword_limit,
+                )
             if keyword_results:
                 ranked_lists.append(keyword_results)
                 list_labels.append("keyword")
-        except Exception:
+        except Exception as error:
             keyword_results = []
+            if trace is not None:
+                trace.error("keyword", error)
+                trace.channel_status(
+                    "keyword",
+                    "error",
+                    reason="keyword_search_failed",
+                    requested_limit=keyword_limit,
+                    score_kind="fts5_bm25",
+                )
+    elif trace is not None:
+        trace.channel_status(
+            "keyword",
+            "skipped",
+            reason="query_routing",
+            score_kind="fts5_bm25",
+        )
 
     # 1b. BM25 strong-signal short-circuit: skip expensive operations when
     # keyword match is very high confidence (top score >= 0.85 with >= 0.15 gap)
-    strong_keyword_signal = bool(
+    initial_strong_keyword_signal = bool(
         keyword_results and bm25_strong_signal_check(keyword_results)
     )
+    strong_keyword_signal = initial_strong_keyword_signal
+    unique_keyword_count = None
     if strong_keyword_signal and file_dedup:
         unique_keyword_results = _dedupe_ranked_by_file(keyword_results, db)
+        unique_keyword_count = len(unique_keyword_results)
         if len(unique_keyword_results) < limit:
             logger.debug(
                 "BM25 short-circuit skipped: %d unique files for requested limit %d",
@@ -755,12 +840,53 @@ def hybrid_search(
             )
             strong_keyword_signal = False
 
+    if trace is not None:
+        normalized_keyword_scores = [
+            normalize_bm25_score(item.get("score", 0.0))
+            for item in keyword_results[:2]
+        ]
+        trace.decision(
+            "bm25_short_circuit",
+            evaluated=bool(keyword_results),
+            threshold=BM25_STRONG_SIGNAL_THRESHOLD,
+            required_gap=BM25_STRONG_SIGNAL_GAP,
+            top_score=normalized_keyword_scores[0] if normalized_keyword_scores else None,
+            second_score=normalized_keyword_scores[1] if len(normalized_keyword_scores) > 1 else None,
+            signal_passed=initial_strong_keyword_signal,
+            file_dedup_guard=file_dedup,
+            unique_keyword_files=unique_keyword_count,
+            requested_files=limit if file_dedup else None,
+            taken=strong_keyword_signal,
+        )
+
     if strong_keyword_signal:
         logger.debug("BM25 short-circuit: strong signal, skipping semantic/PPR")
+        if trace is not None:
+            trace.channel_status(
+                "semantic",
+                "skipped",
+                reason="bm25_short_circuit",
+                score_kind="cosine",
+            )
+            trace.channel_status(
+                "graph",
+                "skipped",
+                reason="bm25_short_circuit",
+                score_kind="ppr",
+            )
         weights = [effective_weights.get("keyword", 1.0)]
         merged = weighted_rrf_merge(ranked_lists, weights=weights)
+        if trace is not None:
+            trace.record_fusion(merged, labels=["keyword"], weights=weights)
         if file_dedup:
-            merged = _dedupe_ranked_by_file(merged, db)
+            before_dedup = merged
+            merged = _dedupe_ranked_by_file(before_dedup, db)
+            if trace is not None:
+                trace.record_dedup(
+                    stage="file_dedup",
+                    before=before_dedup,
+                    after=merged,
+                )
         results = []
         for item in merged[:limit]:
             chunk_id = item["id"]
@@ -809,6 +935,8 @@ def hybrid_search(
                     "short_circuited": True,
                 }
             results.append(enriched)
+        if trace is not None:
+            trace.finalize(results)
         return results
 
     # 2. Semantic search (skipped if only LEX requested)
@@ -833,6 +961,14 @@ def hybrid_search(
                     embedding_vectors,
                     limit=fetch_limit
                 )
+                if trace is not None:
+                    trace.record_channel(
+                        "semantic",
+                        semantic_results,
+                        score_kind="cosine",
+                        metadata=_trace_candidate_metadata(db, semantic_results),
+                        requested_limit=fetch_limit,
+                    )
                 if source_type and semantic_results:
                     # Post-filter by source_type using chunk_meta lookup
                     filtered = []
@@ -840,17 +976,65 @@ def hybrid_search(
                         chunk = db.get_chunk(result["id"])
                         if chunk and (chunk.get("source_type") or "code") in source_type:
                             filtered.append(result)
+                        elif trace is not None:
+                            trace.reject(
+                                result["id"],
+                                stage="source_type_filter",
+                                reason="source_type_not_allowed",
+                                channel="semantic",
+                                allowed_source_types=source_type,
+                                actual_source_type=(chunk or {}).get("source_type") or "code",
+                            )
                     filtered_limit = (
                         limit * FILE_DEDUP_OVER_FETCH_MULTIPLIER
                         if file_dedup
                         else limit
                     )
                     semantic_results = filtered[:filtered_limit]
+                    if trace is not None:
+                        for result in filtered[filtered_limit:]:
+                            trace.reject(
+                                result["id"],
+                                stage="source_type_filter",
+                                reason="post_filter_limit",
+                                channel="semantic",
+                                limit=filtered_limit,
+                            )
+                if trace is not None:
+                    trace.record_stage(
+                        "semantic_eligible",
+                        semantic_results,
+                        score_field="score",
+                        channel="semantic",
+                    )
                 if semantic_results:
                     ranked_lists.append(semantic_results)
                     list_labels.append("semantic")
-        except Exception:
+            elif trace is not None:
+                trace.record_channel(
+                    "semantic",
+                    [],
+                    score_kind="cosine",
+                    requested_limit=retrieval_pool or limit,
+                )
+        except Exception as error:
             semantic_results = []
+            if trace is not None:
+                trace.error("semantic", error)
+                trace.channel_status(
+                    "semantic",
+                    "error",
+                    reason="semantic_search_failed",
+                    score_kind="cosine",
+                )
+    elif trace is not None:
+        reason = "query_routing" if not run_semantic else "missing_query_embedding"
+        trace.channel_status(
+            "semantic",
+            "skipped",
+            reason=reason,
+            score_kind="cosine",
+        )
 
     # 3. PPR search (graph-aware ranking) — only when query targets symbols
     if graph and not graph.is_sparse_fallback():
@@ -892,6 +1076,14 @@ def hybrid_search(
                             except (json.JSONDecodeError, TypeError):
                                 pass
 
+            if trace is not None:
+                trace.decision(
+                    "graph_expansion",
+                    query_tokens=sorted(query_tokens),
+                    matched_symbol_count=matched_symbols,
+                    seed_symbol_ids=sorted(seed_symbol_ids),
+                )
+
             if seed_symbol_ids:
                 # Compute PPR from seeds
                 ppr_scores = graph.personalized_pagerank(list(seed_symbol_ids))
@@ -910,18 +1102,55 @@ def hybrid_search(
                 ppr_results = ppr_to_ranked_list(ppr_chunk_scores)
                 ppr_results = ppr_results[:limit]
 
+                if trace is not None:
+                    trace.record_channel(
+                        "graph",
+                        ppr_results,
+                        score_kind="ppr",
+                        metadata=_trace_candidate_metadata(db, ppr_results),
+                        requested_limit=limit,
+                    )
+
                 if ppr_results:
                     ranked_lists.append(ppr_results)
                     list_labels.append("graph")
+            elif trace is not None:
+                reason = "no_query_symbol_match" if matched_symbols == 0 else "no_seed_symbols"
+                trace.channel_status(
+                    "graph",
+                    "skipped",
+                    reason=reason,
+                    score_kind="ppr",
+                )
         except Exception as e:
             logger.warning(f"PPR computation failed, falling back to 2-way RRF: {e}")
+            if trace is not None:
+                trace.error("graph", e)
+                trace.channel_status(
+                    "graph",
+                    "error",
+                    reason="ppr_failed",
+                    score_kind="ppr",
+                )
+    elif trace is not None:
+        reason = "graph_unavailable" if graph is None else "sparse_graph_fallback"
+        trace.channel_status(
+            "graph",
+            "skipped",
+            reason=reason,
+            score_kind="ppr",
+        )
 
     # 4. Merge with weighted RRF
     if not ranked_lists:
+        if trace is not None:
+            trace.finalize([])
         return []
 
     weights = [effective_weights.get(label, 1.0) for label in list_labels]
     merged = weighted_rrf_merge(ranked_lists, weights=weights)
+    if trace is not None:
+        trace.record_fusion(merged, labels=list_labels, weights=weights)
 
     # 4b. Filename / symbol boost — re-score merged results before taking top-k
     if filename_boost > 0 or symbol_boost > 0:
@@ -962,6 +1191,8 @@ def hybrid_search(
 
         # Re-sort after boosting
         merged.sort(key=lambda x: x.get("rrf_score", 0), reverse=True)
+        if trace is not None:
+            trace.record_rescore("filename_symbol_boost", merged)
 
     # 4c. Depth penalty — penalize deeply nested files
     if depth_penalty > 0:
@@ -979,10 +1210,19 @@ def hybrid_search(
             except Exception:
                 pass
         merged.sort(key=lambda x: x.get("rrf_score", 0), reverse=True)
+        if trace is not None:
+            trace.record_rescore("depth_penalty", merged)
 
     # 4d. File-level dedup — keep only the best-scoring chunk per file
     if file_dedup:
-        merged = _dedupe_ranked_by_file(merged, db)
+        before_dedup = merged
+        merged = _dedupe_ranked_by_file(before_dedup, db)
+        if trace is not None:
+            trace.record_dedup(
+                stage="file_dedup",
+                before=before_dedup,
+                after=merged,
+            )
 
     # 5. Enrich with chunk metadata
     results = []
@@ -1035,6 +1275,9 @@ def hybrid_search(
             }
 
         results.append(enriched)
+
+    if trace is not None:
+        trace.finalize(results)
 
     return results
 

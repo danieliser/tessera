@@ -49,6 +49,11 @@ from tessera.db import ProjectDB  # noqa: E402
 from tessera.embeddings import FastembedClient  # noqa: E402
 from tessera.indexer import IndexerPipeline  # noqa: E402
 from tessera.search import hybrid_search  # noqa: E402
+from tessera.search_trace import (  # noqa: E402
+    SearchTrace,
+    aggregate_candidate_diagnostics,
+    candidate_retrieval_diagnostics,
+)
 
 TOP_K = 10
 BASELINE_ENGINE = "tessera_bge_small_hybrid"
@@ -173,9 +178,12 @@ def _run_case(
     case: dict[str, Any],
     database: ProjectDB,
     embedder: FastembedClient,
+    *,
+    trace_enabled: bool = False,
 ) -> dict[str, Any]:
     started = time.perf_counter()
     embedding = np.asarray(embedder.embed_query(case["query"]), dtype=np.float32)
+    trace = SearchTrace(project_name=case["repository"]) if trace_enabled else None
     hits = hybrid_search(
         case["query"],
         embedding,
@@ -184,10 +192,11 @@ def _run_case(
         limit=TOP_K,
         source_type=_source_filter(case["category"]),
         file_dedup=True,
+        trace=trace,
     )
     paths = _dedupe_paths(hits)[:TOP_K]
     rank = rank_expected(paths, case["expected_files"])
-    return {
+    result = {
         **case,
         "engine": BASELINE_ENGINE,
         "supported": True,
@@ -196,6 +205,13 @@ def _run_case(
         "top_files": paths,
         "latency_ms": round((time.perf_counter() - started) * 1000, 2),
     }
+    if trace is not None:
+        result["candidate_diagnostics"] = candidate_retrieval_diagnostics(
+            trace,
+            case["expected_files"],
+        )
+        result["candidate_trace"] = trace.to_dict()
+    return result
 
 
 def _latency_metrics(rows: list[dict[str, Any]]) -> dict[str, float]:
@@ -224,6 +240,11 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--checkout-root", type=Path, default=DEFAULT_CHECKOUT_ROOT)
     parser.add_argument("--index-root", type=Path, default=DEFAULT_INDEX_ROOT)
     parser.add_argument("--reindex", action="store_true")
+    parser.add_argument(
+        "--trace",
+        action="store_true",
+        help="Include opt-in candidate provenance and channel diagnostics",
+    )
     parser.add_argument("--output", type=Path)
     return parser.parse_args()
 
@@ -280,7 +301,12 @@ def main() -> int:
 
         rows: list[dict[str, Any]] = []
         for index, case in enumerate(cases, start=1):
-            result = _run_case(case, databases[case["repository"]], embedder)
+            result = _run_case(
+                case,
+                databases[case["repository"]],
+                embedder,
+                trace_enabled=args.trace,
+            )
             rows.append(result)
             rank = result["rank"] if result["rank"] is not None else "MISS"
             print(f"[{index}/{len(cases)}] {case['repository']} / {case['case_id']}: {rank}")
@@ -301,6 +327,7 @@ def main() -> int:
                 "tessera_revision": tessera_revision,
                 "embedding_model": BASELINE_MODEL,
                 "engine": BASELINE_ENGINE,
+                "candidate_tracing": args.trace,
             },
         )
         output = {
@@ -315,6 +342,9 @@ def main() -> int:
                 },
                 "protected_segments": protected_segment_metrics(rows),
                 "latency": _latency_metrics(rows),
+                "candidate_diagnostics": aggregate_candidate_diagnostics(rows)
+                if args.trace
+                else None,
             },
             "queries": rows,
             "limitations": [
