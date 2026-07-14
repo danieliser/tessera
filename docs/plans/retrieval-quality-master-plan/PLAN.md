@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-14
 
-**Status:** Active; PR-01 in review, PR-02 next after merge
+**Status:** Active; PR-01 complete, PR-02 next
 
 **Integration target:** `develop` at foundation commit `35800ce`
 
@@ -102,7 +102,7 @@ PR-12/13 and PR-14/15 are parallel optional branches after PR-11. Neither model 
 | ID | Task | Depends on | Size | Status | PR |
 |---|---|---|---|---|---|
 | CP-0 | Establish the integration branch and retarget open work | Owner decision | S | Complete | PR #9 / `35800ce` |
-| PR-01 | Evaluation governance and repository-level corpora | PR #9 | M | In review | PR #14 |
+| PR-01 | Evaluation governance and repository-level corpora | PR #9 | M | Complete | PR #14 |
 | PR-02 | Candidate tracing and benchmark observability | PR-01 | M | Todo | — |
 | PR-03 | Real two-stage retrieval and rerank pool | PR-02 | M | Todo | — |
 | PR-04 | Searchable file/path candidate channel | PR-03 | M | Todo | — |
