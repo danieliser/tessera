@@ -172,6 +172,18 @@ def test_label_validation_requires_category_compatible_tracked_files(tmp_path: P
             [{"case_id": "wrong-category", "category": "code", "expected_files": ["guide.md"]}],
             tmp_path,
         )
+    with pytest.raises(CorpusValidationError, match="outside-declared-scope"):
+        validate_labels_against_checkout(
+            {**repository, "paths": ["src"]},
+            [
+                {
+                    "case_id": "outside-declared-scope",
+                    "category": "document",
+                    "expected_files": ["guide.md"],
+                }
+            ],
+            tmp_path,
+        )
 
 
 def test_external_suite_requires_exact_clean_revision(tmp_path: Path) -> None:
