@@ -115,7 +115,11 @@ useful:
    latency budget, without coupling model selection to this retrieval PR.
 
 The sealed holdout remains unopened. A future replacement for PR-03 needs a new
-predeclared experiment and independent validation before merge.
+predeclared experiment and independent validation before merge. Follow-up work
+is recorded in
+[the latency-bounded cascade issue](https://github.com/danieliser/tessera/issues/17),
+[the model-policy issue](https://github.com/danieliser/tessera/issues/12), and
+[the relevance-aware diversity issue](https://github.com/danieliser/tessera/issues/18).
 
 ## Artifacts and reproduction
 

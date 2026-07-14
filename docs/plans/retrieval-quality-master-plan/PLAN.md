@@ -188,12 +188,15 @@ tests, lint, and strict docs. See
 **Experiment rejected:** Both the initial and context-conserving treatments
 failed the predeclared latency gates. The remediation retained only a small,
 uncertain macro MRR gain (`+0.008095`) and had a large Hono regression; hard
-coverage-first selection independently reduced macro MRR. PR-03 remains an
-unmerged draft. See
+coverage-first selection independently reduced macro MRR. PR-03 remains
+[unmerged draft PR #16](https://github.com/danieliser/tessera/pull/16). See
 [the experiment declaration](PR-03.md) and
 [full result](../../benchmark-two-stage-retrieval-2026-07-14.md). Cross-encoder
-throughput/model selection and relevance-aware diversity must proceed as
-separate experiments; PR-04 does not depend on this rejected production path.
+throughput/model selection and relevance-aware diversity must proceed through
+[issue #17](https://github.com/danieliser/tessera/issues/17),
+[issue #12](https://github.com/danieliser/tessera/issues/12), and
+[issue #18](https://github.com/danieliser/tessera/issues/18); PR-04 does not
+depend on this rejected production path.
 
 ### PR-04 — Searchable file/path candidate channel
 
