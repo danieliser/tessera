@@ -14,6 +14,7 @@ from tessera.search_trace import (
     candidate_retrieval_diagnostics,
     cross_project_diagnostics,
     federated_candidate_diagnostics,
+    stratified_candidate_diagnostics,
 )
 
 
@@ -210,6 +211,24 @@ def test_candidate_metrics_report_channel_recall_and_duplicate_crowding() -> Non
     ])
     assert aggregate["union"]["queries"] == 2
     assert aggregate["union"]["recall_at_k"]["3"] == 1.0
+
+    stratified = stratified_candidate_diagnostics([
+        {
+            "repository": "one",
+            "language": "python",
+            "content_type": "code",
+            "candidate_diagnostics": diagnostics,
+        },
+        {
+            "repository": "two",
+            "language": "go",
+            "content_type": "document",
+            "candidate_diagnostics": diagnostics,
+        },
+    ])
+    assert stratified["macro_per_repository"]["union"]["groups"] == 2
+    assert set(stratified["per_repository"]) == {"one", "two"}
+    assert set(stratified["protected_segments"]["language"]) == {"go", "python"}
 
 
 def test_federated_trace_attributes_projects_scores_and_rerank_pool() -> None:

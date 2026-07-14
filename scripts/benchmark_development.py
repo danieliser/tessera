@@ -51,8 +51,8 @@ from tessera.indexer import IndexerPipeline  # noqa: E402
 from tessera.search import hybrid_search  # noqa: E402
 from tessera.search_trace import (  # noqa: E402
     SearchTrace,
-    aggregate_candidate_diagnostics,
     candidate_retrieval_diagnostics,
+    stratified_candidate_diagnostics,
 )
 
 TOP_K = 10
@@ -232,6 +232,52 @@ def _latency_metrics(rows: list[dict[str, Any]]) -> dict[str, float]:
     }
 
 
+def _compare_baseline(rows: list[dict[str, Any]], baseline_path: Path) -> dict[str, Any]:
+    baseline = json.loads(baseline_path.read_text(encoding="utf-8"))
+    baseline_rows = {
+        (row["repository"], row["case_id"]): row
+        for row in baseline.get("queries", [])
+    }
+    current_rows = {
+        (row["repository"], row["case_id"]): row
+        for row in rows
+    }
+    if baseline_rows.keys() != current_rows.keys():
+        missing_current = sorted(baseline_rows.keys() - current_rows.keys())
+        missing_baseline = sorted(current_rows.keys() - baseline_rows.keys())
+        raise ValueError(
+            "Baseline query coverage differs: "
+            f"missing current={missing_current}, missing baseline={missing_baseline}"
+        )
+
+    rank_changes = []
+    ordered_top_file_changes = []
+    for key in sorted(current_rows):
+        before = baseline_rows[key]
+        after = current_rows[key]
+        if before.get("rank") != after.get("rank"):
+            rank_changes.append({
+                "repository": key[0],
+                "case_id": key[1],
+                "before": before.get("rank"),
+                "after": after.get("rank"),
+            })
+        if before.get("top_files") != after.get("top_files"):
+            ordered_top_file_changes.append({
+                "repository": key[0],
+                "case_id": key[1],
+                "before": before.get("top_files"),
+                "after": after.get("top_files"),
+            })
+    return {
+        "baseline_path": str(baseline_path),
+        "query_cases": len(current_rows),
+        "rank_changes": rank_changes,
+        "ordered_top_file_changes": ordered_top_file_changes,
+        "exact_rank_and_order_match": not rank_changes and not ordered_top_file_changes,
+    }
+
+
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
@@ -244,6 +290,11 @@ def _parse_args() -> argparse.Namespace:
         "--trace",
         action="store_true",
         help="Include opt-in candidate provenance and channel diagnostics",
+    )
+    parser.add_argument(
+        "--compare-baseline",
+        type=Path,
+        help="Require identical case coverage and report rank/ordered-file changes",
     )
     parser.add_argument("--output", type=Path)
     return parser.parse_args()
@@ -330,6 +381,11 @@ def main() -> int:
                 "candidate_tracing": args.trace,
             },
         )
+        baseline_comparison = (
+            _compare_baseline(rows, args.compare_baseline)
+            if args.compare_baseline
+            else None
+        )
         output = {
             "metadata": metadata,
             "repositories": repository_metadata,
@@ -342,9 +398,10 @@ def main() -> int:
                 },
                 "protected_segments": protected_segment_metrics(rows),
                 "latency": _latency_metrics(rows),
-                "candidate_diagnostics": aggregate_candidate_diagnostics(rows)
+                "candidate_diagnostics": stratified_candidate_diagnostics(rows)
                 if args.trace
                 else None,
+                "baseline_comparison": baseline_comparison,
             },
             "queries": rows,
             "limitations": [

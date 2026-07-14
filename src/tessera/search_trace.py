@@ -486,16 +486,18 @@ def candidate_retrieval_diagnostics(
     cutoffs: tuple[int, ...] = (10, 20, 50),
 ) -> dict[str, Any]:
     """Compute per-channel and fused candidate diagnostics for one query."""
-    channels = {
-        label: _candidate_set_metrics(
+    channels = {}
+    for label, channel in trace.channels.items():
+        metrics = _candidate_set_metrics(
             trace.candidate_keys_for_channel(label),
             trace.candidates,
             expected_files,
             cutoffs,
         )
-        for label in trace.channels
-        if trace.channels[label].get("status") in {"used", "empty"}
-    }
+        metrics["status"] = channel.get("status", "unknown")
+        if channel.get("reason"):
+            metrics["reason"] = channel["reason"]
+        channels[label] = metrics
     union_keys = [entry["key"] for entry in trace.stages.get("union", [])]
     return {
         "channels": channels,
@@ -527,8 +529,66 @@ def aggregate_candidate_diagnostics(rows: list[dict[str, Any]]) -> dict[str, Any
                 cutoff: round(fmean(value["recall_at_k"].get(cutoff, 0.0) for value in values), 6)
                 for cutoff in cutoff_names
             },
+            "status_counts": {
+                status: sum(value.get("status") == status for value in values)
+                for status in sorted({str(value.get("status")) for value in values if value.get("status")})
+            },
         }
     return output
+
+
+def _macro_candidate_summaries(
+    summaries: dict[str, dict[str, dict[str, Any]]],
+) -> dict[str, dict[str, Any]]:
+    buckets = sorted({bucket for summary in summaries.values() for bucket in summary})
+    output: dict[str, dict[str, Any]] = {}
+    for bucket in buckets:
+        values = [summary[bucket] for summary in summaries.values() if bucket in summary]
+        cutoff_names = sorted({cutoff for value in values for cutoff in value["recall_at_k"]}, key=int)
+        output[bucket] = {
+            "groups": len(values),
+            "mean_candidate_count": round(fmean(value["mean_candidate_count"] for value in values), 6),
+            "mean_duplicate_file_rate": round(
+                fmean(value["mean_duplicate_file_rate"] for value in values),
+                6,
+            ),
+            "mean_file_diversity": round(fmean(value["mean_file_diversity"] for value in values), 6),
+            "recall_at_k": {
+                cutoff: round(fmean(value["recall_at_k"].get(cutoff, 0.0) for value in values), 6)
+                for cutoff in cutoff_names
+            },
+        }
+    return output
+
+
+def stratified_candidate_diagnostics(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Report pooled, repository-macro, and protected-segment diagnostics."""
+    by_repository: dict[str, list[dict[str, Any]]] = {}
+    for row in rows:
+        by_repository.setdefault(str(row["repository"]), []).append(row)
+    repository_summaries = {
+        repository: aggregate_candidate_diagnostics(repository_rows)
+        for repository, repository_rows in sorted(by_repository.items())
+    }
+
+    protected: dict[str, Any] = {}
+    for dimension in ("language", "content_type"):
+        grouped: dict[str, list[dict[str, Any]]] = {}
+        for row in rows:
+            value = row.get(dimension)
+            if value:
+                grouped.setdefault(str(value), []).append(row)
+        protected[dimension] = {
+            value: aggregate_candidate_diagnostics(segment)
+            for value, segment in sorted(grouped.items())
+        }
+
+    return {
+        "pooled": aggregate_candidate_diagnostics(rows),
+        "macro_per_repository": _macro_candidate_summaries(repository_summaries),
+        "per_repository": repository_summaries,
+        "protected_segments": protected,
+    }
 
 
 def federated_candidate_diagnostics(
