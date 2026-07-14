@@ -176,14 +176,27 @@ tests, lint, and strict docs. See
 
 **Goal:** Decouple the candidate budget from the user-visible result limit.
 
-- [ ] Compute a candidate budget before per-project retrieval when a reranker is active.
-- [ ] Retrieve enough channel candidates to populate that budget instead of requesting only the final `limit`.
-- [ ] Prevent duplicate chunks from one file from starving the reranker while preserving an explicit way to return multiple useful chunks from a selected file.
-- [ ] Pass structured candidate text to the reranker, including stable path/symbol context where available.
-- [ ] Add red/green tests proving a requested result outside the first output page can be promoted by the reranker.
-- [ ] Predeclare the candidate budget from latency/memory constraints; do not choose it on the legacy benchmark.
+- [x] Compute a candidate budget before per-project retrieval when a reranker is active.
+- [x] Retrieve enough channel candidates to populate that budget instead of requesting only the final `limit`.
+- [x] Prevent duplicate chunks from one file from starving the reranker while preserving an explicit way to return multiple useful chunks from a selected file.
+- [x] Pass structured candidate text to the reranker, including stable path/symbol context where available.
+- [x] Add red/green tests proving a requested result outside the first output page can be promoted by the reranker.
+- [x] Predeclare the candidate budget from latency/memory constraints; do not choose it on the legacy benchmark.
 
 **Gate:** The reranker receives the declared unique candidate pool, invariant tests fail before/pass after, development-corpus quality is non-negative, and p95 remains within the declared budget.
+
+**Experiment rejected:** Both the initial and context-conserving treatments
+failed the predeclared latency gates. The remediation retained only a small,
+uncertain macro MRR gain (`+0.008095`) and had a large Hono regression; hard
+coverage-first selection independently reduced macro MRR. PR-03 remains
+[unmerged draft PR #16](https://github.com/danieliser/tessera/pull/16). See
+[the experiment declaration](PR-03.md) and
+[full result](../../benchmark-two-stage-retrieval-2026-07-14.md). Cross-encoder
+throughput/model selection and relevance-aware diversity must proceed through
+[issue #17](https://github.com/danieliser/tessera/issues/17),
+[issue #12](https://github.com/danieliser/tessera/issues/12), and
+[issue #18](https://github.com/danieliser/tessera/issues/18); PR-04 does not
+depend on this rejected production path.
 
 ### PR-04 — Searchable file/path candidate channel
 

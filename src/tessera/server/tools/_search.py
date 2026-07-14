@@ -6,6 +6,14 @@ import logging
 from fastmcp import FastMCP
 
 from ...embeddings import EmbeddingUnavailableError
+from ...rerank import (
+    RERANK_POOL_SELECTION,
+    build_rerank_documents,
+    rerank_candidate_budget,
+    rerank_document_budget,
+    rerank_retrieval_budget,
+    select_rerank_candidates,
+)
 from ...search import (
     SearchType,
     doc_search,
@@ -81,7 +89,7 @@ def register_search_tools(mcp: FastMCP) -> None:
                 E.g., max_depth=1 shows only the immediate containing function/class.
         """
         # Import state at call time to get current values (globals are mutable)
-        from .._state import _embedding_client
+        from .._state import _embedding_client, _reranker
 
         scope, err = _check_session({"session_id": session_id}, "project")
         if err:
@@ -143,6 +151,14 @@ def register_search_tools(mcp: FastMCP) -> None:
 
             # Use model profile's keyword weight unless explicit rrf_weights provided
             profile_kw_weight = _model_profile.hybrid_keyword_weight if _model_profile and not rrf_weights else None
+            candidate_limit = rerank_candidate_budget(
+                limit,
+                reranker_active=_reranker is not None,
+            )
+            retrieval_limit = rerank_retrieval_budget(
+                candidate_limit,
+                reranker_active=_reranker is not None,
+            )
 
             federated_trace = (
                 FederatedSearchTrace(query=query, limit=limit)
@@ -158,7 +174,7 @@ def register_search_tools(mcp: FastMCP) -> None:
             tasks = [
                 asyncio.to_thread(
                     hybrid_search, query, query_embedding, db,
-                    None, limit, source_type_filter,
+                    None, retrieval_limit, source_type_filter,
                     search_types, advanced_fts, rrf_weights,
                     keyword_weight=profile_kw_weight,
                     trace=project_trace,
@@ -196,14 +212,25 @@ def register_search_tools(mcp: FastMCP) -> None:
                 federated_trace.record_project_union(all_results)
 
             # Post-RRF reranking via cross-encoder (if available)
-            from .._state import _reranker
+            db_by_pid = {pid: db for pid, _pn, db in dbs}
             if _reranker and all_results:
                 try:
-                    # Rerank top candidates (take more than limit to give reranker room)
-                    rerank_pool = all_results[:limit * 3]
+                    rerank_pool = select_rerank_candidates(all_results, candidate_limit)
+                    document_char_limit = rerank_document_budget(limit, len(rerank_pool))
                     if federated_trace is not None:
-                        federated_trace.record_rerank_pool(rerank_pool)
-                    docs = [r.get("content", r.get("snippet", "")) for r in rerank_pool]
+                        federated_trace.record_rerank_pool(
+                            rerank_pool,
+                            requested_size=candidate_limit,
+                            retrieval_size=retrieval_limit,
+                            selection_policy=RERANK_POOL_SELECTION,
+                            document_char_limit=document_char_limit,
+                        )
+                    docs = await asyncio.to_thread(
+                        build_rerank_documents,
+                        rerank_pool,
+                        db_by_pid,
+                        max_chars=document_char_limit,
+                    )
                     reranked = await asyncio.to_thread(_reranker.rerank, query, docs, limit)
                     all_results = [rerank_pool[idx] for idx, _score in reranked]
                     if federated_trace is not None:
@@ -235,7 +262,6 @@ def register_search_tools(mcp: FastMCP) -> None:
                 snippet_embed_fn = _embedding_client.embed
 
             # Extract best-matching snippets with ancestor context
-            db_by_pid = {pid: db for pid, _pn, db in dbs}
             for r in all_results:
                 if r.get("content"):
                     # start_line is 0-based from chunker; convert to 1-based for display
@@ -248,7 +274,12 @@ def register_search_tools(mcp: FastMCP) -> None:
 
                     # Look up ancestor symbols for nesting context
                     file_id = r.get("file_id")
-                    result_db = db_by_pid.get(r.get("project_id"))
+                    result_project_id = r.get("project_id")
+                    result_db = (
+                        db_by_pid.get(result_project_id)
+                        if isinstance(result_project_id, int)
+                        else None
+                    )
                     ancestors = []
                     if file_id and result_db and abs_match > 0:
                         ancestors = result_db.get_ancestor_symbols(file_id, abs_match)

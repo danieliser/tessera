@@ -390,13 +390,29 @@ class FederatedSearchTrace:
     def record_project_union(self, results: list[dict[str, Any]]) -> None:
         self._record_results("project_union", results)
 
-    def record_rerank_pool(self, results: list[dict[str, Any]]) -> None:
+    def record_rerank_pool(
+        self,
+        results: list[dict[str, Any]],
+        *,
+        requested_size: int | None = None,
+        retrieval_size: int | None = None,
+        selection_policy: str | None = None,
+        document_char_limit: int | None = None,
+    ) -> None:
         self._record_results("rerank_pool", results)
         self.reranker.update({
             "status": "running",
             "pool_size": len(results),
             "pool_keys": [self.result_key(result) for result in results],
         })
+        if requested_size is not None:
+            self.reranker["requested_pool_size"] = requested_size
+        if retrieval_size is not None:
+            self.reranker["project_retrieval_size"] = retrieval_size
+        if selection_policy is not None:
+            self.reranker["selection_policy"] = selection_policy
+        if document_char_limit is not None:
+            self.reranker["document_char_limit"] = document_char_limit
 
     def record_rerank_result(
         self,
