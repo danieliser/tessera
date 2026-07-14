@@ -271,6 +271,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--reindex", action="store_true")
     parser.add_argument("--path-latency-repetitions", type=int, default=3)
     parser.add_argument("--compare-baseline", type=Path, default=DEFAULT_FROZEN_BASELINE)
+    parser.add_argument("--skip-baseline-comparison", action="store_true")
     parser.add_argument("--output", type=Path)
     return parser.parse_args()
 
@@ -447,7 +448,7 @@ def main() -> int:
         control_rows = [row for row in rows if row["engine"] == CONTROL_ENGINE]
         baseline_comparison = (
             _compare_baseline(control_rows, args.compare_baseline)
-            if args.compare_baseline
+            if args.compare_baseline and not args.skip_baseline_comparison
             else None
         )
         metadata = build_run_metadata(
