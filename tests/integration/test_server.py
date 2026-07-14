@@ -6,12 +6,14 @@ import tempfile
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from fastmcp import Client
+from fastmcp import Client, FastMCP
 from fastmcp.exceptions import ToolError
 
 from tessera.db import GlobalDB, ProjectDB
 from tessera.indexer import IndexStats
+from tessera.server import _state as server_state
 from tessera.server import create_server
+from tessera.server.tools._search import register_search_tools
 
 
 @pytest.fixture
@@ -104,6 +106,82 @@ class TestSearchTool:
         assert trace["schema_version"] == "1.0"
         assert trace["query"] == "trace fixture"
         assert trace["reranker"]["status"] == "skipped"
+
+    async def test_reranker_can_promote_candidate_beyond_visible_limit(self):
+        """The project search must fill the nominal rerank pool, not one page."""
+        candidates = [
+            {
+                "id": chunk_id,
+                "file_path": f"src/candidate_{chunk_id}.py",
+                "start_line": chunk_id,
+                "end_line": chunk_id,
+                "content": "needle target" if chunk_id == 3 else f"distractor {chunk_id}",
+                "score": 1.0 / chunk_id,
+                "source_type": "code",
+            }
+            for chunk_id in range(1, 7)
+        ]
+
+        class PromotingReranker:
+            def __init__(self):
+                self.documents = []
+
+            def rerank(self, _query, documents, top_k=10):
+                self.documents = documents
+                target = next(index for index, doc in enumerate(documents) if "needle target" in doc)
+                remainder = [index for index in range(len(documents)) if index != target]
+                return [(index, 1.0 - rank / 10) for rank, index in enumerate([target, *remainder][:top_k])]
+
+        reranker = PromotingReranker()
+
+        def fake_hybrid_search(*args, **_kwargs):
+            requested_limit = args[4]
+            return [dict(candidate) for candidate in candidates[:requested_limit]]
+
+        mcp = FastMCP("two-stage-fixture")
+        register_search_tools(mcp)
+        with (
+            patch("tessera.server.tools._search._get_project_dbs", return_value=[(7, "fixture", object())]),
+            patch("tessera.server.tools._search.hybrid_search", side_effect=fake_hybrid_search) as search_mock,
+            patch.object(server_state, "_embedding_client", None),
+            patch.object(server_state, "_reranker", reranker),
+        ):
+            async with Client(mcp) as client:
+                result = await client.call_tool("search", {"query": "find needle", "limit": 2})
+
+        payload = json.loads(result.content[0].text)
+        assert search_mock.call_args.args[4] == 30
+        assert [item["id"] for item in payload] == [3, 1]
+        assert len(reranker.documents) == 6
+
+    async def test_no_reranker_keeps_visible_retrieval_limit_and_order(self):
+        candidates = [
+            {
+                "id": chunk_id,
+                "file_path": f"src/candidate_{chunk_id}.py",
+                "content": f"candidate {chunk_id}",
+                "score": 1.0 / chunk_id,
+            }
+            for chunk_id in range(1, 5)
+        ]
+
+        def fake_hybrid_search(*args, **_kwargs):
+            return [dict(candidate) for candidate in candidates[:args[4]]]
+
+        mcp = FastMCP("no-reranker-fixture")
+        register_search_tools(mcp)
+        with (
+            patch("tessera.server.tools._search._get_project_dbs", return_value=[(7, "fixture", object())]),
+            patch("tessera.server.tools._search.hybrid_search", side_effect=fake_hybrid_search) as search_mock,
+            patch.object(server_state, "_embedding_client", None),
+            patch.object(server_state, "_reranker", None),
+        ):
+            async with Client(mcp) as client:
+                result = await client.call_tool("search", {"query": "candidate", "limit": 2})
+
+        payload = json.loads(result.content[0].text)
+        assert search_mock.call_args.args[4] == 2
+        assert [item["id"] for item in payload] == [1, 2]
 
 
 class TestSymbolsTool:

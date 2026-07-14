@@ -260,7 +260,13 @@ def test_federated_trace_attributes_projects_scores_and_rerank_pool() -> None:
 
     trace = FederatedSearchTrace(query="handler", limit=2)
     trace.record_project_union(union)
-    trace.record_rerank_pool(pool)
+    trace.record_rerank_pool(
+        pool,
+        requested_size=2,
+        retrieval_size=10,
+        selection_policy="file_coverage_first",
+        document_char_limit=4096,
+    )
     trace.record_rerank_result(pool, reranked, final)
     trace.record_final(final)
 
@@ -276,6 +282,10 @@ def test_federated_trace_attributes_projects_scores_and_rerank_pool() -> None:
         "output_rank": 1,
         "reranker_score": 0.9,
     }
+    assert trace.reranker["requested_pool_size"] == 2
+    assert trace.reranker["project_retrieval_size"] == 10
+    assert trace.reranker["selection_policy"] == "file_coverage_first"
+    assert trace.reranker["document_char_limit"] == 4096
     candidate_attribution = {
         candidate["key"]: candidate
         for candidate in trace.candidate_attribution()
