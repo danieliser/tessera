@@ -130,3 +130,8 @@ The development runner caches pinned checkouts at
 revision. Its primary result is macro-averaged per repository; pooled query
 metrics are secondary. See [`corpora/README.md`](corpora/README.md) for the
 holdout and rotation policy.
+
+The initial six-repository baseline is recorded in
+[`development-baseline-2026-07-14.json`](development-baseline-2026-07-14.json)
+and summarized in
+[`docs/benchmark-development-baseline-2026-07-14.md`](../docs/benchmark-development-baseline-2026-07-14.md).

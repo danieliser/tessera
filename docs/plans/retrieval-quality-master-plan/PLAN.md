@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-14
 
-**Status:** Active; CP-0 complete, PR-01 next
+**Status:** Active; PR-01 in review, PR-02 next after merge
 
 **Integration target:** `develop` at foundation commit `35800ce`
 
@@ -102,7 +102,7 @@ PR-12/13 and PR-14/15 are parallel optional branches after PR-11. Neither model 
 | ID | Task | Depends on | Size | Status | PR |
 |---|---|---|---|---|---|
 | CP-0 | Establish the integration branch and retarget open work | Owner decision | S | Complete | PR #9 / `35800ce` |
-| PR-01 | Evaluation governance and repository-level corpora | PR #9 | M | Todo | — |
+| PR-01 | Evaluation governance and repository-level corpora | PR #9 | M | In review | PR #14 |
 | PR-02 | Candidate tracing and benchmark observability | PR-01 | M | Todo | — |
 | PR-03 | Real two-stage retrieval and rerank pool | PR-02 | M | Todo | — |
 | PR-04 | Searchable file/path candidate channel | PR-03 | M | Todo | — |
@@ -136,16 +136,20 @@ PR-12/13 and PR-14/15 are parallel optional branches after PR-11. Neither model 
 
 **Goal:** Make it impossible to confuse development, regression, and sealed holdout data.
 
-- [ ] Add versioned dataset manifests with repository URL, pinned revision, license, language/content coverage, label provenance, and split.
-- [ ] Mark the existing Flask/Next.js and PM suites as `legacy_regression` in metadata and reports.
-- [ ] Add several development repositories across supported language families, including Markdown and mixed document/code cases.
-- [ ] Define an encrypted, private, or otherwise inaccessible sealed-holdout manifest and a rotation procedure.
-- [ ] Add macro-per-repository metrics, paired bootstrap intervals, protected-segment reporting, and machine-readable run metadata.
-- [ ] Reframe issue #12: content/language routing remains only a hypothesis until broad repository-level evidence exists.
+- [x] Add versioned dataset manifests with repository URL, pinned revision, license, language/content coverage, label provenance, and split.
+- [x] Mark the existing Flask/Next.js and PM suites as `legacy_regression` in metadata and reports.
+- [x] Add several development repositories across supported language families, including Markdown and mixed document/code cases.
+- [x] Define an encrypted, private, or otherwise inaccessible sealed-holdout manifest and a rotation procedure.
+- [x] Add macro-per-repository metrics, paired bootstrap intervals, protected-segment reporting, and machine-readable run metadata.
+- [x] Reframe issue #12: content/language routing remains only a hypothesis until broad repository-level evidence exists.
 
 **Excludes:** Any product ranking change.
 
-**Gate:** Corpus validation and metric-recomputation tests pass; a baseline run is reproducible from a clean checkout; no holdout labels are exposed to implementation code.
+**Gate:** Passed on PR #14. All eight public repository revisions and labels
+validate, metric-recomputation tests pass, and the clean six-repository baseline
+at `c85a186` is recorded in
+`benchmarks/development-baseline-2026-07-14.json`.
+No holdout repository identity or label is present in the public tree.
 
 ### PR-02 — Candidate tracing and benchmark observability
 

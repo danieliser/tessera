@@ -1,0 +1,1254 @@
+{
+  "limitations": [
+    "This is a public development baseline, not a sealed holdout result.",
+    "File-level labels do not score snippet usefulness, answer synthesis, or agent task completion.",
+    "Cold indexing and warm query latency are recorded separately and should not be combined."
+  ],
+  "metadata": {
+    "command": [
+      "scripts/benchmark_development.py",
+      "--tier",
+      "quick",
+      "--output",
+      "benchmarks/development-baseline-2026-07-14.json"
+    ],
+    "embedding_model": "BAAI/bge-small-en-v1.5",
+    "engine": "tessera_bge_small_hybrid",
+    "evaluation_split": "development",
+    "generated_at": "2026-07-14T08:01:27.033026+00:00",
+    "manifest_path": "benchmarks/corpora/v1/manifest.yaml",
+    "manifest_schema_version": 1,
+    "manifest_sha256": "0e84423ee5f116554af104908b0ba845cee25bc69bfecc38cb813e3deab1c701",
+    "platform": "macOS-15.5-arm64-arm-64bit-Mach-O",
+    "python": "3.14.3",
+    "query_cases": 30,
+    "random_seed": 1729,
+    "repository_revisions": {
+      "attrs": "d544dd2dacb4cbd660891e323ad92751ba65b4e0",
+      "dry-configurable": "e5e025dfddb481485affe6bb7363d3cf37f153b5",
+      "fastroute": "1c961398bef1ff6ecd8b273bef651d7afe90312b",
+      "hono": "b2ae3a2204a48ce15a26448fd746d39745eb1837",
+      "pflag": "5fdac2d16c16d60605cb8baa887e8c5c38ef623f",
+      "swift-argument-parser": "e579882f95579e7d7eb8c8068a5925c65d361e91"
+    },
+    "selection_allowed": true,
+    "tessera_revision": "c85a1866571f0d5e8f7d81664c9246d7250a76bb",
+    "tier": "quick",
+    "top_k": 10
+  },
+  "queries": [
+    {
+      "case_id": "attrs-converter-pipeline",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find optional and piped value converters",
+      "engine": "tessera_bge_small_hybrid",
+      "expected_files": [
+        "src/attr/converters.py"
+      ],
+      "id": "attrs-converter-pipeline",
+      "language": "python",
+      "latency_ms": 61.83,
+      "query": "normalize optional attribute values through a converter pipeline",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "attrs",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/attr/converters.py",
+        "src/attr/_make.py",
+        "src/attr/__init__.py",
+        "src/attr/validators.py",
+        "src/attr/_next_gen.py",
+        "src/attr/_funcs.py",
+        "src/attr/setters.py"
+      ]
+    },
+    {
+      "case_id": "attrs-deep-validators",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find deep iterable and optional validators",
+      "engine": "tessera_bge_small_hybrid",
+      "expected_files": [
+        "src/attr/validators.py"
+      ],
+      "id": "attrs-deep-validators",
+      "language": "python",
+      "latency_ms": 21.89,
+      "query": "validate every item in a nested iterable and allow optional values",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "attrs",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/attr/validators.py",
+        "src/attr/__init__.py",
+        "src/attr/_make.py",
+        "src/attr/setters.py",
+        "src/attr/_next_gen.py",
+        "src/attr/_funcs.py",
+        "src/attr/_cmp.py"
+      ]
+    },
+    {
+      "case_id": "attrs-generated-init",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find generated initializer implementation",
+      "engine": "tessera_bge_small_hybrid",
+      "expected_files": [
+        "src/attr/_make.py"
+      ],
+      "id": "attrs-generated-init",
+      "language": "python",
+      "latency_ms": 19.65,
+      "query": "generate init methods and attach them to decorated classes",
+      "rank": 3,
+      "reciprocal_rank": 0.333333,
+      "repository": "attrs",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/attr/_next_gen.py",
+        "src/attr/_funcs.py",
+        "src/attr/_make.py",
+        "src/attr/_compat.py",
+        "src/attr/__init__.py",
+        "src/attr/_cmp.py",
+        "src/attr/validators.py"
+      ]
+    },
+    {
+      "case_id": "attrs-dataclasses-comparison",
+      "category": "document",
+      "content_type": "document",
+      "description": "Find the attrs and dataclasses comparison",
+      "engine": "tessera_bge_small_hybrid",
+      "expected_files": [
+        "docs/why.md"
+      ],
+      "id": "attrs-dataclasses-comparison",
+      "language": "python",
+      "latency_ms": 20.51,
+      "query": "why use attrs instead of standard library dataclasses",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "attrs",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "docs/why.md",
+        "docs/names.md",
+        "docs/overview.md",
+        "docs/index.md",
+        "docs/examples.md",
+        "docs/api.rst",
+        "docs/api-attr.rst",
+        "docs/how-does-it-work.md",
+        "docs/comparison.md",
+        "docs/glossary.md"
+      ]
+    },
+    {
+      "case_id": "attrs-init-lifecycle",
+      "category": "cross",
+      "content_type": "mixed",
+      "description": "Find initialization lifecycle documentation or implementation",
+      "engine": "tessera_bge_small_hybrid",
+      "expected_files": [
+        "docs/init.md",
+        "src/attr/_make.py"
+      ],
+      "id": "attrs-init-lifecycle",
+      "language": "python",
+      "latency_ms": 16.15,
+      "query": "how generated initialization orders converters validators and post init hooks",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "attrs",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "docs/init.md",
+        "src/attr/setters.py",
+        "docs/index.md",
+        "src/attr/_make.py",
+        "src/attr/validators.py",
+        "docs/api.rst",
+        "docs/examples.md",
+        "docs/api-attr.rst",
+        "src/attr/_cmp.py",
+        "src/attr/_next_gen.py"
+      ]
+    },
+    {
+      "case_id": "hono-compose-middleware",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find middleware composition",
+      "engine": "tessera_bge_small_hybrid",
+      "expected_files": [
+        "src/compose.ts"
+      ],
+      "id": "hono-compose-middleware",
+      "language": "typescript",
+      "latency_ms": 97.5,
+      "query": "compose middleware into a request dispatch chain and call next",
+      "rank": 2,
+      "reciprocal_rank": 0.5,
+      "repository": "hono",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/compose.test.ts",
+        "src/compose.ts",
+        "src/middleware/combine/index.ts",
+        "src/middleware/combine/index.test.ts",
+        "src/middleware/serve-static/index.ts",
+        "src/helper/dev/index.test.ts",
+        "src/request.test.ts",
+        "src/middleware/trailing-slash/index.ts",
+        "src/client/client.ts",
+        "src/middleware/trailing-slash/index.test.ts"
+      ]
+    },
+    {
+      "case_id": "hono-signed-cookies",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find signed cookie helpers",
+      "engine": "tessera_bge_small_hybrid",
+      "expected_files": [
+        "src/utils/cookie.ts",
+        "src/helper/cookie/index.ts"
+      ],
+      "id": "hono-signed-cookies",
+      "language": "typescript",
+      "latency_ms": 42.36,
+      "query": "parse verify and serialize HMAC signed cookies",
+      "rank": 2,
+      "reciprocal_rank": 0.5,
+      "repository": "hono",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/utils/cookie.test.ts",
+        "src/utils/cookie.ts",
+        "src/helper/cookie/index.test.ts",
+        "src/utils/jwt/jws.ts",
+        "src/middleware/jwt/jwt.ts",
+        "src/helper/cookie/index.ts",
+        "src/middleware/language/language.ts",
+        "src/middleware/jwk/jwk.ts",
+        "src/client/client.ts",
+        "src/middleware/language/index.test.ts"
+      ]
+    },
+    {
+      "case_id": "hono-basic-auth",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find basic authentication middleware",
+      "engine": "tessera_bge_small_hybrid",
+      "expected_files": [
+        "src/middleware/basic-auth/index.ts"
+      ],
+      "id": "hono-basic-auth",
+      "language": "typescript",
+      "latency_ms": 43.36,
+      "query": "HTTP basic authentication middleware validates username and password",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "hono",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/middleware/basic-auth/index.ts",
+        "src/middleware/basic-auth/index.test.ts",
+        "src/utils/basic-auth.test.ts",
+        "src/middleware/jwk/jwk.ts",
+        "src/client/client.test.ts",
+        "src/utils/basic-auth.ts",
+        "src/middleware/jwt/jwt.ts",
+        "src/middleware/bearer-auth/index.ts",
+        "src/middleware/request-id/index.test.ts",
+        "src/utils/headers.ts"
+      ]
+    },
+    {
+      "case_id": "hono-migration",
+      "category": "document",
+      "content_type": "document",
+      "description": "Find the migration guide",
+      "engine": "tessera_bge_small_hybrid",
+      "expected_files": [
+        "docs/MIGRATION.md"
+      ],
+      "id": "hono-migration",
+      "language": "typescript",
+      "latency_ms": 19.25,
+      "query": "migrate an application across breaking Hono releases",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "hono",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "docs/MIGRATION.md",
+        "README.md"
+      ]
+    },
+    {
+      "case_id": "hono-server-sent-events",
+      "category": "cross",
+      "content_type": "mixed",
+      "description": "Find the server-sent event streaming API",
+      "engine": "tessera_bge_small_hybrid",
+      "expected_files": [
+        "src/helper/streaming/sse.ts",
+        "src/helper/streaming/index.ts"
+      ],
+      "id": "hono-server-sent-events",
+      "language": "typescript",
+      "latency_ms": 27.33,
+      "query": "stream server sent events with event data ids and retry intervals",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "hono",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/helper/streaming/sse.ts",
+        "src/helper/streaming/sse.test.tsx",
+        "src/helper/streaming/text.test.ts",
+        "src/jsx/streaming.test.tsx",
+        "src/utils/stream.ts",
+        "src/helper/streaming/stream.ts",
+        "src/utils/stream.test.ts",
+        "src/helper/streaming/stream.test.ts",
+        "src/client/utils.ts",
+        "src/adapter/service-worker/types.ts"
+      ]
+    },
+    {
+      "case_id": "fastroute-route-parser",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find standard route parsing",
+      "engine": "tessera_bge_small_hybrid",
+      "expected_files": [
+        "src/RouteParser/Std.php"
+      ],
+      "id": "fastroute-route-parser",
+      "language": "php",
+      "latency_ms": 21.74,
+      "query": "parse route placeholders regular expressions and optional trailing segments",
+      "rank": 2,
+      "reciprocal_rank": 0.5,
+      "repository": "fastroute",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/RouteParser.php",
+        "src/RouteParser/Std.php",
+        "src/Route.php",
+        "src/DataGenerator/MarkBased.php",
+        "src/DataGenerator/GroupPosBased.php",
+        "src/Dispatcher/MarkBased.php",
+        "src/DataGenerator/CharCountBased.php",
+        "src/Dispatcher/CharCountBased.php",
+        "src/DataGenerator/RegexBasedAbstract.php",
+        "src/Dispatcher/GroupPosBased.php"
+      ]
+    },
+    {
+      "case_id": "fastroute-method-not-allowed",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find method-not-allowed dispatch results",
+      "engine": "tessera_bge_small_hybrid",
+      "expected_files": [
+        "src/Dispatcher/Result/MethodNotAllowed.php"
+      ],
+      "id": "fastroute-method-not-allowed",
+      "language": "php",
+      "latency_ms": 18.42,
+      "query": "represent a dispatch result when the path matches but HTTP method does not",
+      "rank": null,
+      "reciprocal_rank": 0.0,
+      "repository": "fastroute",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/Dispatcher/RegexBasedAbstract.php",
+        "src/Dispatcher.php",
+        "src/Dispatcher/MarkBased.php",
+        "src/Dispatcher/CharCountBased.php",
+        "src/Dispatcher/Result/NotMatched.php",
+        "src/Dispatcher/Result/Matched.php",
+        "src/Route.php",
+        "src/Dispatcher/GroupCountBased.php",
+        "src/Dispatcher/GroupPosBased.php",
+        "src/DataGenerator/RegexBasedAbstract.php"
+      ]
+    },
+    {
+      "case_id": "fastroute-file-cache",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find the filesystem route cache",
+      "engine": "tessera_bge_small_hybrid",
+      "expected_files": [
+        "src/Cache/FileCache.php"
+      ],
+      "id": "fastroute-file-cache",
+      "language": "php",
+      "latency_ms": 20.26,
+      "query": "persist generated route collector data in a filesystem cache",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "fastroute",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/Cache/FileCache.php",
+        "src/functions.php",
+        "src/FastRoute.php",
+        "src/Dispatcher/RegexBasedAbstract.php",
+        "src/Cache/Psr16Cache.php",
+        "src/DataGenerator/RegexBasedAbstract.php",
+        "src/Cache.php",
+        "src/GenerateUri/FromProcessedConfiguration.php",
+        "src/RouteCollector.php",
+        "src/Dispatcher/GroupCountBased.php"
+      ]
+    },
+    {
+      "case_id": "fastroute-route-groups",
+      "category": "document",
+      "content_type": "document",
+      "description": "Find route group documentation",
+      "engine": "tessera_bge_small_hybrid",
+      "expected_files": [
+        "README.md"
+      ],
+      "id": "fastroute-route-groups",
+      "language": "php",
+      "latency_ms": 11.66,
+      "query": "define route groups with a shared path prefix",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "fastroute",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "README.md"
+      ]
+    },
+    {
+      "case_id": "fastroute-uri-generation",
+      "category": "cross",
+      "content_type": "mixed",
+      "description": "Find URI generation usage or implementation",
+      "engine": "tessera_bge_small_hybrid",
+      "expected_files": [
+        "README.md",
+        "src/GenerateUri/FromProcessedConfiguration.php"
+      ],
+      "id": "fastroute-uri-generation",
+      "language": "php",
+      "latency_ms": 16.65,
+      "query": "generate a URI from a named route and placeholder values",
+      "rank": 2,
+      "reciprocal_rank": 0.5,
+      "repository": "fastroute",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/Route.php",
+        "src/GenerateUri/FromProcessedConfiguration.php",
+        "README.md",
+        "src/Dispatcher/CharCountBased.php",
+        "src/Dispatcher/MarkBased.php",
+        "src/Dispatcher/RegexBasedAbstract.php",
+        "src/GenerateUri/UriCouldNotBeGenerated.php",
+        "src/GenerateUri.php",
+        "src/DataGenerator/MarkBased.php",
+        "src/DataGenerator/RegexBasedAbstract.php"
+      ]
+    },
+    {
+      "case_id": "pflag-name-normalization",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find custom flag-name normalization",
+      "engine": "tessera_bge_small_hybrid",
+      "expected_files": [
+        "flag.go"
+      ],
+      "id": "pflag-name-normalization",
+      "language": "go",
+      "latency_ms": 77.44,
+      "query": "normalize flag names so underscores and hyphens compare as equivalent",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "pflag",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "flag.go",
+        "flag_test.go",
+        "bytes.go",
+        "errors.go",
+        "string_to_string.go",
+        "golangflag.go",
+        "text.go",
+        "printusage_test.go",
+        "string_slice.go",
+        "ipnet_slice_test.go"
+      ]
+    },
+    {
+      "case_id": "pflag-shorthand-parser",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find shorthand flag parsing",
+      "engine": "tessera_bge_small_hybrid",
+      "expected_files": [
+        "flag.go"
+      ],
+      "id": "pflag-shorthand-parser",
+      "language": "go",
+      "latency_ms": 29.88,
+      "query": "parse combined single-letter shorthand boolean flags",
+      "rank": 2,
+      "reciprocal_rank": 0.5,
+      "repository": "pflag",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "flag_test.go",
+        "flag.go",
+        "bool_slice_test.go",
+        "bool.go",
+        "example_test.go",
+        "string_to_string_test.go",
+        "string_to_string.go",
+        "bytes.go",
+        "errors.go",
+        "printusage_test.go"
+      ]
+    },
+    {
+      "case_id": "pflag-string-slice",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find string-slice flags",
+      "engine": "tessera_bge_small_hybrid",
+      "expected_files": [
+        "string_slice.go"
+      ],
+      "id": "pflag-string-slice",
+      "language": "go",
+      "latency_ms": 28.47,
+      "query": "implement a repeatable string slice command line flag value",
+      "rank": 7,
+      "reciprocal_rank": 0.142857,
+      "repository": "pflag",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "flag.go",
+        "flag_test.go",
+        "string_to_string.go",
+        "bytes.go",
+        "ipnet_slice_test.go",
+        "errors.go",
+        "string_slice.go",
+        "string_to_string_test.go",
+        "printusage_test.go",
+        "golangflag.go"
+      ]
+    },
+    {
+      "case_id": "pflag-go-flag-compatibility",
+      "category": "document",
+      "content_type": "document",
+      "description": "Find standard flag compatibility documentation",
+      "engine": "tessera_bge_small_hybrid",
+      "expected_files": [
+        "README.md"
+      ],
+      "id": "pflag-go-flag-compatibility",
+      "language": "go",
+      "latency_ms": 35.32,
+      "query": "use pflag together with the standard library flag package",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "pflag",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "README.md"
+      ]
+    },
+    {
+      "case_id": "pflag-deprecated-shorthand",
+      "category": "cross",
+      "content_type": "mixed",
+      "description": "Find shorthand deprecation behavior",
+      "engine": "tessera_bge_small_hybrid",
+      "expected_files": [
+        "README.md",
+        "flag.go"
+      ],
+      "id": "pflag-deprecated-shorthand",
+      "language": "go",
+      "latency_ms": 36.72,
+      "query": "deprecate a flag shorthand hide it from help and print a warning",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "pflag",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "flag.go",
+        "README.md",
+        "errors.go",
+        "bytes.go",
+        "flag_test.go",
+        "text.go",
+        "golangflag.go",
+        "bool.go",
+        ".travis.yml",
+        "printusage_test.go"
+      ]
+    },
+    {
+      "case_id": "swift-command-parser",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find subcommand parsing",
+      "engine": "tessera_bge_small_hybrid",
+      "expected_files": [
+        "Sources/ArgumentParser/Parsing/CommandParser.swift"
+      ],
+      "id": "swift-command-parser",
+      "language": "swift",
+      "latency_ms": 24.39,
+      "query": "parse nested subcommands and select the matching command configuration",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "swift-argument-parser",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "Sources/ArgumentParser/Parsing/CommandParser.swift",
+        "Sources/ArgumentParser/Parsable Properties/ParentCommand.swift",
+        "Sources/ArgumentParser/Usage/HelpCommand.swift",
+        "Sources/ArgumentParser/Utilities/Tree.swift",
+        "Sources/ArgumentParser/Parsable Types/ParsableCommand.swift",
+        "Sources/ArgumentParser/Completions/CompletionsGenerator.swift",
+        "Sources/ArgumentParser/Usage/HelpGenerator.swift",
+        "Sources/ArgumentParser/Parsable Types/ParsableArguments.swift",
+        "Sources/ArgumentParser/Parsing/ArgumentSet.swift",
+        "Sources/ArgumentParser/Usage/DumpHelpGenerator.swift"
+      ]
+    },
+    {
+      "case_id": "swift-bash-completions",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find Bash completion generation",
+      "engine": "tessera_bge_small_hybrid",
+      "expected_files": [
+        "Sources/ArgumentParser/Completions/BashCompletionsGenerator.swift"
+      ],
+      "id": "swift-bash-completions",
+      "language": "swift",
+      "latency_ms": 20.96,
+      "query": "generate bash completion functions for options arguments and subcommands",
+      "rank": 3,
+      "reciprocal_rank": 0.333333,
+      "repository": "swift-argument-parser",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "Sources/ArgumentParser/Parsing/CommandParser.swift",
+        "Sources/ArgumentParser/Completions/CompletionsGenerator.swift",
+        "Sources/ArgumentParser/Completions/BashCompletionsGenerator.swift",
+        "Sources/ArgumentParser/Completions/FishCompletionsGenerator.swift",
+        "Sources/ArgumentParser/Usage/UsageGenerator.swift",
+        "Sources/ArgumentParser/Completions/ZshCompletionsGenerator.swift",
+        "Sources/ArgumentParser/Validators/AsyncCompletionsValidator.swift",
+        "Sources/ArgumentParser/Usage/DumpHelpGenerator.swift",
+        "Sources/ArgumentParser/Parsing/ArgumentSet.swift",
+        "Sources/ArgumentParser/Parsable Properties/CompletionKind.swift"
+      ]
+    },
+    {
+      "case_id": "swift-option-strategies",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find option parsing strategies",
+      "engine": "tessera_bge_small_hybrid",
+      "expected_files": [
+        "Sources/ArgumentParser/Parsable Properties/Option.swift"
+      ],
+      "id": "swift-option-strategies",
+      "language": "swift",
+      "latency_ms": 16.32,
+      "query": "configure option parsing strategies for arrays and repeated values",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "swift-argument-parser",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "Sources/ArgumentParser/Parsable Properties/Option.swift",
+        "Sources/ArgumentParser/Parsable Properties/Argument.swift",
+        "Sources/ArgumentParser/Parsing/ArgumentDecoder.swift",
+        "Sources/ArgumentParser/Completions/CompletionsGenerator.swift",
+        "Sources/ArgumentParser/Parsable Properties/OptionGroup.swift",
+        "Sources/ArgumentParser/Usage/UsageGenerator.swift",
+        "Sources/ArgumentParser/Parsing/SplitArguments.swift",
+        "Sources/ArgumentParser/Parsing/Parsed.swift",
+        "Sources/ArgumentParser/Parsing/Name.swift",
+        "Sources/ArgumentParser/Parsing/CommandParser.swift"
+      ]
+    },
+    {
+      "case_id": "swift-validation-guide",
+      "category": "document",
+      "content_type": "document",
+      "description": "Find argument validation documentation",
+      "engine": "tessera_bge_small_hybrid",
+      "expected_files": [
+        "Sources/ArgumentParser/Documentation.docc/Articles/Validation.md"
+      ],
+      "id": "swift-validation-guide",
+      "language": "swift",
+      "latency_ms": 14.88,
+      "query": "validate parsed command line arguments and report validation errors",
+      "rank": 4,
+      "reciprocal_rank": 0.25,
+      "repository": "swift-argument-parser",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "Sources/ArgumentParser/Documentation.docc/Extensions/ParsableArguments.md",
+        "Sources/ArgumentParser/Documentation.docc/Extensions/ArgumentArrayParsingStrategy.md",
+        "Sources/ArgumentParser/Documentation.docc/Articles/ManualParsing.md",
+        "Sources/ArgumentParser/Documentation.docc/Articles/Validation.md",
+        "Sources/ArgumentParser/Documentation.docc/Extensions/Argument.md",
+        "Sources/ArgumentParser/Documentation.docc/Extensions/Flag.md",
+        "Sources/ArgumentParser/Documentation.docc/Extensions/Option.md",
+        "Sources/ArgumentParser/Documentation.docc/Extensions/CommandConfiguration.md",
+        "Sources/ArgumentParser/Documentation.docc/Articles/DeclaringArguments.md",
+        "Sources/ArgumentParser/Documentation.docc/Extensions/OptionGroup.md"
+      ]
+    },
+    {
+      "case_id": "swift-completion-install",
+      "category": "cross",
+      "content_type": "mixed",
+      "description": "Find completion installation documentation or implementation",
+      "engine": "tessera_bge_small_hybrid",
+      "expected_files": [
+        "Sources/ArgumentParser/Documentation.docc/Articles/InstallingCompletionScripts.md",
+        "Sources/ArgumentParser/Completions/CompletionsGenerator.swift"
+      ],
+      "id": "swift-completion-install",
+      "language": "swift",
+      "latency_ms": 18.39,
+      "query": "generate and install shell completion scripts for a command",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "swift-argument-parser",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "Sources/ArgumentParser/Documentation.docc/Articles/InstallingCompletionScripts.md",
+        "Sources/ArgumentParser/Documentation.docc/Articles/CustomizingCompletions.md",
+        "Sources/ArgumentParser/Completions/CompletionsGenerator.swift",
+        "Sources/ArgumentParser/Parsing/CommandParser.swift",
+        "Sources/ArgumentParser/Completions/ZshCompletionsGenerator.swift",
+        "Sources/ArgumentParser/Usage/UsageGenerator.swift",
+        "Sources/ArgumentParser/Completions/BashCompletionsGenerator.swift",
+        "Sources/ArgumentParser/Parsable Properties/CompletionKind.swift",
+        "Sources/ArgumentParser/Usage/DumpHelpGenerator.swift",
+        "Sources/ArgumentParser/Completions/FishCompletionsGenerator.swift"
+      ]
+    },
+    {
+      "case_id": "dry-configurable-compiler",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find the configuration DSL compiler",
+      "engine": "tessera_bge_small_hybrid",
+      "expected_files": [
+        "lib/dry/configurable/compiler.rb"
+      ],
+      "id": "dry-configurable-compiler",
+      "language": "ruby",
+      "latency_ms": 10.9,
+      "query": "compile nested setting abstract syntax tree nodes into configuration settings",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "dry-configurable",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "lib/dry/configurable/compiler.rb",
+        "lib/dry/configurable/instance_methods.rb",
+        "lib/dry/configurable/settings.rb",
+        "lib/dry/configurable/class_methods.rb",
+        "lib/dry-configurable.rb",
+        "lib/dry/configurable/dsl.rb",
+        "lib/dry/configurable.rb",
+        "lib/dry/configurable/config.rb",
+        "lib/dry/configurable/setting.rb",
+        "lib/dry/configurable/errors.rb"
+      ]
+    },
+    {
+      "case_id": "dry-configurable-finalize",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find configuration finalization",
+      "engine": "tessera_bge_small_hybrid",
+      "expected_files": [
+        "lib/dry/configurable/config.rb"
+      ],
+      "id": "dry-configurable-finalize",
+      "language": "ruby",
+      "latency_ms": 10.3,
+      "query": "finalize a configuration recursively and prevent later mutation",
+      "rank": 5,
+      "reciprocal_rank": 0.2,
+      "repository": "dry-configurable",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "lib/dry/configurable.rb",
+        "lib/dry/configurable/instance_methods.rb",
+        "lib/dry/configurable/setting.rb",
+        "lib/dry-configurable.rb",
+        "lib/dry/configurable/config.rb",
+        "lib/dry/configurable/settings.rb",
+        "lib/dry/configurable/methods.rb",
+        "lib/dry/configurable/test_interface.rb",
+        "lib/dry/configurable/compiler.rb",
+        "lib/dry/configurable/dsl.rb"
+      ]
+    },
+    {
+      "case_id": "dry-configurable-inheritance",
+      "category": "code",
+      "content_type": "code",
+      "description": "Find configurable class inheritance",
+      "engine": "tessera_bge_small_hybrid",
+      "expected_files": [
+        "lib/dry/configurable/class_methods.rb"
+      ],
+      "id": "dry-configurable-inheritance",
+      "language": "ruby",
+      "latency_ms": 10.88,
+      "query": "duplicate settings and configuration values when a configurable class is inherited",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "dry-configurable",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "lib/dry/configurable/class_methods.rb",
+        "lib/dry/configurable/settings.rb",
+        "lib/dry/configurable/config.rb",
+        "lib/dry/configurable/setting.rb",
+        "lib/dry/configurable/dsl.rb",
+        "lib/dry/configurable/extension.rb",
+        "lib/dry/configurable/instance_methods.rb",
+        "lib/dry/configurable/errors.rb",
+        "lib/dry/configurable.rb",
+        "lib/dry-configurable.rb"
+      ]
+    },
+    {
+      "case_id": "dry-configurable-nested-settings",
+      "category": "document",
+      "content_type": "document",
+      "description": "Find nested configuration documentation",
+      "engine": "tessera_bge_small_hybrid",
+      "expected_files": [
+        "README.md"
+      ],
+      "id": "dry-configurable-nested-settings",
+      "language": "ruby",
+      "latency_ms": 10.89,
+      "query": "define nested settings with defaults and constructors",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "dry-configurable",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "README.md"
+      ]
+    },
+    {
+      "case_id": "dry-configurable-class-and-instance",
+      "category": "cross",
+      "content_type": "mixed",
+      "description": "Find class and instance configuration behavior",
+      "engine": "tessera_bge_small_hybrid",
+      "expected_files": [
+        "README.md",
+        "lib/dry/configurable/extension.rb",
+        "lib/dry/configurable/instance_methods.rb"
+      ],
+      "id": "dry-configurable-class-and-instance",
+      "language": "ruby",
+      "latency_ms": 9.66,
+      "query": "expose the same configurable settings on classes and instances",
+      "rank": 7,
+      "reciprocal_rank": 0.142857,
+      "repository": "dry-configurable",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "lib/dry/configurable/settings.rb",
+        "lib/dry/configurable/class_methods.rb",
+        "lib/dry/configurable/config.rb",
+        "lib/dry/configurable/setting.rb",
+        "lib/dry/configurable.rb",
+        "lib/dry/configurable/dsl.rb",
+        "lib/dry/configurable/instance_methods.rb",
+        "lib/dry/configurable/extension.rb",
+        "lib/dry/configurable/test_interface.rb",
+        "lib/dry/configurable/compiler.rb"
+      ]
+    }
+  ],
+  "repositories": {
+    "attrs": {
+      "content_types": [
+        "code",
+        "markdown",
+        "rst"
+      ],
+      "index": {
+        "cached": false,
+        "chunks_created": 245,
+        "files_processed": 52,
+        "index_ms": 27821.81
+      },
+      "languages": [
+        "python"
+      ],
+      "license": "MIT",
+      "repository_url": "https://github.com/python-attrs/attrs.git",
+      "revision": "d544dd2dacb4cbd660891e323ad92751ba65b4e0"
+    },
+    "dry-configurable": {
+      "content_types": [
+        "code",
+        "markdown"
+      ],
+      "index": {
+        "cached": false,
+        "chunks_created": 30,
+        "files_processed": 16,
+        "index_ms": 2172.18
+      },
+      "languages": [
+        "ruby"
+      ],
+      "license": "MIT",
+      "repository_url": "https://github.com/dry-rb/dry-configurable.git",
+      "revision": "e5e025dfddb481485affe6bb7363d3cf37f153b5"
+    },
+    "fastroute": {
+      "content_types": [
+        "code",
+        "markdown"
+      ],
+      "index": {
+        "cached": false,
+        "chunks_created": 65,
+        "files_processed": 32,
+        "index_ms": 6693.94
+      },
+      "languages": [
+        "php"
+      ],
+      "license": "BSD-3-Clause",
+      "repository_url": "https://github.com/nikic/FastRoute.git",
+      "revision": "1c961398bef1ff6ecd8b273bef651d7afe90312b"
+    },
+    "hono": {
+      "content_types": [
+        "code",
+        "markdown"
+      ],
+      "index": {
+        "cached": false,
+        "chunks_created": 356,
+        "files_processed": 315,
+        "index_ms": 75696.01
+      },
+      "languages": [
+        "typescript",
+        "javascript"
+      ],
+      "license": "MIT",
+      "repository_url": "https://github.com/honojs/hono.git",
+      "revision": "b2ae3a2204a48ce15a26448fd746d39745eb1837"
+    },
+    "pflag": {
+      "content_types": [
+        "code",
+        "markdown"
+      ],
+      "index": {
+        "cached": false,
+        "chunks_created": 1576,
+        "files_processed": 79,
+        "index_ms": 114728.88
+      },
+      "languages": [
+        "go"
+      ],
+      "license": "BSD-3-Clause",
+      "repository_url": "https://github.com/spf13/pflag.git",
+      "revision": "5fdac2d16c16d60605cb8baa887e8c5c38ef623f"
+    },
+    "swift-argument-parser": {
+      "content_types": [
+        "code",
+        "markdown",
+        "docc"
+      ],
+      "index": {
+        "cached": false,
+        "chunks_created": 447,
+        "files_processed": 75,
+        "index_ms": 67508.94
+      },
+      "languages": [
+        "swift"
+      ],
+      "license": "Apache-2.0",
+      "repository_url": "https://github.com/apple/swift-argument-parser.git",
+      "revision": "e579882f95579e7d7eb8c8068a5925c65d361e91"
+    }
+  },
+  "summary": {
+    "latency": {
+      "mean_ms": 27.13,
+      "p50_ms": 20.39,
+      "p95_ms": 70.42
+    },
+    "per_repository": {
+      "attrs": {
+        "mrr_at_10": 0.866667,
+        "queries_supported": 5,
+        "top_1": 0.8,
+        "top_10": 1.0,
+        "top_3": 1.0,
+        "top_5": 1.0
+      },
+      "dry-configurable": {
+        "mrr_at_10": 0.668571,
+        "queries_supported": 5,
+        "top_1": 0.6,
+        "top_10": 1.0,
+        "top_3": 0.6,
+        "top_5": 0.8
+      },
+      "fastroute": {
+        "mrr_at_10": 0.6,
+        "queries_supported": 5,
+        "top_1": 0.4,
+        "top_10": 0.8,
+        "top_3": 0.8,
+        "top_5": 0.8
+      },
+      "hono": {
+        "mrr_at_10": 0.8,
+        "queries_supported": 5,
+        "top_1": 0.6,
+        "top_10": 1.0,
+        "top_3": 1.0,
+        "top_5": 1.0
+      },
+      "pflag": {
+        "mrr_at_10": 0.728571,
+        "queries_supported": 5,
+        "top_1": 0.6,
+        "top_10": 1.0,
+        "top_3": 0.8,
+        "top_5": 0.8
+      },
+      "swift-argument-parser": {
+        "mrr_at_10": 0.716667,
+        "queries_supported": 5,
+        "top_1": 0.6,
+        "top_10": 1.0,
+        "top_3": 0.8,
+        "top_5": 1.0
+      }
+    },
+    "pooled": {
+      "tessera_bge_small_hybrid": {
+        "mrr_at_10": 0.730079,
+        "queries_supported": 30,
+        "top_1": 0.6,
+        "top_10": 0.966667,
+        "top_3": 0.833333,
+        "top_5": 0.9
+      }
+    },
+    "primary_macro_per_repository": {
+      "tessera_bge_small_hybrid": {
+        "mrr_at_10": 0.730079,
+        "per_repository": {
+          "attrs": {
+            "mrr_at_10": 0.866667,
+            "queries_supported": 5,
+            "top_1": 0.8,
+            "top_10": 1.0,
+            "top_3": 1.0,
+            "top_5": 1.0
+          },
+          "dry-configurable": {
+            "mrr_at_10": 0.668571,
+            "queries_supported": 5,
+            "top_1": 0.6,
+            "top_10": 1.0,
+            "top_3": 0.6,
+            "top_5": 0.8
+          },
+          "fastroute": {
+            "mrr_at_10": 0.6,
+            "queries_supported": 5,
+            "top_1": 0.4,
+            "top_10": 0.8,
+            "top_3": 0.8,
+            "top_5": 0.8
+          },
+          "hono": {
+            "mrr_at_10": 0.8,
+            "queries_supported": 5,
+            "top_1": 0.6,
+            "top_10": 1.0,
+            "top_3": 1.0,
+            "top_5": 1.0
+          },
+          "pflag": {
+            "mrr_at_10": 0.728571,
+            "queries_supported": 5,
+            "top_1": 0.6,
+            "top_10": 1.0,
+            "top_3": 0.8,
+            "top_5": 0.8
+          },
+          "swift-argument-parser": {
+            "mrr_at_10": 0.716667,
+            "queries_supported": 5,
+            "top_1": 0.6,
+            "top_10": 1.0,
+            "top_3": 0.8,
+            "top_5": 1.0
+          }
+        },
+        "queries_supported": 30,
+        "repositories": 6,
+        "top_1": 0.6,
+        "top_10": 0.966667,
+        "top_3": 0.833333,
+        "top_5": 0.9
+      }
+    },
+    "protected_segments": {
+      "content_type": {
+        "tessera_bge_small_hybrid/code": {
+          "mrr_at_10": 0.667196,
+          "queries_supported": 18,
+          "top_1": 0.5,
+          "top_10": 0.944444,
+          "top_3": 0.833333,
+          "top_5": 0.888889
+        },
+        "tessera_bge_small_hybrid/document": {
+          "mrr_at_10": 0.875,
+          "queries_supported": 6,
+          "top_1": 0.833333,
+          "top_10": 1.0,
+          "top_3": 0.833333,
+          "top_5": 1.0
+        },
+        "tessera_bge_small_hybrid/mixed": {
+          "mrr_at_10": 0.77381,
+          "queries_supported": 6,
+          "top_1": 0.666667,
+          "top_10": 1.0,
+          "top_3": 0.833333,
+          "top_5": 0.833333
+        }
+      },
+      "language": {
+        "tessera_bge_small_hybrid/go": {
+          "mrr_at_10": 0.728571,
+          "queries_supported": 5,
+          "top_1": 0.6,
+          "top_10": 1.0,
+          "top_3": 0.8,
+          "top_5": 0.8
+        },
+        "tessera_bge_small_hybrid/php": {
+          "mrr_at_10": 0.6,
+          "queries_supported": 5,
+          "top_1": 0.4,
+          "top_10": 0.8,
+          "top_3": 0.8,
+          "top_5": 0.8
+        },
+        "tessera_bge_small_hybrid/python": {
+          "mrr_at_10": 0.866667,
+          "queries_supported": 5,
+          "top_1": 0.8,
+          "top_10": 1.0,
+          "top_3": 1.0,
+          "top_5": 1.0
+        },
+        "tessera_bge_small_hybrid/ruby": {
+          "mrr_at_10": 0.668571,
+          "queries_supported": 5,
+          "top_1": 0.6,
+          "top_10": 1.0,
+          "top_3": 0.6,
+          "top_5": 0.8
+        },
+        "tessera_bge_small_hybrid/swift": {
+          "mrr_at_10": 0.716667,
+          "queries_supported": 5,
+          "top_1": 0.6,
+          "top_10": 1.0,
+          "top_3": 0.8,
+          "top_5": 1.0
+        },
+        "tessera_bge_small_hybrid/typescript": {
+          "mrr_at_10": 0.8,
+          "queries_supported": 5,
+          "top_1": 0.6,
+          "top_10": 1.0,
+          "top_3": 1.0,
+          "top_5": 1.0
+        }
+      }
+    }
+  }
+}
