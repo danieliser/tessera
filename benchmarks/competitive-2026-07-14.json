@@ -1,0 +1,5038 @@
+{
+  "graph_resolution": {
+    "cases": [
+      {
+        "caller_file": "caller_alias.py",
+        "caller_symbol": "caller_alias",
+        "name": "python_named_alias",
+        "target_file": "service.py",
+        "target_symbol": "run"
+      },
+      {
+        "caller_file": "caller_module.py",
+        "caller_symbol": "caller_module",
+        "name": "python_module_call",
+        "target_file": "service.py",
+        "target_symbol": "run"
+      },
+      {
+        "caller_file": "caller_reexport.py",
+        "caller_symbol": "caller_reexport",
+        "name": "python_reexport",
+        "target_file": "service.py",
+        "target_symbol": "run"
+      },
+      {
+        "caller_file": "caller_alias.ts",
+        "caller_symbol": "callerAlias",
+        "name": "typescript_named_alias",
+        "target_file": "service.ts",
+        "target_symbol": "run"
+      }
+    ],
+    "codegraph": {
+      "cold_index_ms": 571.84,
+      "passed": 3,
+      "passes": {
+        "python_module_call": true,
+        "python_named_alias": false,
+        "python_reexport": true,
+        "typescript_named_alias": true
+      },
+      "resolved_targets": {
+        "caller_alias.py:caller_alias": [
+          "unrelated.py",
+          "execute"
+        ],
+        "caller_alias.ts:callerAlias": [
+          "service.ts",
+          "run"
+        ],
+        "caller_module.py:caller_module": [
+          "service.py",
+          "run"
+        ],
+        "caller_reexport.py:caller_reexport": [
+          "service.py",
+          "run"
+        ]
+      },
+      "total": 4
+    },
+    "tessera": {
+      "cold_index_ms": 48.51,
+      "passed": 4,
+      "passes": {
+        "python_module_call": true,
+        "python_named_alias": true,
+        "python_reexport": true,
+        "typescript_named_alias": true
+      },
+      "resolved_targets": {
+        "caller_alias.py:caller_alias": [
+          "service.py",
+          "run"
+        ],
+        "caller_alias.ts:callerAlias": [
+          "service.ts",
+          "run"
+        ],
+        "caller_module.py:caller_module": [
+          "service.py",
+          "run"
+        ],
+        "caller_reexport.py:caller_reexport": [
+          "service.py",
+          "run"
+        ]
+      },
+      "total": 4
+    }
+  },
+  "limitations": [
+    "CodeGraph does not index Markdown/document content; unsupported rows are excluded.",
+    "Tessera runs in-process while CodeGraph launches a CLI process per query; latency is directional.",
+    "Ground truth is curated and file-level; it does not score answer synthesis or snippet quality.",
+    "Cached indexes are used unless --reindex is supplied, so setup_ms is not a cold-index benchmark."
+  ],
+  "metadata": {
+    "codegraph_version": "1.4.1",
+    "embedding_model": "BAAI/bge-small-en-v1.5",
+    "generated_at": "2026-07-14T05:10:25.144042+00:00",
+    "measured_query_runs": 139,
+    "platform": "macOS-15.5-arm64-arm-64bit-Mach-O",
+    "python": "3.14.3",
+    "query_cases": 58,
+    "reranking_model": "jinaai/jina-reranker-v1-tiny-en",
+    "tessera_revision": "e71e684579128e172fd3f65202852806b4a1c248",
+    "tier": "full",
+    "top_k": 10
+  },
+  "queries": [
+    {
+      "category": "code",
+      "description": "Find the Image component implementation",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "image-component.tsx",
+        "image-external.tsx",
+        "image-optimizer.ts",
+        "image.tsx"
+      ],
+      "language": "typescript",
+      "latency_ms": 121.36,
+      "query": "image optimization component",
+      "rank": 2,
+      "reciprocal_rank": 0.5,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "packages/next/src/shared/lib/image-loader.ts",
+        "packages/next/src/client/legacy/image.tsx",
+        "packages/next/src/shared/lib/router/utils/querystring.ts",
+        "packages/next/src/client/request/search-params.browser.dev.ts",
+        "packages/next/src/lib/mime-type.ts",
+        "packages/next/src/lib/metadata/resolvers/resolve-opengraph.test.ts",
+        "packages/next/src/api/og.ts",
+        "packages/next/src/shared/lib/router/utils/cache-busting-search-param.ts",
+        "packages/next/src/shared/lib/router/utils/parse-url.ts",
+        "packages/next/src/client/request/search-params.browser.prod.ts"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find the Image component implementation",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "image-component.tsx",
+        "image-external.tsx",
+        "image-optimizer.ts",
+        "image.tsx"
+      ],
+      "language": "typescript",
+      "latency_ms": 1045.13,
+      "query": "image optimization component",
+      "rank": 2,
+      "reciprocal_rank": 0.5,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "packages/next/src/shared/lib/image-loader.ts",
+        "packages/next/src/client/legacy/image.tsx",
+        "packages/next/src/shared/lib/image-external.tsx",
+        "packages/next/src/lib/metadata/resolvers/resolve-opengraph.test.ts",
+        "packages/next/src/server/config-shared.ts",
+        "packages/next/src/shared/lib/get-img-props.ts",
+        "packages/next/src/lib/mime-type.ts",
+        "packages/next/src/api/og.ts",
+        "packages/next/src/shared/lib/match-local-pattern.ts",
+        "packages/next/src/shared/lib/image-config.ts"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find the Image component implementation",
+      "engine": "codegraph",
+      "expected_files": [
+        "image-component.tsx",
+        "image-external.tsx",
+        "image-optimizer.ts",
+        "image.tsx"
+      ],
+      "language": "typescript",
+      "latency_ms": 5553.24,
+      "query": "image optimization component",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "packages/next/src/client/image-component.tsx",
+        "packages/next/src/client/legacy/image.tsx",
+        "packages/next/src/server/load-components.ts"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find middleware URL rewrite logic",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "next-url.ts",
+        "next-request.ts",
+        "middleware-route-matcher.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 156.39,
+      "query": "middleware request rewriting",
+      "rank": null,
+      "reciprocal_rank": 0.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "packages/next/src/server/web/types.ts",
+        "packages/next/src/server/request/search-params.ts",
+        "packages/next/src/client/request/search-params.browser.dev.ts",
+        "packages/next/src/shared/lib/router/utils/querystring.ts",
+        "packages/next/src/shared/lib/router/router.ts",
+        "packages/next/src/client/components/navigation.test.ts",
+        "packages/next/src/client/request/search-params.browser.prod.ts",
+        "packages/next/src/client/components/router-reducer/set-cache-busting-search-param.ts",
+        "packages/next/src/client/components/readonly-url-search-params.ts",
+        "packages/next/src/server/internal-utils.ts"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find middleware URL rewrite logic",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "next-url.ts",
+        "next-request.ts",
+        "middleware-route-matcher.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 1193.6,
+      "query": "middleware request rewriting",
+      "rank": 6,
+      "reciprocal_rank": 0.1667,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "packages/next/src/server/lib/patch-set-header.ts",
+        "packages/next/src/experimental/testing/server/index.ts",
+        "packages/next/src/server/web/types.ts",
+        "packages/next/src/experimental/testing/server/middleware-testing-utils.ts",
+        "packages/next/src/shared/lib/router/router.ts",
+        "packages/next/src/shared/lib/router/utils/middleware-route-matcher.ts",
+        "packages/next/src/client/route-params.ts",
+        "packages/next/src/server/server-route-utils.ts",
+        "packages/next/src/next-devtools/server/middleware-response.ts",
+        "packages/next/src/experimental/testmode/fetch.ts"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find middleware URL rewrite logic",
+      "engine": "codegraph",
+      "expected_files": [
+        "next-url.ts",
+        "next-request.ts",
+        "middleware-route-matcher.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 4734.89,
+      "query": "middleware request rewriting",
+      "rank": null,
+      "reciprocal_rank": 0.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "packages/next/src/compiled/@edge-runtime/primitives/load.js",
+        "packages/next/src/server/web/error.ts",
+        "packages/next/src/server/web/adapter.ts"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find route handler implementation",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "app-route/module.ts",
+        "auto-implement-methods.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 37.41,
+      "query": "route handler HTTP methods",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "packages/next/src/server/route-modules/app-route/helpers/auto-implement-methods.ts",
+        "packages/next/src/server/base-server.ts",
+        "packages/next/src/client/components/router-reducer/set-cache-busting-search-param.ts",
+        "packages/next/src/shared/lib/router/utils/prepare-destination.ts",
+        "packages/next/src/shared/lib/router/utils/querystring.ts",
+        "packages/next/src/shared/lib/router/utils/parse-url.ts",
+        "packages/next/src/shared/lib/router/utils/interpolate-as.ts",
+        "packages/next/src/lib/url.ts",
+        "packages/next/src/server/app-render/create-flight-router-state-from-loader-tree.ts",
+        "packages/next/src/server/render.tsx"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find route handler implementation",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "app-route/module.ts",
+        "auto-implement-methods.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 963.59,
+      "query": "route handler HTTP methods",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "packages/next/src/server/route-modules/app-route/helpers/auto-implement-methods.ts",
+        "packages/next/src/shared/lib/router/utils/interpolate-as.ts",
+        "packages/next/src/experimental/testmode/playwright/page-route.ts",
+        "packages/next/src/server/route-modules/app-route/module.ts",
+        "packages/next/src/server/lib/router-server.ts",
+        "packages/next/src/server/request-meta.ts",
+        "packages/next/src/client/resolve-href.ts",
+        "packages/next/src/server/route-modules/route-module.ts",
+        "packages/next/src/server/base-server.ts",
+        "packages/next/src/shared/lib/router/utils/resolve-rewrites.ts"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find route handler implementation",
+      "engine": "codegraph",
+      "expected_files": [
+        "app-route/module.ts",
+        "auto-implement-methods.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 4428.55,
+      "query": "route handler HTTP methods",
+      "rank": null,
+      "reciprocal_rank": 0.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "packages/next/src/server/dev/turbopack-utils.ts",
+        "packages/next/src/server/web/edge-route-module-wrapper.ts"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find env var configuration docs",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "environment-variables.mdx",
+        "env.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": 33.57,
+      "query": "how to configure environment variables",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "docs/01-app/02-guides/environment-variables.mdx",
+        "docs/02-pages/02-guides/environment-variables.mdx",
+        "docs/01-app/03-api-reference/05-config/01-next-config-js/env.mdx",
+        "docs/01-app/03-api-reference/04-functions/use-search-params.mdx",
+        "docs/01-app/02-guides/production-checklist.mdx",
+        "docs/01-app/03-api-reference/02-components/image.mdx",
+        "docs/01-app/02-guides/backend-for-frontend.mdx",
+        "docs/02-pages/04-api-reference/04-config/01-next-config-js/env.mdx",
+        "docs/01-app/01-getting-started/03-layouts-and-pages.mdx",
+        "docs/01-app/03-api-reference/05-config/01-next-config-js/exportPathMap.mdx"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find env var configuration docs",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "environment-variables.mdx",
+        "env.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": 960.4,
+      "query": "how to configure environment variables",
+      "rank": 2,
+      "reciprocal_rank": 0.5,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "docs/02-pages/03-building-your-application/06-configuring/index.mdx",
+        "docs/01-app/02-guides/environment-variables.mdx",
+        "docs/02-pages/02-guides/environment-variables.mdx",
+        "docs/02-pages/04-api-reference/04-config/01-next-config-js/env.mdx",
+        "docs/01-app/03-api-reference/05-config/01-next-config-js/env.mdx",
+        "docs/01-app/02-guides/production-checklist.mdx",
+        "docs/01-app/01-getting-started/05-server-and-client-components.mdx",
+        "docs/01-app/03-api-reference/05-config/01-next-config-js/rewrites.mdx",
+        "docs/01-app/03-api-reference/05-config/01-next-config-js/turbopack.mdx",
+        "docs/02-pages/04-api-reference/01-components/image-legacy.mdx"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find env var configuration docs",
+      "engine": "codegraph",
+      "expected_files": [
+        "environment-variables.mdx",
+        "env.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": null,
+      "query": "how to configure environment variables",
+      "rank": null,
+      "reciprocal_rank": null,
+      "repository": "nextjs",
+      "supported": false,
+      "tier": "quick",
+      "top_files": [],
+      "unsupported_reason": "CodeGraph indexes source code, not Markdown/document content"
+    },
+    {
+      "category": "document",
+      "description": "Find deployment documentation",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "deploying.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": 34.24,
+      "query": "deploying Next.js application",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "docs/02-pages/01-getting-started/11-deploying.mdx",
+        "docs/01-app/01-getting-started/17-deploying.mdx",
+        "docs/01-app/03-api-reference/05-config/01-next-config-js/output.mdx",
+        "docs/01-app/02-guides/self-hosting.mdx",
+        "docs/01-app/03-api-reference/05-config/01-next-config-js/incrementalCacheHandlerPath.mdx",
+        "docs/02-pages/03-building-your-application/index.mdx",
+        "docs/01-app/02-guides/production-checklist.mdx",
+        "docs/02-pages/02-guides/migrating/index.mdx",
+        "docs/01-app/02-guides/migrating/index.mdx",
+        "package.json"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find deployment documentation",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "deploying.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": 774.91,
+      "query": "deploying Next.js application",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "docs/01-app/01-getting-started/17-deploying.mdx",
+        "docs/02-pages/01-getting-started/11-deploying.mdx",
+        "docs/01-app/02-guides/self-hosting.mdx",
+        "docs/01-app/02-guides/single-page-applications.mdx",
+        "docs/01-app/03-api-reference/05-config/01-next-config-js/output.mdx",
+        "docs/01-app/03-api-reference/05-config/01-next-config-js/assetPrefix.mdx",
+        "docs/01-app/02-guides/backend-for-frontend.mdx",
+        "docs/01-app/02-guides/local-development.mdx",
+        "docs/01-app/01-getting-started/01-installation.mdx",
+        "docs/01-app/02-guides/caching.mdx"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find deployment documentation",
+      "engine": "codegraph",
+      "expected_files": [
+        "deploying.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": null,
+      "query": "deploying Next.js application",
+      "rank": null,
+      "reciprocal_rank": null,
+      "repository": "nextjs",
+      "supported": false,
+      "tier": "quick",
+      "top_files": [],
+      "unsupported_reason": "CodeGraph indexes source code, not Markdown/document content"
+    },
+    {
+      "category": "cross",
+      "description": "Find server actions code and docs",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "action-handler.ts",
+        "server-action-reducer.ts",
+        "serverActions.mdx",
+        "forms-and-mutations.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": 24.67,
+      "query": "server actions form submission",
+      "rank": 5,
+      "reciprocal_rank": 0.2,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "docs/01-app/03-api-reference/02-components/form.mdx",
+        "docs/01-app/01-getting-started/08-updating-data.mdx",
+        "docs/01-app/02-guides/forms.mdx",
+        "packages/next/src/shared/lib/router/utils/querystring.ts",
+        "packages/next/src/client/components/router-reducer/reducers/server-action-reducer.ts",
+        "packages/next/src/client/components/navigation.react-server.ts",
+        "docs/01-app/03-api-reference/02-components/image.mdx",
+        "docs/02-pages/04-api-reference/01-components/form.mdx",
+        "docs/01-app/03-api-reference/04-functions/use-search-params.mdx",
+        "packages/next/src/shared/lib/router/utils/parse-url.ts"
+      ]
+    },
+    {
+      "category": "cross",
+      "description": "Find server actions code and docs",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "action-handler.ts",
+        "server-action-reducer.ts",
+        "serverActions.mdx",
+        "forms-and-mutations.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": 870.35,
+      "query": "server actions form submission",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "docs/02-pages/03-building-your-application/03-data-fetching/03-forms-and-mutations.mdx",
+        "docs/01-app/01-getting-started/08-updating-data.mdx",
+        "docs/02-pages/02-guides/forms.mdx",
+        "docs/01-app/02-guides/forms.mdx",
+        "docs/01-app/03-api-reference/02-components/form.mdx",
+        "docs/01-app/03-api-reference/05-config/01-next-config-js/serverActions.mdx",
+        "packages/next/src/server/app-render/action-handler.ts",
+        "packages/next/src/server/mcp/tools/get-server-action-by-id.ts",
+        "packages/next/src/client/components/router-reducer/reducers/server-action-reducer.ts",
+        "packages/next/src/client/components/router-reducer/router-reducer.ts"
+      ]
+    },
+    {
+      "category": "cross",
+      "description": "Find server actions code and docs",
+      "engine": "codegraph",
+      "expected_files": [
+        "action-handler.ts",
+        "server-action-reducer.ts",
+        "serverActions.mdx",
+        "forms-and-mutations.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": null,
+      "query": "server actions form submission",
+      "rank": null,
+      "reciprocal_rank": null,
+      "repository": "nextjs",
+      "supported": false,
+      "tier": "quick",
+      "top_files": [],
+      "unsupported_reason": "CodeGraph indexes source code, not Markdown/document content"
+    },
+    {
+      "category": "cross",
+      "description": "Find dynamic routing code and docs",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "dynamic-routes.mdx",
+        "middleware-route-matcher.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 34.63,
+      "query": "dynamic route parameters slugs",
+      "rank": 2,
+      "reciprocal_rank": 0.5,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "packages/next/src/shared/lib/router/utils/interpolate-as.ts",
+        "docs/02-pages/03-building-your-application/01-routing/02-dynamic-routes.mdx",
+        "docs/01-app/02-guides/caching.mdx",
+        "packages/next/src/shared/lib/router/utils/as-path-to-search-params.ts",
+        "docs/02-pages/03-building-your-application/01-routing/07-api-routes.mdx",
+        "docs/01-app/03-api-reference/03-file-conventions/dynamic-routes.mdx",
+        "packages/next/src/shared/lib/router/utils/querystring.ts",
+        "packages/next/src/client/route-params.ts",
+        "docs/02-pages/04-api-reference/03-functions/use-search-params.mdx",
+        "docs/01-app/03-api-reference/04-functions/generate-static-params.mdx"
+      ]
+    },
+    {
+      "category": "cross",
+      "description": "Find dynamic routing code and docs",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "dynamic-routes.mdx",
+        "middleware-route-matcher.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 887.7,
+      "query": "dynamic route parameters slugs",
+      "rank": 5,
+      "reciprocal_rank": 0.2,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "packages/next/src/shared/lib/router/utils/is-dynamic.test.ts",
+        "docs/01-app/03-api-reference/03-file-conventions/route.mdx",
+        "docs/01-app/02-guides/caching.mdx",
+        "packages/next/src/lib/metadata/get-metadata-route.ts",
+        "docs/02-pages/03-building-your-application/01-routing/02-dynamic-routes.mdx",
+        "docs/02-pages/03-building-your-application/01-routing/07-api-routes.mdx",
+        "docs/02-pages/04-api-reference/03-functions/use-params.mdx",
+        "packages/next/src/client/page-loader.ts",
+        "docs/01-app/03-api-reference/04-functions/generate-static-params.mdx",
+        "packages/next/src/shared/lib/router/utils/sorted-routes.ts"
+      ]
+    },
+    {
+      "category": "cross",
+      "description": "Find dynamic routing code and docs",
+      "engine": "codegraph",
+      "expected_files": [
+        "dynamic-routes.mdx",
+        "middleware-route-matcher.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": null,
+      "query": "dynamic route parameters slugs",
+      "rank": null,
+      "reciprocal_rank": null,
+      "repository": "nextjs",
+      "supported": false,
+      "tier": "quick",
+      "top_files": [],
+      "unsupported_reason": "CodeGraph indexes source code, not Markdown/document content"
+    },
+    {
+      "category": "code",
+      "description": "Find webpack build config",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "webpack-config.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 30.85,
+      "query": "webpack compiler configuration",
+      "rank": null,
+      "reciprocal_rank": 0.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "packages/next/next-devtools.webpack-config.js",
+        "packages/next/next-runtime.webpack-config.js",
+        "packages/next/src/lib/turbopack-warning.ts",
+        "packages/next/src/server/config-shared.ts",
+        "packages/next/src/bundles/webpack/bundle5.js",
+        "packages/next/taskfile-webpack.js",
+        "packages/next/src/server/request/search-params.ts",
+        "packages/next/src/client/request/search-params.browser.ts",
+        "packages/next/src/server/config-utils.ts",
+        "packages/next/src/server/dev/hot-reloader-webpack.ts"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find webpack build config",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "webpack-config.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 872.54,
+      "query": "webpack compiler configuration",
+      "rank": null,
+      "reciprocal_rank": 0.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "packages/next/taskfile-webpack.js",
+        "packages/next/src/server/dev/hot-middleware.ts",
+        "packages/next/next-devtools.webpack-config.js",
+        "packages/next/src/server/dev/on-demand-entry-handler.ts",
+        "packages/next/src/server/config-utils.ts",
+        "packages/next/src/server/config-shared.ts",
+        "packages/next/src/bundles/webpack/packages/FetchCompileWasmTemplatePlugin.js",
+        "packages/next/src/bundles/webpack/packages/FetchCompileWasmPlugin.js",
+        "packages/next/src/lib/turbopack-warning.ts",
+        "packages/next/src/server/dev/hot-reloader-types.ts"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find webpack build config",
+      "engine": "codegraph",
+      "expected_files": [
+        "webpack-config.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 4407.8,
+      "query": "webpack compiler configuration",
+      "rank": null,
+      "reciprocal_rank": 0.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "packages/next/src/compiled/webpack/webpack.d.ts",
+        "packages/next/src/bundles/webpack/packages/webpack.d.ts",
+        "packages/next/src/compiled/@modelcontextprotocol/sdk/server/mcp.js"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find HMR client implementation",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "hot-reloader-webpack.ts",
+        "hot-reloader-turbopack.ts",
+        "hmr-refresh-reducer.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 25.23,
+      "query": "hot module replacement client",
+      "rank": null,
+      "reciprocal_rank": 0.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "packages/next/src/bundles/webpack/packages/lazy-compilation-node.js",
+        "packages/next/src/shared/lib/router/utils/querystring.ts",
+        "packages/next/src/shared/lib/router/utils/parse-url.ts",
+        "packages/next/src/client/request/search-params.browser.dev.ts",
+        "packages/next/src/client/components/router-reducer/set-cache-busting-search-param.ts",
+        "packages/next/src/server/internal-utils.ts",
+        "packages/next/src/client/components/navigation.react-server.ts",
+        "packages/next/src/lib/url.ts",
+        "packages/next/src/server/request/search-params.ts",
+        "packages/next/src/client/request/search-params.browser.ts"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find HMR client implementation",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "hot-reloader-webpack.ts",
+        "hot-reloader-turbopack.ts",
+        "hmr-refresh-reducer.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 842.55,
+      "query": "hot module replacement client",
+      "rank": null,
+      "reciprocal_rank": 0.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "packages/next/src/bundles/webpack/packages/lazy-compilation-node.js",
+        "packages/next/navigation.js",
+        "packages/next/client.js",
+        "packages/next/src/client/dev/hot-reloader/pages/hot-reloader-pages.ts",
+        "packages/next/src/client/page-bootstrap.ts",
+        "packages/next/src/client/dev/hot-middleware-client.ts",
+        "packages/next/src/client/next-dev-turbopack.ts",
+        "packages/next/src/server/dev/hot-reloader-rspack.ts",
+        "packages/next/src/client/dev/hot-reloader/app/hot-reloader-app.tsx",
+        "packages/next/src/server/dev/serialized-errors.ts"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find HMR client implementation",
+      "engine": "codegraph",
+      "expected_files": [
+        "hot-reloader-webpack.ts",
+        "hot-reloader-turbopack.ts",
+        "hmr-refresh-reducer.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 4437.88,
+      "query": "hot module replacement client",
+      "rank": null,
+      "reciprocal_rank": 0.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "packages/next/taskfile.js",
+        "packages/next/src/compiled/jsonwebtoken/index.js"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find cookie handling utilities",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "cookies.ts",
+        "get-cookie-parser.ts",
+        "request-cookies.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 25.61,
+      "query": "cookie parsing and setting",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "packages/next/src/server/web/spec-extension/cookies.ts",
+        "packages/next/src/shared/lib/router/utils/querystring.ts",
+        "packages/next/src/shared/lib/router/utils/prepare-destination.ts",
+        "packages/next/src/server/api-utils/get-cookie-parser.ts",
+        "packages/next/src/client/request/search-params.browser.dev.ts",
+        "packages/next/src/shared/lib/router/utils/parse-url.ts",
+        "packages/next/src/shared/lib/router/utils/cache-busting-search-param.ts",
+        "packages/next/src/server/web/spec-extension/adapters/request-cookies.ts",
+        "packages/next/src/client/components/navigation.test.ts",
+        "packages/next/src/client/request/search-params.browser.prod.ts"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find cookie handling utilities",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "cookies.ts",
+        "get-cookie-parser.ts",
+        "request-cookies.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 848.35,
+      "query": "cookie parsing and setting",
+      "rank": 2,
+      "reciprocal_rank": 0.5,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "packages/next/src/shared/lib/i18n/get-locale-redirect.ts",
+        "packages/next/src/server/api-utils/get-cookie-parser.ts",
+        "packages/next/src/server/web/utils.test.ts",
+        "packages/next/src/server/base-http/index.ts",
+        "packages/next/src/server/api-utils/node/api-resolver.ts",
+        "packages/next/src/shared/lib/router/utils/prepare-destination.ts",
+        "packages/next/src/server/web/spec-extension/response.ts",
+        "packages/next/src/server/lib/patch-set-header.ts",
+        "packages/next/src/server/web/spec-extension/cookies.ts",
+        "packages/next/src/server/request/cookies.ts"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find cookie handling utilities",
+      "engine": "codegraph",
+      "expected_files": [
+        "cookies.ts",
+        "get-cookie-parser.ts",
+        "request-cookies.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 4557.92,
+      "query": "cookie parsing and setting",
+      "rank": null,
+      "reciprocal_rank": 0.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "packages/next/src/compiled/comment-json/index.js"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find static generation logic",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "static-generation-bailout.ts",
+        "is-static-gen-enabled.ts",
+        "static-site-generation.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": 92.69,
+      "query": "static page generation at build time",
+      "rank": null,
+      "reciprocal_rank": 0.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "packages/next/src/server/app-render/app-render.tsx",
+        "packages/next/src/server/request/search-params.ts",
+        "packages/next/src/server/app-render/create-flight-router-state-from-loader-tree.ts",
+        "packages/next/src/next-devtools/dev-overlay/components/errors/dev-tools-indicator/dev-tools-info/route-info.tsx",
+        "packages/next/src/client/request/search-params.browser.dev.ts",
+        "packages/next/src/shared/lib/router/utils/querystring.ts",
+        "packages/next/src/client/components/navigation.test.ts",
+        "packages/next/src/server/mcp/tools/get-page-metadata.ts",
+        "packages/next/src/client/components/segment-cache/navigation.ts",
+        "packages/next/src/shared/lib/router/utils/parse-url.ts"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find static generation logic",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "static-generation-bailout.ts",
+        "is-static-gen-enabled.ts",
+        "static-site-generation.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": 774.76,
+      "query": "static page generation at build time",
+      "rank": null,
+      "reciprocal_rank": 0.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "packages/next/src/next-devtools/dev-overlay/components/errors/dev-tools-indicator/dev-tools-info/route-info.tsx",
+        "packages/next/src/types.ts",
+        "packages/next/src/server/load-components.ts",
+        "packages/next/src/export/routes/app-page.ts",
+        "packages/next/src/server/lib/patch-fetch.ts",
+        "packages/next/src/server/config-shared.ts",
+        "packages/next/src/server/mcp/tools/get-page-metadata.ts",
+        "packages/next/src/shared/lib/turbopack/manifest-loader.ts",
+        "packages/next/src/next-devtools/dev-overlay/segment-explorer-trie.ts",
+        "packages/next/src/export/worker.ts"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find static generation logic",
+      "engine": "codegraph",
+      "expected_files": [
+        "static-generation-bailout.ts",
+        "is-static-gen-enabled.ts",
+        "static-site-generation.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": 4470.12,
+      "query": "static page generation at build time",
+      "rank": null,
+      "reciprocal_rank": 0.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "packages/next/src/compiled/mini-css-extract-plugin/index.js"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find error boundary implementation",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "error-boundary.tsx",
+        "not-found.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 36.71,
+      "query": "error boundary fallback component",
+      "rank": null,
+      "reciprocal_rank": 0.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "packages/next/src/server/app-render/app-render.tsx",
+        "packages/next/src/server/lib/implicit-tags.test.ts",
+        "packages/next/src/shared/lib/router/utils/querystring.ts",
+        "packages/next/src/shared/lib/router/utils/get-dynamic-param.ts",
+        "packages/next/src/client/components/navigation.react-server.ts",
+        "packages/next/src/shared/lib/router/utils/parse-url.ts",
+        "packages/next/src/shared/lib/router/utils/parse-relative-url.ts",
+        "packages/next/src/lib/typescript/diagnosticFormatter.ts",
+        "packages/next/src/lib/metadata/resolvers/resolve-url.test.ts",
+        "packages/next/src/server/internal-utils.ts"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find error boundary implementation",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "error-boundary.tsx",
+        "not-found.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 920.23,
+      "query": "error boundary fallback component",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "packages/next/src/client/components/http-access-fallback/error-boundary.tsx",
+        "packages/next/src/client/components/http-access-fallback/error-fallback.tsx",
+        "packages/next/src/client/components/builtin/not-found.tsx",
+        "packages/next/src/client/components/builtin/global-not-found.tsx",
+        "packages/next/src/client/components/error-boundary.tsx",
+        "packages/next/src/client/components/layout-router.tsx",
+        "packages/next/src/shared/lib/router/utils/get-dynamic-param.ts",
+        "packages/next/src/shared/lib/router/utils/interpolate-as.ts",
+        "packages/next/src/server/lib/implicit-tags.test.ts",
+        "packages/next/src/lib/metadata/resolvers/resolve-url.test.ts"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find error boundary implementation",
+      "engine": "codegraph",
+      "expected_files": [
+        "error-boundary.tsx",
+        "not-found.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 4570.33,
+      "query": "error boundary fallback component",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "packages/next/src/client/components/http-access-fallback/error-boundary.tsx",
+        "packages/next/src/next-devtools/userspace/app/app-dev-overlay-error-boundary.tsx",
+        "packages/next/src/next-devtools/userspace/pages/pages-dev-overlay-error-boundary.tsx",
+        "packages/next/src/shared/lib/no-fallback-error.external.ts",
+        "packages/next/src/next-devtools/dev-overlay/components/errors/error-message/error-message.stories.tsx",
+        "packages/next/src/next-devtools/userspace/pages/pages-dev-overlay-setup.tsx",
+        "packages/next/src/client/dev/hot-reloader/app/hot-reloader-app.tsx"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find Link prefetch behavior",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "link.tsx",
+        "prefetch.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 90.33,
+      "query": "link component prefetching logic",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "packages/next/src/client/link.tsx",
+        "packages/next/src/shared/lib/router/router.ts",
+        "packages/next/src/shared/lib/router/utils/querystring.ts",
+        "packages/next/src/client/components/segment-cache/navigation.ts",
+        "packages/next/src/shared/lib/router/utils/parse-url.ts",
+        "packages/next/src/client/components/navigation.test.ts",
+        "packages/next/src/server/internal-utils.ts",
+        "packages/next/src/next-devtools/dev-overlay/utils/parse-url-from-text.ts",
+        "packages/next/src/client/page-loader.ts",
+        "packages/next/src/client/components/app-router.tsx"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find Link prefetch behavior",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "link.tsx",
+        "prefetch.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 810.65,
+      "query": "link component prefetching logic",
+      "rank": 2,
+      "reciprocal_rank": 0.5,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "packages/next/src/client/components/app-router-utils.ts",
+        "packages/next/src/client/components/segment-cache/prefetch.ts",
+        "packages/next/src/client/components/app-router.tsx",
+        "packages/next/src/client/components/segment-cache/navigation.ts",
+        "packages/next/src/client/app-link-gc.ts",
+        "packages/next/src/client/app-dir/link.tsx",
+        "packages/next/src/lib/metadata/generate/alternate.tsx",
+        "packages/next/src/client/link.tsx",
+        "packages/next/src/next-devtools/dev-overlay/components/hot-linked-text/index.tsx",
+        "packages/next/src/client/components/router-reducer/set-cache-busting-search-param.ts"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find Link prefetch behavior",
+      "engine": "codegraph",
+      "expected_files": [
+        "link.tsx",
+        "prefetch.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 4411.46,
+      "query": "link component prefetching logic",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "packages/next/src/client/link.tsx",
+        "packages/next/src/client/page-loader.ts",
+        "packages/next/src/compiled/react/cjs/react.development.js",
+        "packages/next/src/shared/lib/router/router.ts"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find API route body parser",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "api-resolver.ts",
+        "parse-body.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 36.12,
+      "query": "API route request body parsing",
+      "rank": null,
+      "reciprocal_rank": 0.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "packages/next/src/server/app-render/action-handler.ts",
+        "packages/next/src/server/base-server.ts",
+        "packages/next/src/shared/lib/router/utils/parse-url.ts",
+        "packages/next/src/shared/lib/router/utils/querystring.ts",
+        "packages/next/src/shared/lib/router/utils/interpolate-as.ts",
+        "packages/next/src/shared/lib/router/utils/parse-relative-url.ts",
+        "packages/next/src/shared/lib/router/utils/prepare-destination.ts",
+        "packages/next/src/shared/lib/router/utils/parse-relative-url.test.ts",
+        "packages/next/src/lib/url.ts",
+        "packages/next/src/client/page-loader.ts"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find API route body parser",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "api-resolver.ts",
+        "parse-body.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 868.1,
+      "query": "API route request body parsing",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "packages/next/src/server/api-utils/node/api-resolver.ts",
+        "packages/next/src/server/base-server.ts",
+        "packages/next/src/server/lib/implicit-tags.test.ts",
+        "packages/next/src/experimental/testing/server/config-testing-utils.ts",
+        "packages/next/src/server/api-utils/node/parse-body.ts",
+        "packages/next/src/shared/lib/router/utils/prepare-destination.ts",
+        "packages/next/src/shared/lib/router/utils/route-matcher.ts",
+        "packages/next/src/shared/lib/router/utils/middleware-route-matcher.ts",
+        "packages/next/src/experimental/testmode/playwright/page-route.ts",
+        "packages/next/src/client/route-params.ts"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find API route body parser",
+      "engine": "codegraph",
+      "expected_files": [
+        "api-resolver.ts",
+        "parse-body.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 4465.97,
+      "query": "API route request body parsing",
+      "rank": null,
+      "reciprocal_rank": 0.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "packages/next/src/server/base-http/web.ts",
+        "packages/next/src/compiled/comment-json/index.js"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find caching documentation",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "caching-and-revalidating.mdx",
+        "caching.mdx",
+        "revalidatePath.mdx",
+        "revalidateTag.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": 80.81,
+      "query": "caching and revalidation strategies",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/01-app/02-guides/caching.mdx",
+        "docs/01-app/03-api-reference/04-functions/cacheLife.mdx",
+        "docs/01-app/03-api-reference/01-directives/use-cache-remote.mdx",
+        "docs/01-app/01-getting-started/09-caching-and-revalidating.mdx",
+        "docs/01-app/03-api-reference/05-config/01-next-config-js/cacheHandlers.mdx",
+        "docs/01-app/03-api-reference/03-file-conventions/layout.mdx",
+        "docs/01-app/03-api-reference/04-functions/use-search-params.mdx",
+        "package.json",
+        "docs/01-app/03-api-reference/04-functions/cacheTag.mdx",
+        "docs/01-app/04-glossary.mdx"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find caching documentation",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "caching-and-revalidating.mdx",
+        "caching.mdx",
+        "revalidatePath.mdx",
+        "revalidateTag.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": 770.88,
+      "query": "caching and revalidation strategies",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/01-app/03-api-reference/04-functions/revalidateTag.mdx",
+        "docs/01-app/01-getting-started/06-cache-components.mdx",
+        "docs/01-app/03-api-reference/05-config/01-next-config-js/headers.mdx",
+        "docs/01-app/03-api-reference/01-directives/use-cache-remote.mdx",
+        "docs/01-app/01-getting-started/09-caching-and-revalidating.mdx",
+        "docs/01-app/03-api-reference/05-config/01-next-config-js/staleTimes.mdx",
+        "docs/01-app/03-api-reference/04-functions/fetch.mdx",
+        "docs/01-app/03-api-reference/04-functions/cacheLife.mdx",
+        "docs/02-pages/03-building-your-application/03-data-fetching/05-client-side.mdx",
+        "docs/01-app/02-guides/migrating/app-router-migration.mdx"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find caching documentation",
+      "engine": "codegraph",
+      "expected_files": [
+        "caching-and-revalidating.mdx",
+        "caching.mdx",
+        "revalidatePath.mdx",
+        "revalidateTag.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": null,
+      "query": "caching and revalidation strategies",
+      "rank": null,
+      "reciprocal_rank": null,
+      "repository": "nextjs",
+      "supported": false,
+      "tier": "standard",
+      "top_files": [],
+      "unsupported_reason": "CodeGraph indexes source code, not Markdown/document content"
+    },
+    {
+      "category": "document",
+      "description": "Find i18n docs",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "internationalization.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": 28.88,
+      "query": "internationalization and locales",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/01-app/02-guides/internationalization.mdx",
+        "docs/01-app/03-api-reference/05-config/01-next-config-js/rewrites.mdx",
+        "docs/02-pages/02-guides/internationalization.mdx",
+        "docs/01-app/03-api-reference/04-functions/next-request.mdx",
+        "docs/01-app/03-api-reference/05-config/01-next-config-js/redirects.mdx",
+        "docs/01-app/03-api-reference/04-functions/use-search-params.mdx",
+        "docs/01-app/02-guides/backend-for-frontend.mdx",
+        "docs/02-pages/04-api-reference/03-functions/use-search-params.mdx",
+        "packages/next/package.json",
+        "turbo.json"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find i18n docs",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "internationalization.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": 884.97,
+      "query": "internationalization and locales",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/01-app/02-guides/internationalization.mdx",
+        "docs/02-pages/02-guides/internationalization.mdx",
+        "docs/01-app/03-api-reference/05-config/01-next-config-js/redirects.mdx",
+        "docs/01-app/03-api-reference/05-config/01-next-config-js/rewrites.mdx",
+        "docs/01-app/03-api-reference/04-functions/next-request.mdx",
+        "docs/01-app/02-guides/migrating/app-router-migration.mdx",
+        "docs/01-app/03-api-reference/03-file-conventions/01-metadata/sitemap.mdx",
+        "turbo.json",
+        "docs/01-app/03-api-reference/05-config/01-next-config-js/headers.mdx",
+        "packages/next/src/lib/known-edge-safe-packages.json"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find i18n docs",
+      "engine": "codegraph",
+      "expected_files": [
+        "internationalization.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": null,
+      "query": "internationalization and locales",
+      "rank": null,
+      "reciprocal_rank": null,
+      "repository": "nextjs",
+      "supported": false,
+      "tier": "standard",
+      "top_files": [],
+      "unsupported_reason": "CodeGraph indexes source code, not Markdown/document content"
+    },
+    {
+      "category": "cross",
+      "description": "Find middleware config docs",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "middleware-route-matcher.ts",
+        "middleware-config.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 28.42,
+      "query": "middleware matching paths configuration",
+      "rank": 6,
+      "reciprocal_rank": 0.1667,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "packages/next/src/server/base-server.ts",
+        "docs/01-app/01-getting-started/16-proxy.mdx",
+        "packages/next/src/shared/lib/router/router.ts",
+        "packages/next/src/experimental/testing/server/middleware-testing-utils.ts",
+        "packages/next/src/experimental/testing/server/config-testing-utils.ts",
+        "packages/next/src/shared/lib/router/utils/middleware-route-matcher.ts",
+        "packages/next/src/server/request/search-params.ts",
+        "packages/next/src/shared/lib/router/utils/prepare-destination.ts",
+        "docs/01-app/03-api-reference/04-functions/use-search-params.mdx",
+        "packages/next/src/client/components/navigation.test.ts"
+      ]
+    },
+    {
+      "category": "cross",
+      "description": "Find middleware config docs",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "middleware-route-matcher.ts",
+        "middleware-config.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 784.89,
+      "query": "middleware matching paths configuration",
+      "rank": null,
+      "reciprocal_rank": 0.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "packages/next/src/shared/lib/router/router.ts",
+        "packages/next/src/experimental/testing/server/middleware-testing-utils.test.ts",
+        "packages/next/src/experimental/testing/server/middleware-testing-utils.ts",
+        "packages/next/src/server/lib/router-utils/filesystem.ts",
+        "packages/next/src/client/app-find-source-map-url.ts",
+        "docs/01-app/03-api-reference/03-file-conventions/proxy.mdx",
+        "packages/next/src/server/base-server.ts",
+        "docs/01-app/01-getting-started/16-proxy.mdx",
+        "packages/next/src/shared/lib/router/utils/route-match-utils.ts",
+        "docs/01-app/03-api-reference/05-config/01-next-config-js/rewrites.mdx"
+      ]
+    },
+    {
+      "category": "cross",
+      "description": "Find middleware config docs",
+      "engine": "codegraph",
+      "expected_files": [
+        "middleware-route-matcher.ts",
+        "middleware-config.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": null,
+      "query": "middleware matching paths configuration",
+      "rank": null,
+      "reciprocal_rank": null,
+      "repository": "nextjs",
+      "supported": false,
+      "tier": "standard",
+      "top_files": [],
+      "unsupported_reason": "CodeGraph indexes source code, not Markdown/document content"
+    },
+    {
+      "category": "document",
+      "description": "Find auth documentation",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "authentication.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": 24.97,
+      "query": "authentication and session management",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/01-app/02-guides/authentication.mdx",
+        "docs/02-pages/02-guides/authentication.mdx",
+        "docs/01-app/02-guides/redirecting.mdx",
+        "docs/01-app/02-guides/production-checklist.mdx",
+        "docs/01-app/03-api-reference/02-components/image.mdx",
+        "docs/01-app/03-api-reference/01-directives/use-cache-remote.mdx",
+        "docs/01-app/03-api-reference/03-file-conventions/layout.mdx",
+        "docs/01-app/03-api-reference/01-directives/use-cache-private.mdx",
+        "packages/next/package.json",
+        "docs/01-app/03-api-reference/04-functions/userAgent.mdx"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find auth documentation",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "authentication.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": 781.17,
+      "query": "authentication and session management",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/02-pages/02-guides/authentication.mdx",
+        "docs/01-app/03-api-reference/04-functions/unauthorized.mdx",
+        "docs/01-app/03-api-reference/03-file-conventions/proxy.mdx",
+        "docs/01-app/02-guides/authentication.mdx",
+        "docs/01-app/02-guides/migrating/from-create-react-app.mdx",
+        "docs/01-app/03-api-reference/02-components/link.mdx",
+        "packages/next/package.json",
+        "packages/next/src/lib/known-edge-safe-packages.json",
+        "docs/01-app/02-guides/data-security.mdx",
+        "docs/01-app/03-api-reference/04-functions/forbidden.mdx"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find auth documentation",
+      "engine": "codegraph",
+      "expected_files": [
+        "authentication.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": null,
+      "query": "authentication and session management",
+      "rank": null,
+      "reciprocal_rank": null,
+      "repository": "nextjs",
+      "supported": false,
+      "tier": "standard",
+      "top_files": [],
+      "unsupported_reason": "CodeGraph indexes source code, not Markdown/document content"
+    },
+    {
+      "category": "document",
+      "description": "Find CSS/styling docs",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "css.mdx",
+        "post-css.mdx",
+        "css-in-js.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": 31.27,
+      "query": "CSS modules and styling options",
+      "rank": 2,
+      "reciprocal_rank": 0.5,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/01-app/03-api-reference/03-file-conventions/layout.mdx",
+        "docs/01-app/01-getting-started/11-css.mdx",
+        "docs/02-pages/01-getting-started/06-css.mdx",
+        "docs/01-app/03-api-reference/02-components/form.mdx",
+        "docs/01-app/03-api-reference/05-config/01-next-config-js/inlineCss.mdx",
+        "docs/01-app/03-api-reference/02-components/image.mdx",
+        "docs/02-pages/02-guides/post-css.mdx",
+        "docs/01-app/03-api-reference/04-functions/generate-viewport.mdx",
+        "docs/01-app/03-api-reference/05-config/01-next-config-js/cssChunking.mdx",
+        "docs/01-app/03-api-reference/04-functions/use-search-params.mdx"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find CSS/styling docs",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "css.mdx",
+        "post-css.mdx",
+        "css-in-js.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": 936.78,
+      "query": "CSS modules and styling options",
+      "rank": 5,
+      "reciprocal_rank": 0.2,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/01-app/03-api-reference/08-turbopack.mdx",
+        "docs/01-app/03-api-reference/02-components/font.mdx",
+        "docs/01-app/03-api-reference/03-file-conventions/not-found.mdx",
+        "docs/01-app/03-api-reference/05-config/01-next-config-js/cssChunking.mdx",
+        "docs/01-app/03-api-reference/05-config/01-next-config-js/inlineCss.mdx",
+        "docs/01-app/03-api-reference/02-components/image.mdx",
+        "docs/02-pages/02-guides/post-css.mdx",
+        "packages/next/package.json",
+        "docs/02-pages/01-getting-started/06-css.mdx",
+        "docs/01-app/03-api-reference/04-functions/generate-metadata.mdx"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find CSS/styling docs",
+      "engine": "codegraph",
+      "expected_files": [
+        "css.mdx",
+        "post-css.mdx",
+        "css-in-js.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": null,
+      "query": "CSS modules and styling options",
+      "rank": null,
+      "reciprocal_rank": null,
+      "repository": "nextjs",
+      "supported": false,
+      "tier": "standard",
+      "top_files": [],
+      "unsupported_reason": "CodeGraph indexes source code, not Markdown/document content"
+    },
+    {
+      "category": "document",
+      "description": "Find TypeScript setup docs",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "typescript.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": 32.58,
+      "query": "TypeScript configuration and support",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/01-app/03-api-reference/05-config/02-typescript.mdx",
+        "packages/next/package.json",
+        "docs/01-app/03-api-reference/02-components/form.mdx",
+        "docs/01-app/03-api-reference/04-functions/use-search-params.mdx",
+        "docs/01-app/03-api-reference/03-file-conventions/page.mdx",
+        "docs/02-pages/04-api-reference/03-functions/use-search-params.mdx",
+        "docs/01-app/01-getting-started/03-layouts-and-pages.mdx",
+        "docs/01-app/03-api-reference/03-file-conventions/layout.mdx",
+        "docs/01-app/03-api-reference/04-functions/generate-static-params.mdx",
+        "docs/01-app/01-getting-started/01-installation.mdx"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find TypeScript setup docs",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "typescript.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": 784.61,
+      "query": "TypeScript configuration and support",
+      "rank": 9,
+      "reciprocal_rank": 0.1111,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/01-app/01-getting-started/01-installation.mdx",
+        "docs/01-app/03-api-reference/05-config/01-next-config-js/typedRoutes.mdx",
+        "docs/01-app/02-guides/migrating/from-vite.mdx",
+        "docs/01-app/03-api-reference/08-turbopack.mdx",
+        "docs/03-architecture/supported-browsers.mdx",
+        "docs/02-pages/02-guides/upgrading/version-11.mdx",
+        "docs/01-app/02-guides/testing/cypress.mdx",
+        "docs/02-pages/02-guides/upgrading/version-12.mdx",
+        "docs/01-app/03-api-reference/05-config/02-typescript.mdx",
+        "turbo.json"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find TypeScript setup docs",
+      "engine": "codegraph",
+      "expected_files": [
+        "typescript.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": null,
+      "query": "TypeScript configuration and support",
+      "rank": null,
+      "reciprocal_rank": null,
+      "repository": "nextjs",
+      "supported": false,
+      "tier": "standard",
+      "top_files": [],
+      "unsupported_reason": "CodeGraph indexes source code, not Markdown/document content"
+    },
+    {
+      "category": "document",
+      "description": "Find error handling docs",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "error-handling.mdx",
+        "error.mdx",
+        "not-found.mdx",
+        "custom-error.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": 30.2,
+      "query": "error handling custom error pages",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/02-pages/03-building-your-application/06-configuring/12-error-handling.mdx",
+        "docs/01-app/01-getting-started/02-project-structure.mdx",
+        "docs/02-pages/03-building-your-application/01-routing/08-custom-error.mdx",
+        "docs/01-app/02-guides/mcp.mdx",
+        "docs/01-app/01-getting-started/10-error-handling.mdx",
+        "docs/02-pages/04-api-reference/03-functions/get-server-side-props.mdx",
+        "package.json",
+        "docs/01-app/03-api-reference/02-components/image.mdx",
+        "docs/01-app/03-api-reference/03-file-conventions/page.mdx",
+        "docs/01-app/03-api-reference/05-config/02-typescript.mdx"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find error handling docs",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "error-handling.mdx",
+        "error.mdx",
+        "not-found.mdx",
+        "custom-error.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": 893.99,
+      "query": "error handling custom error pages",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/02-pages/03-building-your-application/06-configuring/12-error-handling.mdx",
+        "docs/02-pages/03-building-your-application/01-routing/08-custom-error.mdx",
+        "docs/02-pages/04-api-reference/03-functions/get-server-side-props.mdx",
+        "docs/01-app/01-getting-started/10-error-handling.mdx",
+        "docs/01-app/01-getting-started/02-project-structure.mdx",
+        "docs/02-pages/03-building-your-application/03-data-fetching/03-get-server-side-props.mdx",
+        "docs/02-pages/02-guides/forms.mdx",
+        "docs/01-app/03-api-reference/03-file-conventions/error.mdx",
+        ".gitattributes",
+        "docs/01-app/02-guides/mcp.mdx"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find error handling docs",
+      "engine": "codegraph",
+      "expected_files": [
+        "error-handling.mdx",
+        "error.mdx",
+        "not-found.mdx",
+        "custom-error.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": null,
+      "query": "error handling custom error pages",
+      "rank": null,
+      "reciprocal_rank": null,
+      "repository": "nextjs",
+      "supported": false,
+      "tier": "standard",
+      "top_files": [],
+      "unsupported_reason": "CodeGraph indexes source code, not Markdown/document content"
+    },
+    {
+      "category": "document",
+      "description": "Find config reference docs",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "next-config-js"
+      ],
+      "language": "typescript",
+      "latency_ms": 85.93,
+      "query": "next.config.js configuration options",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/01-app/03-api-reference/05-config/01-next-config-js/index.mdx",
+        "docs/01-app/03-api-reference/05-config/01-next-config-js/turbopack.mdx",
+        "docs/01-app/03-api-reference/05-config/01-next-config-js/images.mdx",
+        "docs/02-pages/04-api-reference/01-components/image-legacy.mdx",
+        "docs/01-app/02-guides/migrating/from-vite.mdx",
+        "docs/01-app/02-guides/upgrading/version-16.mdx",
+        "docs/01-app/02-guides/migrating/from-create-react-app.mdx",
+        "docs/01-app/03-api-reference/05-config/01-next-config-js/webpack.mdx",
+        "docs/01-app/03-api-reference/02-components/image.mdx",
+        "docs/01-app/03-api-reference/05-config/index.mdx"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find config reference docs",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "next-config-js"
+      ],
+      "language": "typescript",
+      "latency_ms": 833.0,
+      "query": "next.config.js configuration options",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/02-pages/04-api-reference/04-config/01-next-config-js/index.mdx",
+        "docs/01-app/03-api-reference/05-config/01-next-config-js/index.mdx",
+        "docs/02-pages/04-api-reference/01-components/image-legacy.mdx",
+        "docs/01-app/02-guides/upgrading/version-16.mdx",
+        "docs/01-app/03-api-reference/05-config/01-next-config-js/typescript.mdx",
+        "docs/01-app/03-api-reference/05-config/index.mdx",
+        "docs/02-pages/03-building-your-application/06-configuring/index.mdx",
+        "docs/02-pages/04-api-reference/04-config/index.mdx",
+        "docs/01-app/03-api-reference/05-config/01-next-config-js/turbopack.mdx",
+        "docs/01-app/02-guides/package-bundling.mdx"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find config reference docs",
+      "engine": "codegraph",
+      "expected_files": [
+        "next-config-js"
+      ],
+      "language": "typescript",
+      "latency_ms": null,
+      "query": "next.config.js configuration options",
+      "rank": null,
+      "reciprocal_rank": null,
+      "repository": "nextjs",
+      "supported": false,
+      "tier": "standard",
+      "top_files": [],
+      "unsupported_reason": "CodeGraph indexes source code, not Markdown/document content"
+    },
+    {
+      "category": "cross",
+      "description": "Find streaming implementation and docs",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "loading.mdx",
+        "flight-render-result.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 29.78,
+      "query": "streaming and suspense boundaries",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/01-app/03-api-reference/03-file-conventions/loading.mdx",
+        "docs/01-app/04-glossary.mdx",
+        "packages/next/src/server/request/search-params.ts",
+        "package.json",
+        "packages/next/package.json",
+        "packages/next/tsconfig.build.json",
+        "docs/01-app/03-api-reference/02-components/image.mdx",
+        "packages/next/src/client/request/search-params.browser.dev.ts",
+        "docs/01-app/01-getting-started/06-cache-components.mdx",
+        "docs/01-app/03-api-reference/03-file-conventions/layout.mdx"
+      ]
+    },
+    {
+      "category": "cross",
+      "description": "Find streaming implementation and docs",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "loading.mdx",
+        "flight-render-result.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 873.57,
+      "query": "streaming and suspense boundaries",
+      "rank": 2,
+      "reciprocal_rank": 0.5,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/01-app/04-glossary.mdx",
+        "docs/01-app/03-api-reference/03-file-conventions/loading.mdx",
+        "docs/01-app/02-guides/videos.mdx",
+        "docs/01-app/03-api-reference/04-functions/use-search-params.mdx",
+        "docs/01-app/02-guides/public-static-pages.mdx",
+        "docs/01-app/01-getting-started/07-fetching-data.mdx",
+        "packages/next/src/lib/metadata/metadata.tsx",
+        "packages/next/package.json",
+        "packages/next/tsconfig.build.json",
+        "docs/01-app/01-getting-started/06-cache-components.mdx"
+      ]
+    },
+    {
+      "category": "cross",
+      "description": "Find streaming implementation and docs",
+      "engine": "codegraph",
+      "expected_files": [
+        "loading.mdx",
+        "flight-render-result.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": null,
+      "query": "streaming and suspense boundaries",
+      "rank": null,
+      "reciprocal_rank": null,
+      "repository": "nextjs",
+      "supported": false,
+      "tier": "standard",
+      "top_files": [],
+      "unsupported_reason": "CodeGraph indexes source code, not Markdown/document content"
+    },
+    {
+      "category": "cross",
+      "description": "Find parallel routing code and docs",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "parallel-routes.mdx",
+        "intercepting-routes.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": 38.12,
+      "query": "parallel routes and intercepting routes",
+      "rank": 2,
+      "reciprocal_rank": 0.5,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/01-app/01-getting-started/02-project-structure.mdx",
+        "docs/01-app/03-api-reference/03-file-conventions/intercepting-routes.mdx",
+        "packages/next/src/lib/generate-interception-routes-rewrites.test.ts",
+        "packages/next/src/server/route-definitions/route-definition.ts",
+        "packages/next/src/client/components/segment-cache/navigation.ts",
+        "docs/01-app/03-api-reference/03-file-conventions/parallel-routes.mdx",
+        "packages/next/src/shared/lib/router/utils/interpolate-as.ts",
+        "packages/next/src/shared/lib/router/utils/sortable-routes.ts",
+        "packages/next/src/server/app-render/create-flight-router-state-from-loader-tree.ts",
+        "packages/next/src/shared/lib/router/utils/querystring.ts"
+      ]
+    },
+    {
+      "category": "cross",
+      "description": "Find parallel routing code and docs",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "parallel-routes.mdx",
+        "intercepting-routes.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": 961.97,
+      "query": "parallel routes and intercepting routes",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/01-app/03-api-reference/03-file-conventions/intercepting-routes.mdx",
+        "docs/01-app/01-getting-started/02-project-structure.mdx",
+        "packages/next/src/server/lib/router-utils/route-types-utils.ts",
+        "packages/next/src/server/route-definitions/route-definition.ts",
+        "docs/01-app/03-api-reference/03-file-conventions/parallel-routes.mdx",
+        "packages/next/src/client/components/router-reducer/compute-changed-path.ts",
+        "packages/next/src/lib/generate-interception-routes-rewrites.test.ts",
+        "packages/next/src/shared/lib/router/utils/get-dynamic-param.ts",
+        "packages/next/src/client/components/router-reducer/reducers/find-head-in-cache.ts",
+        "packages/next/src/shared/lib/router/utils/route-regex.ts"
+      ]
+    },
+    {
+      "category": "cross",
+      "description": "Find parallel routing code and docs",
+      "engine": "codegraph",
+      "expected_files": [
+        "parallel-routes.mdx",
+        "intercepting-routes.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": null,
+      "query": "parallel routes and intercepting routes",
+      "rank": null,
+      "reciprocal_rank": null,
+      "repository": "nextjs",
+      "supported": false,
+      "tier": "standard",
+      "top_files": [],
+      "unsupported_reason": "CodeGraph indexes source code, not Markdown/document content"
+    },
+    {
+      "category": "cross",
+      "description": "Find metadata system code and docs",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "metadata-and-og-images.mdx",
+        "generate-metadata.mdx",
+        "resolve-metadata.ts",
+        "opengraph-image.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": 28.34,
+      "query": "metadata and open graph configuration",
+      "rank": 4,
+      "reciprocal_rank": 0.25,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/01-app/03-api-reference/03-file-conventions/route.mdx",
+        "packages/next/src/lib/metadata/types/metadata-interface.ts",
+        "packages/next/src/lib/metadata/generate/opengraph.tsx",
+        "docs/01-app/03-api-reference/04-functions/generate-metadata.mdx",
+        "packages/next/src/lib/metadata/resolvers/resolve-opengraph.ts",
+        "packages/next/src/lib/metadata/metadata.tsx",
+        "docs/01-app/03-api-reference/03-file-conventions/01-metadata/opengraph-image.mdx",
+        "packages/next/src/shared/lib/router/utils/querystring.ts",
+        "docs/01-app/03-api-reference/03-file-conventions/01-metadata/index.mdx",
+        "docs/04-community/01-contribution-guide.mdx"
+      ]
+    },
+    {
+      "category": "cross",
+      "description": "Find metadata system code and docs",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "metadata-and-og-images.mdx",
+        "generate-metadata.mdx",
+        "resolve-metadata.ts",
+        "opengraph-image.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": 958.27,
+      "query": "metadata and open graph configuration",
+      "rank": 4,
+      "reciprocal_rank": 0.25,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/01-app/03-api-reference/03-file-conventions/route.mdx",
+        "packages/next/src/lib/metadata/metadata.tsx",
+        "packages/next/src/lib/metadata/generate/opengraph.tsx",
+        "docs/01-app/03-api-reference/03-file-conventions/01-metadata/opengraph-image.mdx",
+        "docs/01-app/01-getting-started/14-metadata-and-og-images.mdx",
+        "docs/01-app/03-api-reference/03-file-conventions/01-metadata/index.mdx",
+        "docs/01-app/03-api-reference/04-functions/generate-metadata.mdx",
+        "docs/01-app/02-guides/backend-for-frontend.mdx",
+        "packages/next/src/lib/metadata/types/opengraph-types.ts",
+        "packages/next/src/lib/metadata/get-metadata-route.ts"
+      ]
+    },
+    {
+      "category": "cross",
+      "description": "Find metadata system code and docs",
+      "engine": "codegraph",
+      "expected_files": [
+        "metadata-and-og-images.mdx",
+        "generate-metadata.mdx",
+        "resolve-metadata.ts",
+        "opengraph-image.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": null,
+      "query": "metadata and open graph configuration",
+      "rank": null,
+      "reciprocal_rank": null,
+      "repository": "nextjs",
+      "supported": false,
+      "tier": "standard",
+      "top_files": [],
+      "unsupported_reason": "CodeGraph indexes source code, not Markdown/document content"
+    },
+    {
+      "category": "cross",
+      "description": "Find font optimization code and docs",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "fonts.mdx",
+        "font.mdx",
+        "font-utils.ts",
+        "next-font-loader"
+      ],
+      "language": "typescript",
+      "latency_ms": 28.29,
+      "query": "font optimization and loading",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/01-app/03-api-reference/02-components/font.mdx",
+        "docs/01-app/01-getting-started/13-fonts.mdx",
+        "package.json",
+        "packages/next/src/next-devtools/dev-overlay/font/font-styles.tsx",
+        "packages/next/package.json",
+        "docs/02-pages/02-guides/upgrading/version-13.mdx",
+        "packages/next/src/shared/lib/turbopack/utils.test.ts",
+        "docs/01-app/02-guides/migrating/app-router-migration.mdx",
+        "docs/01-app/04-glossary.mdx",
+        "packages/next/src/server/next-server.ts"
+      ]
+    },
+    {
+      "category": "cross",
+      "description": "Find font optimization code and docs",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "fonts.mdx",
+        "font.mdx",
+        "font-utils.ts",
+        "next-font-loader"
+      ],
+      "language": "typescript",
+      "latency_ms": 974.06,
+      "query": "font optimization and loading",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/01-app/03-api-reference/02-components/font.mdx",
+        "docs/01-app/01-getting-started/13-fonts.mdx",
+        "docs/02-pages/02-guides/upgrading/version-13.mdx",
+        "packages/next/src/client/head-manager.ts",
+        "packages/next/src/server/app-render/get-preloadable-fonts.tsx",
+        "packages/next/src/next-devtools/dev-overlay/font/font-styles.tsx",
+        "docs/01-app/03-api-reference/03-file-conventions/not-found.mdx",
+        "packages/next/src/client/components/styles/access-error-styles.ts",
+        "packages/next/src/server/font-utils.ts",
+        "packages/next/src/server/app-render/get-layer-assets.tsx"
+      ]
+    },
+    {
+      "category": "cross",
+      "description": "Find font optimization code and docs",
+      "engine": "codegraph",
+      "expected_files": [
+        "fonts.mdx",
+        "font.mdx",
+        "font-utils.ts",
+        "next-font-loader"
+      ],
+      "language": "typescript",
+      "latency_ms": null,
+      "query": "font optimization and loading",
+      "rank": null,
+      "reciprocal_rank": null,
+      "repository": "nextjs",
+      "supported": false,
+      "tier": "standard",
+      "top_files": [],
+      "unsupported_reason": "CodeGraph indexes source code, not Markdown/document content"
+    },
+    {
+      "category": "cross",
+      "description": "Find ISR implementation and docs",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "incremental-static-regeneration.mdx",
+        "incremental-cache"
+      ],
+      "language": "typescript",
+      "latency_ms": 27.82,
+      "query": "incremental static regeneration ISR",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/02-pages/02-guides/incremental-static-regeneration.mdx",
+        "docs/01-app/02-guides/incremental-static-regeneration.mdx",
+        "docs/01-app/04-glossary.mdx",
+        "package.json",
+        "packages/next/src/client/request/search-params.browser.dev.ts",
+        "packages/next/package.json",
+        "docs/01-app/02-guides/production-checklist.mdx",
+        "packages/next/src/server/request/search-params.ts",
+        "packages/next/src/shared/lib/router/utils/querystring.ts",
+        "docs/01-app/02-guides/self-hosting.mdx"
+      ]
+    },
+    {
+      "category": "cross",
+      "description": "Find ISR implementation and docs",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "incremental-static-regeneration.mdx",
+        "incremental-cache"
+      ],
+      "language": "typescript",
+      "latency_ms": 833.57,
+      "query": "incremental static regeneration ISR",
+      "rank": 2,
+      "reciprocal_rank": 0.5,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/01-app/04-glossary.mdx",
+        "docs/02-pages/02-guides/incremental-static-regeneration.mdx",
+        "docs/01-app/02-guides/incremental-static-regeneration.mdx",
+        "docs/01-app/02-guides/content-security-policy.mdx",
+        "docs/01-app/02-guides/production-checklist.mdx",
+        "docs/01-app/02-guides/self-hosting.mdx",
+        "docs/01-app/03-api-reference/07-edge.mdx",
+        "docs/02-pages/04-api-reference/03-functions/get-static-props.mdx",
+        "docs/02-pages/02-guides/draft-mode.mdx",
+        "packages/next/src/server/request/search-params.ts"
+      ]
+    },
+    {
+      "category": "cross",
+      "description": "Find ISR implementation and docs",
+      "engine": "codegraph",
+      "expected_files": [
+        "incremental-static-regeneration.mdx",
+        "incremental-cache"
+      ],
+      "language": "typescript",
+      "latency_ms": null,
+      "query": "incremental static regeneration ISR",
+      "rank": null,
+      "reciprocal_rank": null,
+      "repository": "nextjs",
+      "supported": false,
+      "tier": "standard",
+      "top_files": [],
+      "unsupported_reason": "CodeGraph indexes source code, not Markdown/document content"
+    },
+    {
+      "category": "cross",
+      "description": "Find data fetching code and docs",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "data-fetching",
+        "fetch-server-response.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 38.98,
+      "query": "data fetching with fetch API",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/02-pages/03-building-your-application/03-data-fetching/05-client-side.mdx",
+        "docs/01-app/01-getting-started/07-fetching-data.mdx",
+        "docs/01-app/02-guides/migrating/app-router-migration.mdx",
+        "docs/01-app/02-guides/static-exports.mdx",
+        "docs/02-pages/03-building-your-application/02-rendering/05-client-side-rendering.mdx",
+        "docs/01-app/03-api-reference/05-config/02-typescript.mdx",
+        "docs/01-app/02-guides/backend-for-frontend.mdx",
+        "docs/01-app/02-guides/caching.mdx",
+        "packages/next/src/shared/lib/router/utils/querystring.ts",
+        "docs/02-pages/04-api-reference/03-functions/get-initial-props.mdx"
+      ]
+    },
+    {
+      "category": "cross",
+      "description": "Find data fetching code and docs",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "data-fetching",
+        "fetch-server-response.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 901.03,
+      "query": "data fetching with fetch API",
+      "rank": null,
+      "reciprocal_rank": 0.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/01-app/01-getting-started/07-fetching-data.mdx",
+        "docs/01-app/02-guides/migrating/app-router-migration.mdx",
+        "docs/01-app/03-api-reference/05-config/02-typescript.mdx",
+        "docs/02-pages/04-api-reference/03-functions/get-initial-props.mdx",
+        "docs/02-pages/03-building-your-application/02-rendering/05-client-side-rendering.mdx",
+        "docs/01-app/02-guides/single-page-applications.mdx",
+        "docs/01-app/02-guides/caching.mdx",
+        "docs/01-app/02-guides/static-exports.mdx",
+        "docs/01-app/03-api-reference/02-components/form.mdx",
+        "docs/01-app/02-guides/backend-for-frontend.mdx"
+      ]
+    },
+    {
+      "category": "cross",
+      "description": "Find data fetching code and docs",
+      "engine": "codegraph",
+      "expected_files": [
+        "data-fetching",
+        "fetch-server-response.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": null,
+      "query": "data fetching with fetch API",
+      "rank": null,
+      "reciprocal_rank": null,
+      "repository": "nextjs",
+      "supported": false,
+      "tier": "standard",
+      "top_files": [],
+      "unsupported_reason": "CodeGraph indexes source code, not Markdown/document content"
+    },
+    {
+      "category": "cross",
+      "description": "Find client component boundary code and docs",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "server-and-client-components.mdx",
+        "flight-client-entry-plugin.ts",
+        "next-flight-client-entry-loader.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 29.15,
+      "query": "client components use client directive",
+      "rank": 2,
+      "reciprocal_rank": 0.5,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/01-app/03-api-reference/01-directives/use-client.mdx",
+        "docs/01-app/01-getting-started/05-server-and-client-components.mdx",
+        "docs/01-app/03-api-reference/01-directives/use-server.mdx",
+        "packages/next/src/server/typescript/rules/client-boundary.ts",
+        "packages/next/src/lib/format-server-error.ts",
+        "packages/next/src/server/typescript/rules/error.ts",
+        "docs/01-app/02-guides/migrating/from-vite.mdx",
+        "docs/01-app/03-api-reference/04-functions/use-search-params.mdx",
+        "docs/01-app/03-api-reference/02-components/form.mdx",
+        "packages/next/src/client/components/client-page.tsx"
+      ]
+    },
+    {
+      "category": "cross",
+      "description": "Find client component boundary code and docs",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "server-and-client-components.mdx",
+        "flight-client-entry-plugin.ts",
+        "next-flight-client-entry-loader.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 836.32,
+      "query": "client components use client directive",
+      "rank": 3,
+      "reciprocal_rank": 0.3333,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/01-app/03-api-reference/01-directives/use-client.mdx",
+        "packages/next/src/server/typescript/rules/error.ts",
+        "docs/01-app/01-getting-started/05-server-and-client-components.mdx",
+        "packages/next/src/server/typescript/rules/client-boundary.ts",
+        "docs/01-app/01-getting-started/08-updating-data.mdx",
+        "docs/01-app/02-guides/migrating/app-router-migration.mdx",
+        "docs/01-app/03-api-reference/04-functions/use-search-params.mdx",
+        "docs/01-app/03-api-reference/01-directives/use-server.mdx",
+        "docs/01-app/02-guides/static-exports.mdx",
+        "packages/next/src/shared/lib/hooks-client-context.shared-runtime.ts"
+      ]
+    },
+    {
+      "category": "cross",
+      "description": "Find client component boundary code and docs",
+      "engine": "codegraph",
+      "expected_files": [
+        "server-and-client-components.mdx",
+        "flight-client-entry-plugin.ts",
+        "next-flight-client-entry-loader.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": null,
+      "query": "client components use client directive",
+      "rank": null,
+      "reciprocal_rank": null,
+      "repository": "nextjs",
+      "supported": false,
+      "tier": "standard",
+      "top_files": [],
+      "unsupported_reason": "CodeGraph indexes source code, not Markdown/document content"
+    },
+    {
+      "category": "cross",
+      "description": "Find redirect implementation and docs",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "redirecting.mdx",
+        "redirect.ts",
+        "redirect-boundary.tsx"
+      ],
+      "language": "typescript",
+      "latency_ms": 85.65,
+      "query": "redirect and permanent redirect",
+      "rank": 4,
+      "reciprocal_rank": 0.25,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/01-app/03-api-reference/05-config/01-next-config-js/redirects.mdx",
+        "docs/01-app/03-api-reference/04-functions/redirect.mdx",
+        "docs/01-app/03-api-reference/04-functions/permanentRedirect.mdx",
+        "docs/01-app/02-guides/redirecting.mdx",
+        "packages/next/src/lib/redirect-status.ts",
+        "packages/next/src/lib/build-custom-route.ts",
+        "packages/next/src/experimental/testing/server/config-testing-utils.ts",
+        "docs/02-pages/04-api-reference/03-functions/get-server-side-props.mdx",
+        "packages/next/src/lib/load-custom-routes.ts",
+        "packages/next/src/shared/lib/router/utils/querystring.ts"
+      ]
+    },
+    {
+      "category": "cross",
+      "description": "Find redirect implementation and docs",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "redirecting.mdx",
+        "redirect.ts",
+        "redirect-boundary.tsx"
+      ],
+      "language": "typescript",
+      "latency_ms": 774.01,
+      "query": "redirect and permanent redirect",
+      "rank": null,
+      "reciprocal_rank": 0.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/01-app/03-api-reference/04-functions/permanentRedirect.mdx",
+        "docs/01-app/03-api-reference/04-functions/redirect.mdx",
+        "packages/next/src/lib/redirect-status.ts",
+        "packages/next/src/client/components/redirect-status-code.ts",
+        "docs/02-pages/04-api-reference/03-functions/get-static-props.mdx",
+        "docs/02-pages/04-api-reference/03-functions/get-server-side-props.mdx",
+        "packages/next/src/experimental/testing/server/config-testing-utils.ts",
+        "packages/next/src/client/components/navigation.react-server.ts",
+        "docs/01-app/03-api-reference/05-config/01-next-config-js/redirects.mdx",
+        "packages/next/src/experimental/testing/server/config-testing-utils.test.ts"
+      ]
+    },
+    {
+      "category": "cross",
+      "description": "Find redirect implementation and docs",
+      "engine": "codegraph",
+      "expected_files": [
+        "redirecting.mdx",
+        "redirect.ts",
+        "redirect-boundary.tsx"
+      ],
+      "language": "typescript",
+      "latency_ms": null,
+      "query": "redirect and permanent redirect",
+      "rank": null,
+      "reciprocal_rank": null,
+      "repository": "nextjs",
+      "supported": false,
+      "tier": "standard",
+      "top_files": [],
+      "unsupported_reason": "CodeGraph indexes source code, not Markdown/document content"
+    },
+    {
+      "category": "code",
+      "description": "Find turbopack resolver",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "hot-reloader-turbopack.ts",
+        "middleware-turbopack.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 33.26,
+      "query": "turbopack module resolution",
+      "rank": 2,
+      "reciprocal_rank": 0.5,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "full",
+      "top_files": [
+        "packages/next/src/server/dev/hot-reloader-webpack.ts",
+        "packages/next/src/server/dev/middleware-turbopack.ts",
+        "packages/next/src/bundles/babel/packages/traverse.js",
+        "packages/next/src/server/request/search-params.ts",
+        "packages/next/src/lib/metadata/resolvers/resolve-url.ts",
+        "packages/next/src/shared/lib/router/utils/querystring.ts",
+        "packages/next/src/shared/lib/turbopack/manifest-loader.ts",
+        "packages/next/src/shared/lib/router/utils/parse-url.ts",
+        "packages/next/src/client/next-turbopack.ts",
+        "packages/next/src/client/request/search-params.browser.dev.ts"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find turbopack resolver",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "hot-reloader-turbopack.ts",
+        "middleware-turbopack.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 884.97,
+      "query": "turbopack module resolution",
+      "rank": 10,
+      "reciprocal_rank": 0.1,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "full",
+      "top_files": [
+        "packages/next/src/server/route-modules/pages-api/module.compiled.js",
+        "packages/next/src/server/route-modules/pages/module.compiled.js",
+        "packages/next/src/client/next-turbopack.ts",
+        "packages/next/src/server/app-render/segment-explorer-path.ts",
+        "packages/next/taskfile-ncc.js",
+        "packages/next/src/client/next-dev-turbopack.ts",
+        "packages/next/src/server/dev/browser-logs/source-map.ts",
+        "packages/next/src/shared/lib/router/utils/route-match-utils.ts",
+        "packages/next/src/bundles/webpack/bundle5.js",
+        "packages/next/src/server/dev/middleware-turbopack.ts"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find turbopack resolver",
+      "engine": "codegraph",
+      "expected_files": [
+        "hot-reloader-turbopack.ts",
+        "middleware-turbopack.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 5523.03,
+      "query": "turbopack module resolution",
+      "rank": null,
+      "reciprocal_rank": 0.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "full",
+      "top_files": [
+        "packages/next/src/shared/lib/turbopack/utils.ts",
+        "packages/next/src/server/route-modules/pages-api/module.ts",
+        "packages/next/src/server/lib/module-loader/route-module-loader.ts"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find React Server Component serialization",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "flight-render-result.ts",
+        "parse-and-validate-flight-router-state.tsx",
+        "create-flight-router-state-from-loader-tree.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 77.47,
+      "query": "RSC payload serialization",
+      "rank": null,
+      "reciprocal_rank": 0.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "full",
+      "top_files": [
+        "packages/next/src/lib/url.ts",
+        "packages/next/src/server/internal-utils.ts",
+        "packages/next/src/server/resume-data-cache/resume-data-cache.test.ts",
+        "packages/next/src/server/request/search-params.ts",
+        "packages/next/src/client/request/search-params.browser.dev.ts",
+        "packages/next/src/shared/lib/router/utils/cache-busting-search-param.ts",
+        "packages/next/src/client/route-params.ts",
+        "packages/next/src/shared/lib/router/utils/querystring.ts",
+        "packages/next/src/client/components/router-reducer/set-cache-busting-search-param.ts",
+        "packages/next/src/client/components/router-reducer/reducers/server-action-reducer.ts"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find React Server Component serialization",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "flight-render-result.ts",
+        "parse-and-validate-flight-router-state.tsx",
+        "create-flight-router-state-from-loader-tree.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 799.73,
+      "query": "RSC payload serialization",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "full",
+      "top_files": [
+        "packages/next/src/server/app-render/flight-render-result.ts",
+        "packages/next/src/client/route-params.ts",
+        "packages/next/src/server/resume-data-cache/resume-data-cache.test.ts",
+        "packages/next/src/client/components/router-reducer/set-cache-busting-search-param.ts",
+        "packages/next/src/server/resume-data-cache/resume-data-cache.ts",
+        "packages/next/src/server/app-render/get-asset-query-string.ts",
+        "packages/next/src/client/components/segment-cache/cache.ts",
+        "packages/next/src/server/resume-data-cache/cache-store.ts",
+        "packages/next/src/server/request-meta.ts",
+        "packages/next/src/client/components/router-reducer/reducers/server-action-reducer.ts"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find React Server Component serialization",
+      "engine": "codegraph",
+      "expected_files": [
+        "flight-render-result.ts",
+        "parse-and-validate-flight-router-state.tsx",
+        "create-flight-router-state-from-loader-tree.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 6490.89,
+      "query": "RSC payload serialization",
+      "rank": null,
+      "reciprocal_rank": 0.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "full",
+      "top_files": [
+        "packages/next/src/server/app-render/app-render.tsx"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find build tracing implementation",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "trace.test.ts",
+        "upload-trace.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 52.97,
+      "query": "trace file generation for debugging",
+      "rank": null,
+      "reciprocal_rank": 0.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "full",
+      "top_files": [
+        "packages/next/src/trace/trace-uploader.ts",
+        "packages/next/src/server/request/search-params.ts",
+        "packages/next/src/client/request/search-params.browser.dev.ts",
+        "packages/next/src/diagnostics/build-diagnostics.ts",
+        "packages/next/src/diagnostics/build-diagnostics.test.ts",
+        "packages/next/src/server/dev/middleware-turbopack.ts",
+        "packages/next/src/client/app-find-source-map-url.ts",
+        "packages/next/src/shared/lib/router/utils/cache-busting-search-param.ts",
+        "packages/next/src/server/dev/browser-logs/receive-logs.ts",
+        "packages/next/src/server/app-render/app-render.tsx"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find build tracing implementation",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "trace.test.ts",
+        "upload-trace.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 969.03,
+      "query": "trace file generation for debugging",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "full",
+      "top_files": [
+        "packages/next/src/trace/upload-trace.ts",
+        "packages/next/src/diagnostics/build-diagnostics.ts",
+        "packages/next/src/trace/trace.test.ts",
+        "packages/next/src/cli/next-analyze.ts",
+        "packages/next/src/trace/trace-uploader.ts",
+        "run-tests.js",
+        "packages/next/src/trace/report/to-json-build.ts",
+        "packages/next/src/server/lib/parse-stack.ts",
+        "packages/next/src/server/image-optimizer.ts",
+        "packages/next/src/client/components/segment-cache/navigation.ts"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find build tracing implementation",
+      "engine": "codegraph",
+      "expected_files": [
+        "trace.test.ts",
+        "upload-trace.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 4549.72,
+      "query": "trace file generation for debugging",
+      "rank": null,
+      "reciprocal_rank": 0.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "full",
+      "top_files": [
+        "packages/next/src/server/lib/trace/tracer.ts",
+        "packages/next/src/compiled/crypto-browserify/index.js"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find migration guide",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "app-router-migration.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": 80.51,
+      "query": "upgrading from pages router to app router",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "full",
+      "top_files": [
+        "docs/01-app/02-guides/migrating/app-router-migration.mdx",
+        "docs/02-pages/02-guides/upgrading/version-14.mdx",
+        "docs/01-app/02-guides/upgrading/version-16.mdx",
+        "docs/02-pages/02-guides/upgrading/codemods.mdx",
+        "docs/01-app/02-guides/upgrading/version-15.mdx",
+        "docs/02-pages/02-guides/migrating/app-router-migration.mdx",
+        "docs/01-app/03-api-reference/04-functions/use-router.mdx",
+        "docs/02-pages/04-api-reference/03-functions/use-search-params.mdx",
+        "docs/02-pages/03-building-your-application/01-routing/03-linking-and-navigating.mdx",
+        "docs/02-pages/03-building-your-application/01-routing/index.mdx"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find migration guide",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "app-router-migration.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": 829.33,
+      "query": "upgrading from pages router to app router",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "full",
+      "top_files": [
+        "docs/01-app/02-guides/migrating/app-router-migration.mdx",
+        "docs/02-pages/02-guides/migrating/app-router-migration.mdx",
+        "docs/01-app/02-guides/upgrading/version-14.mdx",
+        "docs/01-app/02-guides/upgrading/version-16.mdx",
+        "docs/02-pages/02-guides/upgrading/version-14.mdx",
+        "docs/01-app/02-guides/upgrading/version-15.mdx",
+        "docs/02-pages/02-guides/upgrading/codemods.mdx",
+        "docs/01-app/02-guides/static-exports.mdx",
+        "docs/02-pages/02-guides/static-exports.mdx",
+        "docs/01-app/index.mdx"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find migration guide",
+      "engine": "codegraph",
+      "expected_files": [
+        "app-router-migration.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": null,
+      "query": "upgrading from pages router to app router",
+      "rank": null,
+      "reciprocal_rank": null,
+      "repository": "nextjs",
+      "supported": false,
+      "tier": "full",
+      "top_files": [],
+      "unsupported_reason": "CodeGraph indexes source code, not Markdown/document content"
+    },
+    {
+      "category": "document",
+      "description": "Find CSP documentation",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "content-security-policy.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": 30.28,
+      "query": "security headers content security policy",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "full",
+      "top_files": [
+        "docs/01-app/02-guides/content-security-policy.mdx",
+        "docs/01-app/03-api-reference/05-config/01-next-config-js/headers.mdx",
+        "docs/01-app/03-api-reference/02-components/image.mdx",
+        "docs/01-app/02-guides/data-security.mdx",
+        "docs/01-app/02-guides/progressive-web-apps.mdx",
+        "docs/01-app/02-guides/production-checklist.mdx",
+        "docs/02-pages/02-guides/content-security-policy.mdx",
+        "docs/01-app/03-api-reference/03-file-conventions/layout.mdx",
+        "docs/02-pages/04-api-reference/01-components/image-legacy.mdx",
+        "docs/01-app/03-api-reference/05-config/01-next-config-js/rewrites.mdx"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find CSP documentation",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "content-security-policy.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": 795.61,
+      "query": "security headers content security policy",
+      "rank": 2,
+      "reciprocal_rank": 0.5,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "full",
+      "top_files": [
+        "docs/01-app/03-api-reference/02-components/image.mdx",
+        "docs/01-app/02-guides/content-security-policy.mdx",
+        "docs/01-app/03-api-reference/05-config/01-next-config-js/headers.mdx",
+        "docs/02-pages/02-guides/content-security-policy.mdx",
+        "docs/01-app/02-guides/progressive-web-apps.mdx",
+        "docs/01-app/02-guides/production-checklist.mdx",
+        "docs/01-app/02-guides/data-security.mdx",
+        "docs/01-app/03-api-reference/03-file-conventions/proxy.mdx",
+        "packages/next/tsconfig.json",
+        "docs/01-app/03-api-reference/04-functions/headers.mdx"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find CSP documentation",
+      "engine": "codegraph",
+      "expected_files": [
+        "content-security-policy.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": null,
+      "query": "security headers content security policy",
+      "rank": null,
+      "reciprocal_rank": null,
+      "repository": "nextjs",
+      "supported": false,
+      "tier": "full",
+      "top_files": [],
+      "unsupported_reason": "CodeGraph indexes source code, not Markdown/document content"
+    },
+    {
+      "category": "cross",
+      "description": "Natural language query about pre-rendering",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "static-generation-bailout.ts",
+        "is-static-gen-enabled.ts",
+        "static-site-generation.mdx",
+        "static-exports.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": 31.28,
+      "query": "how does Next.js decide which pages to pre-render during build",
+      "rank": null,
+      "reciprocal_rank": 0.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "full",
+      "top_files": [
+        "docs/01-app/03-api-reference/03-file-conventions/layout.mdx",
+        "docs/02-pages/03-building-your-application/02-rendering/index.mdx",
+        "docs/02-pages/03-building-your-application/02-rendering/04-automatic-static-optimization.mdx",
+        "docs/01-app/01-getting-started/04-linking-and-navigating.mdx",
+        "docs/01-app/03-api-reference/05-config/01-next-config-js/exportPathMap.mdx",
+        "docs/01-app/02-guides/prefetching.mdx",
+        "docs/01-app/02-guides/caching.mdx",
+        "packages/next/src/client/app-bootstrap.ts",
+        "docs/01-app/02-guides/single-page-applications.mdx",
+        "docs/01-app/03-api-reference/04-functions/use-search-params.mdx"
+      ]
+    },
+    {
+      "category": "cross",
+      "description": "Natural language query about pre-rendering",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "static-generation-bailout.ts",
+        "is-static-gen-enabled.ts",
+        "static-site-generation.mdx",
+        "static-exports.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": 880.47,
+      "query": "how does Next.js decide which pages to pre-render during build",
+      "rank": null,
+      "reciprocal_rank": 0.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "full",
+      "top_files": [
+        "docs/02-pages/03-building-your-application/02-rendering/index.mdx",
+        "docs/02-pages/02-guides/draft-mode.mdx",
+        "docs/01-app/02-guides/production-checklist.mdx",
+        "docs/01-app/02-guides/single-page-applications.mdx",
+        "docs/02-pages/03-building-your-application/03-data-fetching/index.mdx",
+        "docs/01-app/03-api-reference/05-config/01-next-config-js/exportPathMap.mdx",
+        "docs/02-pages/04-api-reference/03-functions/get-static-paths.mdx",
+        "docs/02-pages/03-building-your-application/02-rendering/05-client-side-rendering.mdx",
+        "docs/01-app/03-api-reference/03-file-conventions/parallel-routes.mdx",
+        "docs/01-app/02-guides/upgrading/version-16.mdx"
+      ]
+    },
+    {
+      "category": "cross",
+      "description": "Natural language query about pre-rendering",
+      "engine": "codegraph",
+      "expected_files": [
+        "static-generation-bailout.ts",
+        "is-static-gen-enabled.ts",
+        "static-site-generation.mdx",
+        "static-exports.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": null,
+      "query": "how does Next.js decide which pages to pre-render during build",
+      "rank": null,
+      "reciprocal_rank": null,
+      "repository": "nextjs",
+      "supported": false,
+      "tier": "full",
+      "top_files": [],
+      "unsupported_reason": "CodeGraph indexes source code, not Markdown/document content"
+    },
+    {
+      "category": "cross",
+      "description": "Misspelled middleware query",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "middleware-route-matcher.ts",
+        "middleware-config.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 26.44,
+      "query": "middlewear route matchng",
+      "rank": null,
+      "reciprocal_rank": 0.0,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "full",
+      "top_files": [
+        "packages/next/src/shared/lib/router/router.ts",
+        "packages/next/src/shared/lib/router/utils/prepare-destination.ts",
+        "packages/next/src/experimental/testing/server/config-testing-utils.ts",
+        "docs/01-app/01-getting-started/02-project-structure.mdx",
+        "packages/next/src/shared/lib/router/utils/interpolate-as.ts",
+        "packages/next/src/experimental/testing/server/middleware-testing-utils.ts",
+        "docs/01-app/03-api-reference/03-file-conventions/dynamic-routes.mdx",
+        "packages/next/src/shared/lib/router/utils/sortable-routes.ts",
+        "packages/next/src/shared/lib/router/utils/route-regex.ts",
+        "packages/next/src/server/get-route-from-entrypoint.ts"
+      ]
+    },
+    {
+      "category": "cross",
+      "description": "Misspelled middleware query",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "middleware-route-matcher.ts",
+        "middleware-config.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": 901.53,
+      "query": "middlewear route matchng",
+      "rank": 4,
+      "reciprocal_rank": 0.25,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "full",
+      "top_files": [
+        "docs/01-app/03-api-reference/03-file-conventions/dynamic-routes.mdx",
+        "packages/next/src/experimental/testing/server/middleware-testing-utils.ts",
+        "packages/next/src/server/route-matchers/app-page-route-matcher.ts",
+        "packages/next/src/shared/lib/router/utils/middleware-route-matcher.ts",
+        "packages/next/src/server/route-matcher-managers/dev-route-matcher-manager.ts",
+        "packages/next/src/export/helpers/get-params.ts",
+        "packages/next/src/experimental/testing/server/middleware-testing-utils.test.ts",
+        "packages/next/src/shared/lib/router/utils/route-matcher.ts",
+        "packages/next/src/shared/lib/router/utils/interpolate-as.ts",
+        "packages/next/src/shared/lib/router/utils/prepare-destination.ts"
+      ]
+    },
+    {
+      "category": "cross",
+      "description": "Misspelled middleware query",
+      "engine": "codegraph",
+      "expected_files": [
+        "middleware-route-matcher.ts",
+        "middleware-config.ts"
+      ],
+      "language": "typescript",
+      "latency_ms": null,
+      "query": "middlewear route matchng",
+      "rank": null,
+      "reciprocal_rank": null,
+      "repository": "nextjs",
+      "supported": false,
+      "tier": "full",
+      "top_files": [],
+      "unsupported_reason": "CodeGraph indexes source code, not Markdown/document content"
+    },
+    {
+      "category": "cross",
+      "description": "Multi-hop: image \u2192 optimizer \u2192 cache",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "image-optimizer.ts",
+        "incremental-cache",
+        "incrementalCacheHandlerPath.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": 31.64,
+      "query": "the cache handler used by the image optimization API",
+      "rank": 5,
+      "reciprocal_rank": 0.2,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "full",
+      "top_files": [
+        "packages/next/src/client/request/search-params.browser.dev.ts",
+        "docs/01-app/03-api-reference/01-directives/use-cache-remote.mdx",
+        "packages/next/src/client/request/search-params.browser.prod.ts",
+        "packages/next/src/client/components/router-reducer/set-cache-busting-search-param.ts",
+        "packages/next/src/server/lib/incremental-cache/memory-cache.external.ts",
+        "packages/next/package.json",
+        "package.json",
+        "docs/01-app/02-guides/caching.mdx",
+        "packages/next/src/server/request/search-params.ts",
+        "packages/next/src/server/resume-data-cache/resume-data-cache.ts"
+      ]
+    },
+    {
+      "category": "cross",
+      "description": "Multi-hop: image \u2192 optimizer \u2192 cache",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "image-optimizer.ts",
+        "incremental-cache",
+        "incrementalCacheHandlerPath.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": 782.49,
+      "query": "the cache handler used by the image optimization API",
+      "rank": 7,
+      "reciprocal_rank": 0.1429,
+      "repository": "nextjs",
+      "supported": true,
+      "tier": "full",
+      "top_files": [
+        "docs/02-pages/04-api-reference/01-components/image-legacy.mdx",
+        "docs/01-app/01-getting-started/12-images.mdx",
+        "docs/02-pages/01-getting-started/04-images.mdx",
+        "docs/01-app/02-guides/caching.mdx",
+        "docs/01-app/03-api-reference/05-config/01-next-config-js/images.mdx",
+        "docs/01-app/03-api-reference/01-directives/use-cache-remote.mdx",
+        "packages/next/src/server/lib/incremental-cache/memory-cache.external.ts",
+        "docs/01-app/03-api-reference/04-functions/unstable_cache.mdx",
+        "packages/next/src/server/lib/incremental-cache/index.ts",
+        "docs/01-app/03-api-reference/01-directives/use-cache-private.mdx"
+      ]
+    },
+    {
+      "category": "cross",
+      "description": "Multi-hop: image \u2192 optimizer \u2192 cache",
+      "engine": "codegraph",
+      "expected_files": [
+        "image-optimizer.ts",
+        "incremental-cache",
+        "incrementalCacheHandlerPath.mdx"
+      ],
+      "language": "typescript",
+      "latency_ms": null,
+      "query": "the cache handler used by the image optimization API",
+      "rank": null,
+      "reciprocal_rank": null,
+      "repository": "nextjs",
+      "supported": false,
+      "tier": "full",
+      "top_files": [],
+      "unsupported_reason": "CodeGraph indexes source code, not Markdown/document content"
+    },
+    {
+      "category": "code",
+      "description": "Find request dispatch implementation",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "src/flask/app.py"
+      ],
+      "language": "python",
+      "latency_ms": 108.68,
+      "query": "request dispatch and view function invocation",
+      "rank": null,
+      "reciprocal_rank": 0.0,
+      "repository": "flask",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "tests/test_async.py",
+        "tests/test_basic.py",
+        "src/flask/views.py",
+        "tests/test_views.py",
+        "src/flask/ctx.py",
+        "examples/tutorial/tests/test_blog.py",
+        "tests/test_reqctx.py",
+        "src/flask/wrappers.py",
+        "tests/type_check/typing_route.py",
+        "tests/test_helpers.py"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find request dispatch implementation",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "src/flask/app.py"
+      ],
+      "language": "python",
+      "latency_ms": 575.64,
+      "query": "request dispatch and view function invocation",
+      "rank": null,
+      "reciprocal_rank": 0.0,
+      "repository": "flask",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/flask/views.py",
+        "tests/test_views.py",
+        "tests/test_basic.py",
+        "tests/test_async.py",
+        "src/flask/ctx.py",
+        "src/flask/wrappers.py",
+        "src/flask/helpers.py",
+        "tests/test_blueprints.py",
+        "tests/test_templating.py",
+        "examples/celery/src/task_app/views.py"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find request dispatch implementation",
+      "engine": "codegraph",
+      "expected_files": [
+        "src/flask/app.py"
+      ],
+      "language": "python",
+      "latency_ms": 591.48,
+      "query": "request dispatch and view function invocation",
+      "rank": 2,
+      "reciprocal_rank": 0.5,
+      "repository": "flask",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/flask/views.py",
+        "src/flask/app.py"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find secure cookie sessions",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "src/flask/sessions.py"
+      ],
+      "language": "python",
+      "latency_ms": 15.86,
+      "query": "secure cookie session loading and saving",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "flask",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/flask/sessions.py",
+        "tests/test_reqctx.py",
+        "tests/test_basic.py",
+        "tests/test_testing.py",
+        "tests/test_session_interface.py",
+        "examples/tutorial/tests/test_blog.py",
+        "src/flask/testing.py",
+        "examples/tutorial/tests/test_auth.py",
+        "tests/test_converters.py",
+        "src/flask/json/tag.py"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find secure cookie sessions",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "src/flask/sessions.py"
+      ],
+      "language": "python",
+      "latency_ms": 420.69,
+      "query": "secure cookie session loading and saving",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "flask",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/flask/sessions.py",
+        "tests/test_basic.py",
+        "tests/test_reqctx.py",
+        "src/flask/json/tag.py",
+        "tests/test_testing.py",
+        "tests/test_session_interface.py",
+        "examples/tutorial/flaskr/auth.py",
+        "src/flask/wrappers.py",
+        "src/flask/cli.py",
+        "tests/test_config.py"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find secure cookie sessions",
+      "engine": "codegraph",
+      "expected_files": [
+        "src/flask/sessions.py"
+      ],
+      "language": "python",
+      "latency_ms": 462.97,
+      "query": "secure cookie session loading and saving",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "flask",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/flask/sessions.py"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find template rendering",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "src/flask/templating.py"
+      ],
+      "language": "python",
+      "latency_ms": 23.7,
+      "query": "render a Jinja template with context processors",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "flask",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/flask/templating.py",
+        "examples/javascript/tests/test_js_example.py",
+        "tests/test_blueprints.py",
+        "tests/test_signals.py",
+        "tests/test_templating.py",
+        "tests/type_check/typing_route.py",
+        "src/flask/app.py",
+        "examples/javascript/js_example/views.py",
+        "examples/tutorial/flaskr/blog.py",
+        "tests/test_json.py"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find template rendering",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "src/flask/templating.py"
+      ],
+      "language": "python",
+      "latency_ms": 608.18,
+      "query": "render a Jinja template with context processors",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "flask",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/flask/templating.py",
+        "tests/test_json.py",
+        "tests/test_templating.py",
+        "tests/test_blueprints.py",
+        "tests/test_signals.py",
+        "src/flask/sansio/scaffold.py",
+        "src/flask/helpers.py",
+        "tests/test_apps/blueprintapp/apps/admin/__init__.py",
+        "tests/test_apps/blueprintapp/apps/frontend/__init__.py",
+        "examples/javascript/js_example/views.py"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find template rendering",
+      "engine": "codegraph",
+      "expected_files": [
+        "src/flask/templating.py"
+      ],
+      "language": "python",
+      "latency_ms": 464.82,
+      "query": "render a Jinja template with context processors",
+      "rank": 2,
+      "reciprocal_rank": 0.5,
+      "repository": "flask",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/flask/signals.py",
+        "src/flask/templating.py",
+        "src/flask/sansio/scaffold.py",
+        "src/flask/sansio/app.py"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find blueprint documentation",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "docs/blueprints.rst"
+      ],
+      "language": "python",
+      "latency_ms": 16.17,
+      "query": "organize a Flask application with blueprints",
+      "rank": 2,
+      "reciprocal_rank": 0.5,
+      "repository": "flask",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "docs/tutorial/views.rst",
+        "docs/blueprints.rst",
+        "pyproject.toml",
+        "CHANGES.rst",
+        "docs/views.rst",
+        "docs/tutorial/next.rst",
+        "docs/patterns/urlprocessors.rst",
+        "docs/tutorial/blog.rst",
+        "README.md",
+        "docs/patterns/appdispatch.rst"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find blueprint documentation",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "docs/blueprints.rst"
+      ],
+      "language": "python",
+      "latency_ms": 712.84,
+      "query": "organize a Flask application with blueprints",
+      "rank": 2,
+      "reciprocal_rank": 0.5,
+      "repository": "flask",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "docs/tutorial/views.rst",
+        "docs/blueprints.rst",
+        "CHANGES.rst",
+        "docs/appcontext.rst",
+        "docs/index.rst",
+        "docs/api.rst",
+        "docs/patterns/urlprocessors.rst",
+        "docs/cli.rst",
+        "docs/quickstart.rst",
+        "README.md"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find blueprint documentation",
+      "engine": "codegraph",
+      "expected_files": [
+        "docs/blueprints.rst"
+      ],
+      "language": "python",
+      "latency_ms": null,
+      "query": "organize a Flask application with blueprints",
+      "rank": null,
+      "reciprocal_rank": null,
+      "repository": "flask",
+      "supported": false,
+      "tier": "quick",
+      "top_files": [],
+      "unsupported_reason": "CodeGraph indexes source code, not Markdown/document content"
+    },
+    {
+      "category": "document",
+      "description": "Find application factory guide",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "docs/patterns/appfactories.rst"
+      ],
+      "language": "python",
+      "latency_ms": 15.87,
+      "query": "create and configure an application factory",
+      "rank": 2,
+      "reciprocal_rank": 0.5,
+      "repository": "flask",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "docs/testing.rst",
+        "docs/patterns/appfactories.rst",
+        "docs/cli.rst",
+        "docs/patterns/appdispatch.rst",
+        "docs/patterns/sqlalchemy.rst",
+        "docs/patterns/sqlite3.rst",
+        "docs/config.rst",
+        "docs/patterns/viewdecorators.rst",
+        "pyproject.toml",
+        "docs/tutorial/tests.rst"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find application factory guide",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "docs/patterns/appfactories.rst"
+      ],
+      "language": "python",
+      "latency_ms": 660.19,
+      "query": "create and configure an application factory",
+      "rank": 5,
+      "reciprocal_rank": 0.2,
+      "repository": "flask",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "docs/testing.rst",
+        "docs/tutorial/factory.rst",
+        "docs/patterns/celery.rst",
+        "docs/deploying/uwsgi.rst",
+        "docs/patterns/appfactories.rst",
+        "docs/tutorial/tests.rst",
+        "docs/cli.rst",
+        "docs/api.rst",
+        "docs/design.rst",
+        "docs/appcontext.rst"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find application factory guide",
+      "engine": "codegraph",
+      "expected_files": [
+        "docs/patterns/appfactories.rst"
+      ],
+      "language": "python",
+      "latency_ms": null,
+      "query": "create and configure an application factory",
+      "rank": null,
+      "reciprocal_rank": null,
+      "repository": "flask",
+      "supported": false,
+      "tier": "quick",
+      "top_files": [],
+      "unsupported_reason": "CodeGraph indexes source code, not Markdown/document content"
+    },
+    {
+      "category": "cross",
+      "description": "Find error handling code or guide",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "src/flask/app.py",
+        "docs/errorhandling.rst"
+      ],
+      "language": "python",
+      "latency_ms": 21.17,
+      "query": "how Flask handles exceptions and registered error handlers",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "flask",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "src/flask/app.py",
+        "docs/errorhandling.rst",
+        "docs/lifecycle.rst",
+        "tests/test_basic.py",
+        "docs/reqcontext.rst",
+        "tests/test_appctx.py",
+        "tests/type_check/typing_error_handler.py",
+        "src/flask/wrappers.py",
+        "docs/blueprints.rst",
+        "CHANGES.rst"
+      ]
+    },
+    {
+      "category": "cross",
+      "description": "Find error handling code or guide",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "src/flask/app.py",
+        "docs/errorhandling.rst"
+      ],
+      "language": "python",
+      "latency_ms": 816.16,
+      "query": "how Flask handles exceptions and registered error handlers",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "flask",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "docs/errorhandling.rst",
+        "docs/blueprints.rst",
+        "tests/test_user_error_handler.py",
+        "docs/api.rst",
+        "tests/test_blueprints.py",
+        "tests/type_check/typing_error_handler.py",
+        "docs/config.rst",
+        "tests/test_signals.py",
+        "docs/lifecycle.rst",
+        "tests/test_appctx.py"
+      ]
+    },
+    {
+      "category": "cross",
+      "description": "Find error handling code or guide",
+      "engine": "codegraph",
+      "expected_files": [
+        "src/flask/app.py",
+        "docs/errorhandling.rst"
+      ],
+      "language": "python",
+      "latency_ms": null,
+      "query": "how Flask handles exceptions and registered error handlers",
+      "rank": null,
+      "reciprocal_rank": null,
+      "repository": "flask",
+      "supported": false,
+      "tier": "quick",
+      "top_files": [],
+      "unsupported_reason": "CodeGraph indexes source code, not Markdown/document content"
+    },
+    {
+      "category": "cross",
+      "description": "Find context lifecycle code or docs",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "src/flask/ctx.py",
+        "docs/reqcontext.rst",
+        "docs/appcontext.rst"
+      ],
+      "language": "python",
+      "latency_ms": 14.63,
+      "query": "application and request context push pop lifecycle",
+      "rank": 4,
+      "reciprocal_rank": 0.25,
+      "repository": "flask",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "tests/test_testing.py",
+        "tests/test_reqctx.py",
+        "tests/test_signals.py",
+        "docs/reqcontext.rst",
+        "tests/test_basic.py",
+        "src/flask/ctx.py",
+        "docs/shell.rst",
+        "docs/lifecycle.rst",
+        "docs/appcontext.rst",
+        "docs/extensiondev.rst"
+      ]
+    },
+    {
+      "category": "cross",
+      "description": "Find context lifecycle code or docs",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "src/flask/ctx.py",
+        "docs/reqcontext.rst",
+        "docs/appcontext.rst"
+      ],
+      "language": "python",
+      "latency_ms": 813.08,
+      "query": "application and request context push pop lifecycle",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "flask",
+      "supported": true,
+      "tier": "quick",
+      "top_files": [
+        "docs/appcontext.rst",
+        "src/flask/ctx.py",
+        "tests/test_signals.py",
+        "docs/shell.rst",
+        "tests/test_testing.py",
+        "tests/test_reqctx.py",
+        "docs/api.rst",
+        "CHANGES.rst",
+        "docs/testing.rst",
+        "docs/reqcontext.rst"
+      ]
+    },
+    {
+      "category": "cross",
+      "description": "Find context lifecycle code or docs",
+      "engine": "codegraph",
+      "expected_files": [
+        "src/flask/ctx.py",
+        "docs/reqcontext.rst",
+        "docs/appcontext.rst"
+      ],
+      "language": "python",
+      "latency_ms": null,
+      "query": "application and request context push pop lifecycle",
+      "rank": null,
+      "reciprocal_rank": null,
+      "repository": "flask",
+      "supported": false,
+      "tier": "quick",
+      "top_files": [],
+      "unsupported_reason": "CodeGraph indexes source code, not Markdown/document content"
+    },
+    {
+      "category": "code",
+      "description": "Find response conversion",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "src/flask/app.py",
+        "src/flask/helpers.py"
+      ],
+      "language": "python",
+      "latency_ms": 19.08,
+      "query": "convert a view return value into a response object",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "flask",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "src/flask/helpers.py",
+        "src/flask/json/__init__.py",
+        "tests/test_views.py",
+        "tests/test_async.py",
+        "tests/test_basic.py",
+        "src/flask/ctx.py",
+        "src/flask/wrappers.py",
+        "tests/type_check/typing_route.py",
+        "src/flask/app.py",
+        "src/flask/typing.py"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find response conversion",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "src/flask/app.py",
+        "src/flask/helpers.py"
+      ],
+      "language": "python",
+      "latency_ms": 648.27,
+      "query": "convert a view return value into a response object",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "flask",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "src/flask/helpers.py",
+        "src/flask/ctx.py",
+        "src/flask/json/__init__.py",
+        "src/flask/templating.py",
+        "src/flask/wrappers.py",
+        "tests/test_converters.py",
+        "src/flask/sansio/scaffold.py",
+        "src/flask/typing.py",
+        "tests/test_views.py",
+        "src/flask/cli.py"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find response conversion",
+      "engine": "codegraph",
+      "expected_files": [
+        "src/flask/app.py",
+        "src/flask/helpers.py"
+      ],
+      "language": "python",
+      "latency_ms": 448.6,
+      "query": "convert a view return value into a response object",
+      "rank": null,
+      "reciprocal_rank": 0.0,
+      "repository": "flask",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "src/flask/views.py",
+        "src/flask/json/provider.py",
+        "src/flask/cli.py",
+        "src/flask/wrappers.py"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find blueprint registration",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "src/flask/sansio/blueprints.py",
+        "src/flask/blueprints.py"
+      ],
+      "language": "python",
+      "latency_ms": 15.51,
+      "query": "register a blueprint and deferred setup operations",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "flask",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "src/flask/sansio/blueprints.py",
+        "tests/test_blueprints.py",
+        "tests/test_cli.py",
+        "tests/test_basic.py",
+        "tests/test_testing.py",
+        "examples/celery/src/task_app/views.py",
+        "src/flask/debughelpers.py",
+        "tests/test_templating.py",
+        "src/flask/blueprints.py",
+        "examples/tutorial/flaskr/blog.py"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find blueprint registration",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "src/flask/sansio/blueprints.py",
+        "src/flask/blueprints.py"
+      ],
+      "language": "python",
+      "latency_ms": 627.73,
+      "query": "register a blueprint and deferred setup operations",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "flask",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "src/flask/sansio/blueprints.py",
+        "tests/test_testing.py",
+        "tests/test_cli.py",
+        "tests/test_basic.py",
+        "tests/test_blueprints.py",
+        "tests/test_apps/blueprintapp/__init__.py",
+        "src/flask/blueprints.py",
+        "examples/celery/src/task_app/__init__.py",
+        "tests/test_async.py",
+        "src/flask/debughelpers.py"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find blueprint registration",
+      "engine": "codegraph",
+      "expected_files": [
+        "src/flask/sansio/blueprints.py",
+        "src/flask/blueprints.py"
+      ],
+      "language": "python",
+      "latency_ms": 480.77,
+      "query": "register a blueprint and deferred setup operations",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "flask",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "src/flask/sansio/blueprints.py",
+        "src/flask/sansio/app.py"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find URL generation",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "src/flask/app.py",
+        "src/flask/helpers.py"
+      ],
+      "language": "python",
+      "latency_ms": 15.54,
+      "query": "generate URLs inside and outside a request context",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "flask",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "src/flask/helpers.py",
+        "tests/test_appctx.py",
+        "tests/test_basic.py",
+        "src/flask/ctx.py",
+        "tests/test_reqctx.py",
+        "tests/test_testing.py",
+        "tests/test_helpers.py",
+        "src/flask/app.py",
+        "src/flask/templating.py",
+        "tests/type_check/typing_route.py"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find URL generation",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "src/flask/app.py",
+        "src/flask/helpers.py"
+      ],
+      "language": "python",
+      "latency_ms": 457.64,
+      "query": "generate URLs inside and outside a request context",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "flask",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "src/flask/helpers.py",
+        "src/flask/ctx.py",
+        "tests/test_reqctx.py",
+        "tests/test_testing.py",
+        "src/flask/templating.py",
+        "src/flask/wrappers.py",
+        "src/flask/globals.py",
+        "tests/test_appctx.py",
+        "tests/test_converters.py",
+        "tests/type_check/typing_route.py"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find URL generation",
+      "engine": "codegraph",
+      "expected_files": [
+        "src/flask/app.py",
+        "src/flask/helpers.py"
+      ],
+      "language": "python",
+      "latency_ms": 480.5,
+      "query": "generate URLs inside and outside a request context",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "flask",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "src/flask/app.py"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find MethodView dispatch",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "src/flask/views.py"
+      ],
+      "language": "python",
+      "latency_ms": 23.12,
+      "query": "class based views dispatch HTTP methods",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "flask",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "src/flask/views.py",
+        "tests/test_async.py",
+        "tests/test_views.py",
+        "tests/test_basic.py",
+        "src/flask/wrappers.py",
+        "src/flask/app.py",
+        "tests/test_helpers.py",
+        "tests/type_check/typing_route.py",
+        "tests/test_appctx.py",
+        "src/flask/ctx.py"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find MethodView dispatch",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "src/flask/views.py"
+      ],
+      "language": "python",
+      "latency_ms": 476.61,
+      "query": "class based views dispatch HTTP methods",
+      "rank": 2,
+      "reciprocal_rank": 0.5,
+      "repository": "flask",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "tests/test_views.py",
+        "src/flask/views.py",
+        "tests/test_async.py",
+        "tests/test_basic.py",
+        "src/flask/wrappers.py",
+        "src/flask/templating.py",
+        "tests/test_helpers.py",
+        "tests/test_user_error_handler.py",
+        "src/flask/debughelpers.py",
+        "tests/type_check/typing_route.py"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find MethodView dispatch",
+      "engine": "codegraph",
+      "expected_files": [
+        "src/flask/views.py"
+      ],
+      "language": "python",
+      "latency_ms": 460.41,
+      "query": "class based views dispatch HTTP methods",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "flask",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "src/flask/views.py",
+        "src/flask/app.py"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find CLI application discovery",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "src/flask/cli.py"
+      ],
+      "language": "python",
+      "latency_ms": 53.35,
+      "query": "discover and load an application for the flask command",
+      "rank": 2,
+      "reciprocal_rank": 0.5,
+      "repository": "flask",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "tests/test_cli.py",
+        "src/flask/cli.py",
+        "tests/test_apps/cliapp/app.py",
+        "tests/test_apps/cliapp/inner1/inner2/flask.py",
+        "tests/test_apps/cliapp/inner1/__init__.py",
+        "tests/test_apps/cliapp/factory.py",
+        "src/flask/json/__init__.py",
+        "tests/test_signals.py",
+        "tests/test_regression.py",
+        "tests/test_templating.py"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find CLI application discovery",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "src/flask/cli.py"
+      ],
+      "language": "python",
+      "latency_ms": 794.44,
+      "query": "discover and load an application for the flask command",
+      "rank": null,
+      "reciprocal_rank": 0.0,
+      "repository": "flask",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "src/flask/testing.py",
+        "src/flask/json/__init__.py",
+        "examples/tutorial/flaskr/db.py",
+        "examples/tutorial/flaskr/__init__.py",
+        "src/flask/app.py",
+        "tests/test_cli.py",
+        "src/flask/sansio/app.py",
+        "examples/tutorial/tests/conftest.py",
+        "tests/test_json.py",
+        "examples/celery/src/task_app/__init__.py"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find CLI application discovery",
+      "engine": "codegraph",
+      "expected_files": [
+        "src/flask/cli.py"
+      ],
+      "language": "python",
+      "latency_ms": 473.61,
+      "query": "discover and load an application for the flask command",
+      "rank": 2,
+      "reciprocal_rank": 0.5,
+      "repository": "flask",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "src/flask/json/provider.py",
+        "src/flask/cli.py",
+        "src/flask/json/__init__.py"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find JSON provider",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "src/flask/json/provider.py"
+      ],
+      "language": "python",
+      "latency_ms": 26.09,
+      "query": "serialize JSON responses with the default provider",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "flask",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "src/flask/json/provider.py",
+        "src/flask/json/__init__.py",
+        "tests/test_json.py",
+        "src/flask/sessions.py",
+        "tests/test_testing.py",
+        "src/flask/json/tag.py",
+        "tests/test_basic.py",
+        "tests/test_json_tag.py",
+        "examples/tutorial/tests/test_blog.py",
+        "src/flask/wrappers.py"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find JSON provider",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "src/flask/json/provider.py"
+      ],
+      "language": "python",
+      "latency_ms": 542.69,
+      "query": "serialize JSON responses with the default provider",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "flask",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "src/flask/json/provider.py",
+        "src/flask/json/__init__.py",
+        "tests/test_json.py",
+        "src/flask/sessions.py",
+        "src/flask/json/tag.py",
+        "src/flask/wrappers.py",
+        "tests/test_testing.py",
+        "tests/test_basic.py",
+        "tests/test_json_tag.py",
+        "examples/javascript/js_example/views.py"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find JSON provider",
+      "engine": "codegraph",
+      "expected_files": [
+        "src/flask/json/provider.py"
+      ],
+      "language": "python",
+      "latency_ms": 480.1,
+      "query": "serialize JSON responses with the default provider",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "flask",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "src/flask/json/provider.py",
+        "src/flask/json/tag.py"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find request preprocessing",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "src/flask/app.py"
+      ],
+      "language": "python",
+      "latency_ms": 21.42,
+      "query": "run before request preprocessors in blueprint order",
+      "rank": 7,
+      "reciprocal_rank": 0.1429,
+      "repository": "flask",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "tests/test_basic.py",
+        "tests/test_blueprints.py",
+        "tests/test_cli.py",
+        "examples/celery/src/task_app/views.py",
+        "src/flask/sansio/blueprints.py",
+        "src/flask/blueprints.py",
+        "src/flask/app.py",
+        "tests/test_testing.py",
+        "tests/test_async.py",
+        "examples/tutorial/flaskr/blog.py"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find request preprocessing",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "src/flask/app.py"
+      ],
+      "language": "python",
+      "latency_ms": 736.57,
+      "query": "run before request preprocessors in blueprint order",
+      "rank": null,
+      "reciprocal_rank": 0.0,
+      "repository": "flask",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "tests/test_blueprints.py",
+        "tests/test_async.py",
+        "src/flask/sansio/blueprints.py",
+        "tests/test_testing.py",
+        "examples/celery/src/task_app/views.py",
+        "src/flask/blueprints.py",
+        "tests/test_templating.py",
+        "examples/tutorial/flaskr/blog.py",
+        "src/flask/helpers.py",
+        "tests/test_basic.py"
+      ]
+    },
+    {
+      "category": "code",
+      "description": "Find request preprocessing",
+      "engine": "codegraph",
+      "expected_files": [
+        "src/flask/app.py"
+      ],
+      "language": "python",
+      "latency_ms": 469.93,
+      "query": "run before request preprocessors in blueprint order",
+      "rank": null,
+      "reciprocal_rank": 0.0,
+      "repository": "flask",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "src/flask/wrappers.py",
+        "src/flask/sansio/scaffold.py"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find request lifecycle guide",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "docs/lifecycle.rst"
+      ],
+      "language": "python",
+      "latency_ms": 18.21,
+      "query": "complete request handling lifecycle step by step",
+      "rank": 3,
+      "reciprocal_rank": 0.3333,
+      "repository": "flask",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/views.rst",
+        "docs/testing.rst",
+        "docs/lifecycle.rst",
+        "docs/patterns/sqlalchemy.rst",
+        "docs/patterns/viewdecorators.rst",
+        "docs/patterns/javascript.rst",
+        "CHANGES.rst",
+        "docs/patterns/appdispatch.rst",
+        "docs/patterns/sqlite3.rst",
+        "docs/tutorial/views.rst"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find request lifecycle guide",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "docs/lifecycle.rst"
+      ],
+      "language": "python",
+      "latency_ms": 751.23,
+      "query": "complete request handling lifecycle step by step",
+      "rank": 8,
+      "reciprocal_rank": 0.125,
+      "repository": "flask",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/reqcontext.rst",
+        "docs/patterns/deferredcallbacks.rst",
+        "docs/api.rst",
+        "docs/blueprints.rst",
+        "docs/index.rst",
+        "docs/patterns/sqlite3.rst",
+        "docs/web-security.rst",
+        "docs/lifecycle.rst",
+        "docs/testing.rst",
+        "docs/quickstart.rst"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find request lifecycle guide",
+      "engine": "codegraph",
+      "expected_files": [
+        "docs/lifecycle.rst"
+      ],
+      "language": "python",
+      "latency_ms": null,
+      "query": "complete request handling lifecycle step by step",
+      "rank": null,
+      "reciprocal_rank": null,
+      "repository": "flask",
+      "supported": false,
+      "tier": "standard",
+      "top_files": [],
+      "unsupported_reason": "CodeGraph indexes source code, not Markdown/document content"
+    },
+    {
+      "category": "document",
+      "description": "Find web security guidance",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "docs/web-security.rst"
+      ],
+      "language": "python",
+      "latency_ms": 17.64,
+      "query": "security headers content security policy and cookie settings",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "flask",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/web-security.rst",
+        "docs/config.rst",
+        "CHANGES.rst",
+        "docs/tutorial/views.rst",
+        "docs/quickstart.rst",
+        "tests/static/config.json",
+        "docs/tutorial/templates.rst",
+        "tests/templates/non_escaping_template.txt",
+        "tests/templates/escaping_template.html",
+        "examples/tutorial/flaskr/templates/auth/login.html"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find web security guidance",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "docs/web-security.rst"
+      ],
+      "language": "python",
+      "latency_ms": 707.94,
+      "query": "security headers content security policy and cookie settings",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "flask",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/web-security.rst",
+        "docs/config.rst",
+        "docs/quickstart.rst",
+        "docs/tutorial/templates.rst",
+        "examples/tutorial/flaskr/templates/auth/register.html",
+        "CHANGES.rst",
+        "examples/tutorial/flaskr/templates/auth/login.html",
+        "examples/tutorial/flaskr/templates/blog/create.html",
+        "docs/tutorial/deploy.rst",
+        "examples/tutorial/flaskr/templates/blog/update.html"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find web security guidance",
+      "engine": "codegraph",
+      "expected_files": [
+        "docs/web-security.rst"
+      ],
+      "language": "python",
+      "latency_ms": null,
+      "query": "security headers content security policy and cookie settings",
+      "rank": null,
+      "reciprocal_rank": null,
+      "repository": "flask",
+      "supported": false,
+      "tier": "standard",
+      "top_files": [],
+      "unsupported_reason": "CodeGraph indexes source code, not Markdown/document content"
+    },
+    {
+      "category": "document",
+      "description": "Find async view documentation",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "docs/async-await.rst"
+      ],
+      "language": "python",
+      "latency_ms": 19.19,
+      "query": "use async await in route views",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "flask",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/async-await.rst",
+        "docs/patterns/javascript.rst",
+        "docs/views.rst",
+        "docs/api.rst",
+        "docs/patterns/celery.rst",
+        "docs/lifecycle.rst",
+        "CHANGES.rst",
+        "docs/patterns/viewdecorators.rst",
+        "docs/tutorial/views.rst",
+        "docs/testing.rst"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find async view documentation",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "docs/async-await.rst"
+      ],
+      "language": "python",
+      "latency_ms": 651.72,
+      "query": "use async await in route views",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "flask",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/async-await.rst",
+        "docs/deploying/eventlet.rst",
+        "docs/deploying/gunicorn.rst",
+        "docs/design.rst",
+        "CHANGES.rst",
+        "docs/deploying/gevent.rst",
+        "docs/deploying/asgi.rst",
+        "docs/patterns/lazyloading.rst",
+        "docs/quickstart.rst",
+        "docs/patterns/celery.rst"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find async view documentation",
+      "engine": "codegraph",
+      "expected_files": [
+        "docs/async-await.rst"
+      ],
+      "language": "python",
+      "latency_ms": null,
+      "query": "use async await in route views",
+      "rank": null,
+      "reciprocal_rank": null,
+      "repository": "flask",
+      "supported": false,
+      "tier": "standard",
+      "top_files": [],
+      "unsupported_reason": "CodeGraph indexes source code, not Markdown/document content"
+    },
+    {
+      "category": "document",
+      "description": "Find testing guide",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "docs/testing.rst"
+      ],
+      "language": "python",
+      "latency_ms": 18.29,
+      "query": "test an application with pytest fixtures and the test client",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "flask",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/testing.rst",
+        "docs/tutorial/tests.rst",
+        "CHANGES.rst",
+        "pyproject.toml",
+        "examples/tutorial/README.rst",
+        "docs/quickstart.rst",
+        "examples/javascript/README.rst",
+        "examples/tutorial/pyproject.toml"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find testing guide",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "docs/testing.rst"
+      ],
+      "language": "python",
+      "latency_ms": 186.68,
+      "query": "test an application with pytest fixtures and the test client",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "flask",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/testing.rst",
+        "docs/tutorial/tests.rst",
+        "examples/tutorial/README.rst",
+        "CHANGES.rst",
+        "examples/javascript/README.rst",
+        "examples/tutorial/pyproject.toml",
+        "pyproject.toml",
+        "docs/quickstart.rst"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find testing guide",
+      "engine": "codegraph",
+      "expected_files": [
+        "docs/testing.rst"
+      ],
+      "language": "python",
+      "latency_ms": null,
+      "query": "test an application with pytest fixtures and the test client",
+      "rank": null,
+      "reciprocal_rank": null,
+      "repository": "flask",
+      "supported": false,
+      "tier": "standard",
+      "top_files": [],
+      "unsupported_reason": "CodeGraph indexes source code, not Markdown/document content"
+    },
+    {
+      "category": "document",
+      "description": "Find streaming pattern",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "docs/patterns/streaming.rst"
+      ],
+      "language": "python",
+      "latency_ms": 18.89,
+      "query": "stream a response from a generator while keeping request context",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "flask",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/patterns/streaming.rst",
+        "CHANGES.rst",
+        "docs/lifecycle.rst",
+        "docs/testing.rst",
+        "docs/reqcontext.rst",
+        "docs/quickstart.rst",
+        "docs/patterns/javascript.rst",
+        "docs/patterns/requestchecksum.rst",
+        "docs/shell.rst",
+        "docs/views.rst"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find streaming pattern",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "docs/patterns/streaming.rst"
+      ],
+      "language": "python",
+      "latency_ms": 582.54,
+      "query": "stream a response from a generator while keeping request context",
+      "rank": 1,
+      "reciprocal_rank": 1.0,
+      "repository": "flask",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/patterns/streaming.rst",
+        "CHANGES.rst",
+        "docs/shell.rst",
+        "docs/lifecycle.rst",
+        "docs/api.rst",
+        "docs/appcontext.rst",
+        "docs/patterns/requestchecksum.rst",
+        "docs/reqcontext.rst",
+        "docs/quickstart.rst",
+        "docs/extensiondev.rst"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find streaming pattern",
+      "engine": "codegraph",
+      "expected_files": [
+        "docs/patterns/streaming.rst"
+      ],
+      "language": "python",
+      "latency_ms": null,
+      "query": "stream a response from a generator while keeping request context",
+      "rank": null,
+      "reciprocal_rank": null,
+      "repository": "flask",
+      "supported": false,
+      "tier": "standard",
+      "top_files": [],
+      "unsupported_reason": "CodeGraph indexes source code, not Markdown/document content"
+    },
+    {
+      "category": "document",
+      "description": "Find Sans-IO Markdown architecture note",
+      "engine": "tessera_bge_small",
+      "expected_files": [
+        "src/flask/sansio/README.md"
+      ],
+      "language": "python",
+      "latency_ms": 15.49,
+      "query": "sans io base classes separate framework logic from the web server",
+      "rank": 10,
+      "reciprocal_rank": 0.1,
+      "repository": "flask",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "docs/web-security.rst",
+        "tests/static/config.json",
+        "CHANGES.rst",
+        "pyproject.toml",
+        "docs/index.rst",
+        "docs/design.rst",
+        "examples/javascript/js_example/templates/fetch.html",
+        "docs/quickstart.rst",
+        "docs/patterns/sqlalchemy.rst",
+        "src/flask/sansio/README.md"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find Sans-IO Markdown architecture note",
+      "engine": "tessera_bge_small_jina_tiny",
+      "expected_files": [
+        "src/flask/sansio/README.md"
+      ],
+      "language": "python",
+      "latency_ms": 651.4,
+      "query": "sans io base classes separate framework logic from the web server",
+      "rank": 2,
+      "reciprocal_rank": 0.5,
+      "repository": "flask",
+      "supported": true,
+      "tier": "standard",
+      "top_files": [
+        "CHANGES.rst",
+        "src/flask/sansio/README.md",
+        "README.md",
+        "docs/index.rst",
+        "pyproject.toml",
+        "docs/design.rst",
+        "docs/config.rst",
+        "docs/deploying/index.rst",
+        "docs/tutorial/templates.rst",
+        "docs/tutorial/static.rst"
+      ]
+    },
+    {
+      "category": "document",
+      "description": "Find Sans-IO Markdown architecture note",
+      "engine": "codegraph",
+      "expected_files": [
+        "src/flask/sansio/README.md"
+      ],
+      "language": "python",
+      "latency_ms": null,
+      "query": "sans io base classes separate framework logic from the web server",
+      "rank": null,
+      "reciprocal_rank": null,
+      "repository": "flask",
+      "supported": false,
+      "tier": "standard",
+      "top_files": [],
+      "unsupported_reason": "CodeGraph indexes source code, not Markdown/document content"
+    }
+  ],
+  "repositories": {
+    "flask": {
+      "codegraph_index": {
+        "cached": true,
+        "setup_ms": 0.0
+      },
+      "configured_ref": "3.1.2",
+      "languages": [
+        "python"
+      ],
+      "revision": "2c1b30d0503cfb064f1cb252e6614a06915a362a"
+    },
+    "nextjs": {
+      "codegraph_index": {
+        "cached": true,
+        "setup_ms": 0.0
+      },
+      "configured_ref": "v16.1.6",
+      "languages": [
+        "typescript",
+        "javascript"
+      ],
+      "revision": "adf8c612adddd103647c90ff0f511ea35c57076e"
+    }
+  },
+  "summary": {
+    "comparable_code": {
+      "codegraph": {
+        "latency_ms_mean": 2931.09,
+        "latency_ms_p50": 4411.46,
+        "latency_ms_p95": 5550.22,
+        "mrr_at_10": 0.413,
+        "queries_supported": 23,
+        "queries_total": 23,
+        "queries_unsupported": 0,
+        "top_1": 0.3478,
+        "top_10": 0.4783,
+        "top_3": 0.4783,
+        "top_5": 0.4783
+      },
+      "tessera_bge_small": {
+        "latency_ms_mean": 49.51,
+        "latency_ms_p50": 33.26,
+        "latency_ms_p95": 120.09,
+        "mrr_at_10": 0.5062,
+        "queries_supported": 23,
+        "queries_total": 23,
+        "queries_unsupported": 0,
+        "top_1": 0.4348,
+        "top_10": 0.6087,
+        "top_3": 0.5652,
+        "top_5": 0.5652
+      },
+      "tessera_bge_small_jina_tiny": {
+        "latency_ms_mean": 768.77,
+        "latency_ms_p50": 799.73,
+        "latency_ms_p95": 1037.52,
+        "mrr_at_10": 0.5768,
+        "queries_supported": 23,
+        "queries_total": 23,
+        "queries_unsupported": 0,
+        "top_1": 0.4783,
+        "top_10": 0.7391,
+        "top_3": 0.6522,
+        "top_5": 0.6522
+      }
+    },
+    "overall": {
+      "codegraph": {
+        "latency_ms_mean": 2931.09,
+        "latency_ms_p50": 4411.46,
+        "latency_ms_p95": 5550.22,
+        "mrr_at_10": 0.413,
+        "queries_supported": 23,
+        "queries_total": 58,
+        "queries_unsupported": 35,
+        "top_1": 0.3478,
+        "top_10": 0.4783,
+        "top_3": 0.4783,
+        "top_5": 0.4783
+      },
+      "tessera_bge_small": {
+        "latency_ms_mean": 39.5,
+        "latency_ms_p50": 29.46,
+        "latency_ms_p95": 95.09,
+        "mrr_at_10": 0.6102,
+        "queries_supported": 58,
+        "queries_total": 58,
+        "queries_unsupported": 0,
+        "top_1": 0.5,
+        "top_10": 0.8103,
+        "top_3": 0.6724,
+        "top_5": 0.7586
+      },
+      "tessera_bge_small_jina_tiny": {
+        "latency_ms_mean": 787.61,
+        "latency_ms_p50": 811.87,
+        "latency_ms_p95": 969.78,
+        "mrr_at_10": 0.5876,
+        "queries_supported": 58,
+        "queries_total": 58,
+        "queries_unsupported": 0,
+        "top_1": 0.4655,
+        "top_10": 0.8276,
+        "top_3": 0.6552,
+        "top_5": 0.7414
+      }
+    },
+    "ranker_routing": {
+      "categories": {
+        "code": {
+          "latency_ms_mean": 768.77,
+          "latency_ms_p50": 799.73,
+          "latency_ms_p95": 1037.52,
+          "mrr_at_10": 0.5768,
+          "queries_supported": 23,
+          "queries_total": 23,
+          "queries_unsupported": 0,
+          "top_1": 0.4783,
+          "top_10": 0.7391,
+          "top_3": 0.6522,
+          "top_5": 0.6522
+        },
+        "cross": {
+          "latency_ms_mean": 32.44,
+          "latency_ms_p50": 28.79,
+          "latency_ms_p95": 50.65,
+          "mrr_at_10": 0.4885,
+          "queries_supported": 16,
+          "queries_total": 16,
+          "queries_unsupported": 0,
+          "top_1": 0.3125,
+          "top_10": 0.875,
+          "top_3": 0.5,
+          "top_5": 0.8125
+        },
+        "document": {
+          "latency_ms_mean": 33.32,
+          "latency_ms_p50": 28.88,
+          "latency_ms_p95": 81.32,
+          "mrr_at_10": 0.8386,
+          "queries_supported": 19,
+          "queries_total": 19,
+          "queries_unsupported": 0,
+          "top_1": 0.7368,
+          "top_10": 1.0,
+          "top_3": 0.9474,
+          "top_5": 0.9474
+        }
+      },
+      "overall": {
+        "latency_ms_mean": 324.72,
+        "latency_ms_p50": 36.38,
+        "latency_ms_p95": 964.41,
+        "mrr_at_10": 0.6382,
+        "queries_supported": 58,
+        "queries_total": 58,
+        "queries_unsupported": 0,
+        "top_1": 0.5172,
+        "top_10": 0.8621,
+        "top_3": 0.7069,
+        "top_5": 0.7931
+      },
+      "policy": "Jina-tiny reranking for code; base hybrid order for document and cross queries",
+      "post_hoc": true
+    },
+    "segments": {
+      "codegraph/flask/code": {
+        "latency_ms_mean": 481.32,
+        "latency_ms_p50": 471.77,
+        "latency_ms_p95": 541.66,
+        "mrr_at_10": 0.65,
+        "queries_supported": 10,
+        "queries_total": 10,
+        "queries_unsupported": 0,
+        "top_1": 0.5,
+        "top_10": 0.8,
+        "top_3": 0.8,
+        "top_5": 0.8
+      },
+      "codegraph/flask/cross": {
+        "latency_ms_mean": 0.0,
+        "latency_ms_p50": 0.0,
+        "latency_ms_p95": 0.0,
+        "mrr_at_10": 0.0,
+        "queries_supported": 0,
+        "queries_total": 2,
+        "queries_unsupported": 2,
+        "top_1": 0.0,
+        "top_10": 0.0,
+        "top_3": 0.0,
+        "top_5": 0.0
+      },
+      "codegraph/flask/document": {
+        "latency_ms_mean": 0.0,
+        "latency_ms_p50": 0.0,
+        "latency_ms_p95": 0.0,
+        "mrr_at_10": 0.0,
+        "queries_supported": 0,
+        "queries_total": 8,
+        "queries_unsupported": 8,
+        "top_1": 0.0,
+        "top_10": 0.0,
+        "top_3": 0.0,
+        "top_5": 0.0
+      },
+      "codegraph/nextjs/code": {
+        "latency_ms_mean": 4815.52,
+        "latency_ms_p50": 4549.72,
+        "latency_ms_p95": 5928.3,
+        "mrr_at_10": 0.2308,
+        "queries_supported": 13,
+        "queries_total": 13,
+        "queries_unsupported": 0,
+        "top_1": 0.2308,
+        "top_10": 0.2308,
+        "top_3": 0.2308,
+        "top_5": 0.2308
+      },
+      "codegraph/nextjs/cross": {
+        "latency_ms_mean": 0.0,
+        "latency_ms_p50": 0.0,
+        "latency_ms_p95": 0.0,
+        "mrr_at_10": 0.0,
+        "queries_supported": 0,
+        "queries_total": 14,
+        "queries_unsupported": 14,
+        "top_1": 0.0,
+        "top_10": 0.0,
+        "top_3": 0.0,
+        "top_5": 0.0
+      },
+      "codegraph/nextjs/document": {
+        "latency_ms_mean": 0.0,
+        "latency_ms_p50": 0.0,
+        "latency_ms_p95": 0.0,
+        "mrr_at_10": 0.0,
+        "queries_supported": 0,
+        "queries_total": 11,
+        "queries_unsupported": 11,
+        "top_1": 0.0,
+        "top_10": 0.0,
+        "top_3": 0.0,
+        "top_5": 0.0
+      },
+      "tessera_bge_small/flask/code": {
+        "latency_ms_mean": 32.23,
+        "latency_ms_p50": 22.27,
+        "latency_ms_p95": 83.78,
+        "mrr_at_10": 0.7643,
+        "queries_supported": 10,
+        "queries_total": 10,
+        "queries_unsupported": 0,
+        "top_1": 0.7,
+        "top_10": 0.9,
+        "top_3": 0.8,
+        "top_5": 0.8
+      },
+      "tessera_bge_small/flask/cross": {
+        "latency_ms_mean": 17.9,
+        "latency_ms_p50": 17.9,
+        "latency_ms_p95": 20.84,
+        "mrr_at_10": 0.625,
+        "queries_supported": 2,
+        "queries_total": 2,
+        "queries_unsupported": 0,
+        "top_1": 0.5,
+        "top_10": 1.0,
+        "top_3": 0.5,
+        "top_5": 1.0
+      },
+      "tessera_bge_small/flask/document": {
+        "latency_ms_mean": 17.47,
+        "latency_ms_p50": 17.93,
+        "latency_ms_p95": 19.09,
+        "mrr_at_10": 0.6792,
+        "queries_supported": 8,
+        "queries_total": 8,
+        "queries_unsupported": 0,
+        "top_1": 0.5,
+        "top_10": 1.0,
+        "top_3": 0.875,
+        "top_5": 0.875
+      },
+      "tessera_bge_small/nextjs/code": {
+        "latency_ms_mean": 62.8,
+        "latency_ms_p50": 37.41,
+        "latency_ms_p95": 135.37,
+        "mrr_at_10": 0.3077,
+        "queries_supported": 13,
+        "queries_total": 13,
+        "queries_unsupported": 0,
+        "top_1": 0.2308,
+        "top_10": 0.3846,
+        "top_3": 0.3846,
+        "top_5": 0.3846
+      },
+      "tessera_bge_small/nextjs/cross": {
+        "latency_ms_mean": 34.52,
+        "latency_ms_p50": 29.46,
+        "latency_ms_p95": 55.31,
+        "mrr_at_10": 0.469,
+        "queries_supported": 14,
+        "queries_total": 14,
+        "queries_unsupported": 0,
+        "top_1": 0.2857,
+        "top_10": 0.8571,
+        "top_3": 0.5,
+        "top_5": 0.7857
+      },
+      "tessera_bge_small/nextjs/document": {
+        "latency_ms_mean": 44.84,
+        "latency_ms_p50": 32.58,
+        "latency_ms_p95": 83.37,
+        "mrr_at_10": 0.9545,
+        "queries_supported": 11,
+        "queries_total": 11,
+        "queries_unsupported": 0,
+        "top_1": 0.9091,
+        "top_10": 1.0,
+        "top_3": 1.0,
+        "top_5": 1.0
+      },
+      "tessera_bge_small_jina_tiny/flask/code": {
+        "latency_ms_mean": 588.85,
+        "latency_ms_p50": 591.91,
+        "latency_ms_p95": 768.4,
+        "mrr_at_10": 0.65,
+        "queries_supported": 10,
+        "queries_total": 10,
+        "queries_unsupported": 0,
+        "top_1": 0.6,
+        "top_10": 0.7,
+        "top_3": 0.7,
+        "top_5": 0.7
+      },
+      "tessera_bge_small_jina_tiny/flask/cross": {
+        "latency_ms_mean": 814.62,
+        "latency_ms_p50": 814.62,
+        "latency_ms_p95": 816.01,
+        "mrr_at_10": 1.0,
+        "queries_supported": 2,
+        "queries_total": 2,
+        "queries_unsupported": 0,
+        "top_1": 1.0,
+        "top_10": 1.0,
+        "top_3": 1.0,
+        "top_5": 1.0
+      },
+      "tessera_bge_small_jina_tiny/flask/document": {
+        "latency_ms_mean": 613.07,
+        "latency_ms_p50": 655.96,
+        "latency_ms_p95": 737.79,
+        "mrr_at_10": 0.6656,
+        "queries_supported": 8,
+        "queries_total": 8,
+        "queries_unsupported": 0,
+        "top_1": 0.5,
+        "top_10": 1.0,
+        "top_3": 0.75,
+        "top_5": 0.875
+      },
+      "tessera_bge_small_jina_tiny/nextjs/code": {
+        "latency_ms_mean": 907.17,
+        "latency_ms_p50": 872.54,
+        "latency_ms_p95": 1104.52,
+        "mrr_at_10": 0.5205,
+        "queries_supported": 13,
+        "queries_total": 13,
+        "queries_unsupported": 0,
+        "top_1": 0.3846,
+        "top_10": 0.7692,
+        "top_3": 0.6154,
+        "top_5": 0.6154
+      },
+      "tessera_bge_small_jina_tiny/nextjs/cross": {
+        "latency_ms_mean": 872.87,
+        "latency_ms_p50": 877.02,
+        "latency_ms_p95": 966.2,
+        "mrr_at_10": 0.3697,
+        "queries_supported": 14,
+        "queries_total": 14,
+        "queries_unsupported": 0,
+        "top_1": 0.2143,
+        "top_10": 0.7143,
+        "top_3": 0.4286,
+        "top_5": 0.6429
+      },
+      "tessera_bge_small_jina_tiny/nextjs/document": {
+        "latency_ms_mean": 840.51,
+        "latency_ms_p50": 829.33,
+        "latency_ms_p95": 948.59,
+        "mrr_at_10": 0.7556,
+        "queries_supported": 11,
+        "queries_total": 11,
+        "queries_unsupported": 0,
+        "top_1": 0.6364,
+        "top_10": 1.0,
+        "top_3": 0.8182,
+        "top_5": 0.9091
+      }
+    }
+  }
+}
