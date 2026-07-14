@@ -2,9 +2,9 @@
 
 **Date:** 2026-07-14
 
-**Status:** Proposed; ready to execute after checkpoint CP-0
+**Status:** Active; CP-0 complete, PR-01 next
 
-**Integration target:** `develop` (remote branch does not yet exist)
+**Integration target:** `develop` at foundation commit `35800ce`
 
 **Evidence baseline:** [PR #9](https://github.com/danieliser/tessera/pull/9), [competitive report](../../benchmark-competitive-2026-07-14.md), [benchmark expansion issue #11](https://github.com/danieliser/tessera/issues/11)
 
@@ -101,7 +101,7 @@ PR-12/13 and PR-14/15 are parallel optional branches after PR-11. Neither model 
 
 | ID | Task | Depends on | Size | Status | PR |
 |---|---|---|---|---|---|
-| CP-0 | Establish the integration branch and retarget open work | Owner decision | S | Blocked on input | — |
+| CP-0 | Establish the integration branch and retarget open work | Owner decision | S | Complete | PR #9 / `35800ce` |
 | PR-01 | Evaluation governance and repository-level corpora | PR #9 | M | Todo | — |
 | PR-02 | Candidate tracing and benchmark observability | PR-01 | M | Todo | — |
 | PR-03 | Real two-stage retrieval and rerank pool | PR-02 | M | Todo | — |
@@ -124,13 +124,13 @@ PR-12/13 and PR-14/15 are parallel optional branches after PR-11. Neither model 
 
 ### CP-0 — Establish the integration branch
 
-**Current state:** GitHub has `origin/main` but no `origin/develop`. The local `develop` branch is an old ancestor and must not be pushed as-is.
+**Completed 2026-07-14:** `origin/develop` was created from the then-current `origin/main` tip (`169dddc`) without using the stale local branch. PR #9 was retargeted, revalidated, and squash-merged as foundation commit `35800ce`.
 
-- [ ] Confirm whether to create `develop` from the current `origin/main` or continue using `main` as the integration branch.
-- [ ] If `develop` is chosen, create it from the current remote main tip, protect it as appropriate, and retarget active/future program PRs.
-- [ ] Decide whether PR #9 merges to `develop` first or remains a direct-to-main foundation PR.
+- [x] Confirm `develop` as the integration branch.
+- [x] Create the remote branch from the current remote main tip without pushing the stale local branch.
+- [x] Retarget, revalidate, and merge PR #9 into `develop` as the program foundation.
 
-**Gate:** The remote integration target exists and is explicitly confirmed. No history rewrite or force push.
+**Gate:** Passed. The remote integration target exists, PR #9 is merged, and no existing branch history was rewritten.
 
 ### PR-01 — Evaluation governance and repository-level corpora
 
@@ -373,7 +373,7 @@ Default-changing PRs require a feature flag or immediately reversible profile/co
 
 The implementer should continue autonomously and ping the owner only at these points:
 
-1. **CP-0 now:** choose/create the remote integration branch and decide where PR #9 lands.
+1. **CP-0 complete:** `origin/develop` exists and PR #9 landed there as `35800ce`.
 2. **Corpus approval:** repository/license constraints or private repositories are needed for the development/holdout sets.
 3. **Operational budget:** product limits for local model download, memory, index size, p95 latency, and optional paid APIs are not already documented.
 4. **Tradeoff:** no Pareto-dominant model/algorithm exists and the choice materially changes product cost or deployment.
