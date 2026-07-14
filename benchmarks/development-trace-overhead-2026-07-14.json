@@ -1,0 +1,638 @@
+{
+  "metadata": {
+    "command": [
+      "scripts/benchmark_trace_overhead.py",
+      "--tier",
+      "quick",
+      "--repetitions",
+      "10",
+      "--warmups",
+      "2",
+      "--output",
+      "benchmarks/development-trace-overhead-2026-07-14.json"
+    ],
+    "embedding_model": "BAAI/bge-small-en-v1.5",
+    "evaluation_split": "development",
+    "generated_at": "2026-07-14T08:48:22.850631+00:00",
+    "manifest_path": "benchmarks/corpora/v1/manifest.yaml",
+    "manifest_schema_version": 1,
+    "manifest_sha256": "0e84423ee5f116554af104908b0ba845cee25bc69bfecc38cb813e3deab1c701",
+    "platform": "macOS-15.5-arm64-arm-64bit-Mach-O",
+    "python": "3.14.3",
+    "query_cases": 30,
+    "random_seed": 1729,
+    "repetitions": 10,
+    "repository_revisions": {
+      "attrs": "d544dd2dacb4cbd660891e323ad92751ba65b4e0",
+      "dry-configurable": "e5e025dfddb481485affe6bb7363d3cf37f153b5",
+      "fastroute": "1c961398bef1ff6ecd8b273bef651d7afe90312b",
+      "hono": "b2ae3a2204a48ce15a26448fd746d39745eb1837",
+      "pflag": "5fdac2d16c16d60605cb8baa887e8c5c38ef623f",
+      "swift-argument-parser": "e579882f95579e7d7eb8c8068a5925c65d361e91"
+    },
+    "selection_allowed": true,
+    "tessera_revision": "a73c373ec93246b1fd22b57df0b0ab6799a8e0e0",
+    "tier": "quick",
+    "warmups": 2
+  },
+  "queries": [
+    {
+      "attribution_complete": true,
+      "case_id": "attrs-converter-pipeline",
+      "content_type": "code",
+      "language": "python",
+      "max_trace_bytes": 33983,
+      "repository": "attrs",
+      "results_equal": true,
+      "traced": {
+        "mean_ms": 2.2906,
+        "p50_ms": 2.2554,
+        "p95_ms": 2.6221
+      },
+      "untraced": {
+        "mean_ms": 1.5041,
+        "p50_ms": 1.4365,
+        "p95_ms": 1.8463
+      }
+    },
+    {
+      "attribution_complete": true,
+      "case_id": "attrs-deep-validators",
+      "content_type": "code",
+      "language": "python",
+      "max_trace_bytes": 36073,
+      "repository": "attrs",
+      "results_equal": true,
+      "traced": {
+        "mean_ms": 2.233,
+        "p50_ms": 2.1497,
+        "p95_ms": 2.5243
+      },
+      "untraced": {
+        "mean_ms": 1.4527,
+        "p50_ms": 1.3646,
+        "p95_ms": 1.6754
+      }
+    },
+    {
+      "attribution_complete": true,
+      "case_id": "attrs-generated-init",
+      "content_type": "code",
+      "language": "python",
+      "max_trace_bytes": 34762,
+      "repository": "attrs",
+      "results_equal": true,
+      "traced": {
+        "mean_ms": 2.2398,
+        "p50_ms": 2.146,
+        "p95_ms": 2.6894
+      },
+      "untraced": {
+        "mean_ms": 1.5333,
+        "p50_ms": 1.4802,
+        "p95_ms": 1.8521
+      }
+    },
+    {
+      "attribution_complete": true,
+      "case_id": "attrs-dataclasses-comparison",
+      "content_type": "document",
+      "language": "python",
+      "max_trace_bytes": 37311,
+      "repository": "attrs",
+      "results_equal": true,
+      "traced": {
+        "mean_ms": 2.2929,
+        "p50_ms": 2.2453,
+        "p95_ms": 2.5117
+      },
+      "untraced": {
+        "mean_ms": 1.6347,
+        "p50_ms": 1.6555,
+        "p95_ms": 1.8487
+      }
+    },
+    {
+      "attribution_complete": true,
+      "case_id": "attrs-init-lifecycle",
+      "content_type": "mixed",
+      "language": "python",
+      "max_trace_bytes": 40345,
+      "repository": "attrs",
+      "results_equal": true,
+      "traced": {
+        "mean_ms": 2.4536,
+        "p50_ms": 2.4131,
+        "p95_ms": 2.9006
+      },
+      "untraced": {
+        "mean_ms": 1.5047,
+        "p50_ms": 1.459,
+        "p95_ms": 1.78
+      }
+    },
+    {
+      "attribution_complete": true,
+      "case_id": "hono-compose-middleware",
+      "content_type": "code",
+      "language": "typescript",
+      "max_trace_bytes": 40776,
+      "repository": "hono",
+      "results_equal": true,
+      "traced": {
+        "mean_ms": 3.3262,
+        "p50_ms": 3.2079,
+        "p95_ms": 4.0371
+      },
+      "untraced": {
+        "mean_ms": 2.3414,
+        "p50_ms": 2.2611,
+        "p95_ms": 2.9649
+      }
+    },
+    {
+      "attribution_complete": true,
+      "case_id": "hono-signed-cookies",
+      "content_type": "code",
+      "language": "typescript",
+      "max_trace_bytes": 40908,
+      "repository": "hono",
+      "results_equal": true,
+      "traced": {
+        "mean_ms": 3.1308,
+        "p50_ms": 3.0825,
+        "p95_ms": 3.5224
+      },
+      "untraced": {
+        "mean_ms": 2.298,
+        "p50_ms": 2.2446,
+        "p95_ms": 2.6749
+      }
+    },
+    {
+      "attribution_complete": true,
+      "case_id": "hono-basic-auth",
+      "content_type": "code",
+      "language": "typescript",
+      "max_trace_bytes": 41305,
+      "repository": "hono",
+      "results_equal": true,
+      "traced": {
+        "mean_ms": 2.9551,
+        "p50_ms": 2.8946,
+        "p95_ms": 3.249
+      },
+      "untraced": {
+        "mean_ms": 2.2713,
+        "p50_ms": 2.126,
+        "p95_ms": 2.7463
+      }
+    },
+    {
+      "attribution_complete": true,
+      "case_id": "hono-migration",
+      "content_type": "document",
+      "language": "typescript",
+      "max_trace_bytes": 33500,
+      "repository": "hono",
+      "results_equal": true,
+      "traced": {
+        "mean_ms": 2.2938,
+        "p50_ms": 2.1811,
+        "p95_ms": 3.0033
+      },
+      "untraced": {
+        "mean_ms": 1.3809,
+        "p50_ms": 1.2872,
+        "p95_ms": 1.7292
+      }
+    },
+    {
+      "attribution_complete": true,
+      "case_id": "hono-server-sent-events",
+      "content_type": "mixed",
+      "language": "typescript",
+      "max_trace_bytes": 41296,
+      "repository": "hono",
+      "results_equal": true,
+      "traced": {
+        "mean_ms": 2.5685,
+        "p50_ms": 2.6001,
+        "p95_ms": 2.6897
+      },
+      "untraced": {
+        "mean_ms": 2.0209,
+        "p50_ms": 2.0137,
+        "p95_ms": 2.35
+      }
+    },
+    {
+      "attribution_complete": true,
+      "case_id": "fastroute-route-parser",
+      "content_type": "code",
+      "language": "php",
+      "max_trace_bytes": 41642,
+      "repository": "fastroute",
+      "results_equal": true,
+      "traced": {
+        "mean_ms": 2.0626,
+        "p50_ms": 2.0354,
+        "p95_ms": 2.3041
+      },
+      "untraced": {
+        "mean_ms": 1.2588,
+        "p50_ms": 1.2494,
+        "p95_ms": 1.3835
+      }
+    },
+    {
+      "attribution_complete": true,
+      "case_id": "fastroute-method-not-allowed",
+      "content_type": "code",
+      "language": "php",
+      "max_trace_bytes": 41356,
+      "repository": "fastroute",
+      "results_equal": true,
+      "traced": {
+        "mean_ms": 2.0289,
+        "p50_ms": 1.9623,
+        "p95_ms": 2.313
+      },
+      "untraced": {
+        "mean_ms": 1.2308,
+        "p50_ms": 1.178,
+        "p95_ms": 1.4747
+      }
+    },
+    {
+      "attribution_complete": true,
+      "case_id": "fastroute-file-cache",
+      "content_type": "code",
+      "language": "php",
+      "max_trace_bytes": 41240,
+      "repository": "fastroute",
+      "results_equal": true,
+      "traced": {
+        "mean_ms": 2.051,
+        "p50_ms": 2.0705,
+        "p95_ms": 2.2223
+      },
+      "untraced": {
+        "mean_ms": 1.3319,
+        "p50_ms": 1.3128,
+        "p95_ms": 1.5858
+      }
+    },
+    {
+      "attribution_complete": true,
+      "case_id": "fastroute-route-groups",
+      "content_type": "document",
+      "language": "php",
+      "max_trace_bytes": 34111,
+      "repository": "fastroute",
+      "results_equal": true,
+      "traced": {
+        "mean_ms": 1.4021,
+        "p50_ms": 1.3671,
+        "p95_ms": 1.5943
+      },
+      "untraced": {
+        "mean_ms": 0.6677,
+        "p50_ms": 0.6234,
+        "p95_ms": 0.8692
+      }
+    },
+    {
+      "attribution_complete": true,
+      "case_id": "fastroute-uri-generation",
+      "content_type": "mixed",
+      "language": "php",
+      "max_trace_bytes": 42294,
+      "repository": "fastroute",
+      "results_equal": true,
+      "traced": {
+        "mean_ms": 1.7182,
+        "p50_ms": 1.658,
+        "p95_ms": 1.9614
+      },
+      "untraced": {
+        "mean_ms": 0.9782,
+        "p50_ms": 0.9331,
+        "p95_ms": 1.1534
+      }
+    },
+    {
+      "attribution_complete": true,
+      "case_id": "pflag-name-normalization",
+      "content_type": "code",
+      "language": "go",
+      "max_trace_bytes": 38494,
+      "repository": "pflag",
+      "results_equal": true,
+      "traced": {
+        "mean_ms": 5.4021,
+        "p50_ms": 5.284,
+        "p95_ms": 6.4861
+      },
+      "untraced": {
+        "mean_ms": 5.944,
+        "p50_ms": 4.6531,
+        "p95_ms": 10.8021
+      }
+    },
+    {
+      "attribution_complete": true,
+      "case_id": "pflag-shorthand-parser",
+      "content_type": "code",
+      "language": "go",
+      "max_trace_bytes": 38931,
+      "repository": "pflag",
+      "results_equal": true,
+      "traced": {
+        "mean_ms": 5.5796,
+        "p50_ms": 5.4709,
+        "p95_ms": 6.531
+      },
+      "untraced": {
+        "mean_ms": 4.4754,
+        "p50_ms": 4.4124,
+        "p95_ms": 5.3014
+      }
+    },
+    {
+      "attribution_complete": true,
+      "case_id": "pflag-string-slice",
+      "content_type": "code",
+      "language": "go",
+      "max_trace_bytes": 39258,
+      "repository": "pflag",
+      "results_equal": true,
+      "traced": {
+        "mean_ms": 5.9535,
+        "p50_ms": 5.6079,
+        "p95_ms": 7.1059
+      },
+      "untraced": {
+        "mean_ms": 5.493,
+        "p50_ms": 4.8511,
+        "p95_ms": 8.6312
+      }
+    },
+    {
+      "attribution_complete": true,
+      "case_id": "pflag-go-flag-compatibility",
+      "content_type": "document",
+      "language": "go",
+      "max_trace_bytes": 32871,
+      "repository": "pflag",
+      "results_equal": true,
+      "traced": {
+        "mean_ms": 5.1385,
+        "p50_ms": 4.96,
+        "p95_ms": 6.1838
+      },
+      "untraced": {
+        "mean_ms": 4.2522,
+        "p50_ms": 4.094,
+        "p95_ms": 4.8154
+      }
+    },
+    {
+      "attribution_complete": true,
+      "case_id": "pflag-deprecated-shorthand",
+      "content_type": "mixed",
+      "language": "go",
+      "max_trace_bytes": 39944,
+      "repository": "pflag",
+      "results_equal": true,
+      "traced": {
+        "mean_ms": 5.5407,
+        "p50_ms": 5.4657,
+        "p95_ms": 6.3397
+      },
+      "untraced": {
+        "mean_ms": 5.429,
+        "p50_ms": 4.8043,
+        "p95_ms": 8.9512
+      }
+    },
+    {
+      "attribution_complete": true,
+      "case_id": "swift-command-parser",
+      "content_type": "code",
+      "language": "swift",
+      "max_trace_bytes": 45080,
+      "repository": "swift-argument-parser",
+      "results_equal": true,
+      "traced": {
+        "mean_ms": 3.0273,
+        "p50_ms": 2.9423,
+        "p95_ms": 3.4156
+      },
+      "untraced": {
+        "mean_ms": 2.2034,
+        "p50_ms": 2.0784,
+        "p95_ms": 2.8129
+      }
+    },
+    {
+      "attribution_complete": true,
+      "case_id": "swift-bash-completions",
+      "content_type": "code",
+      "language": "swift",
+      "max_trace_bytes": 44895,
+      "repository": "swift-argument-parser",
+      "results_equal": true,
+      "traced": {
+        "mean_ms": 2.9171,
+        "p50_ms": 2.8848,
+        "p95_ms": 3.6144
+      },
+      "untraced": {
+        "mean_ms": 2.1268,
+        "p50_ms": 1.9734,
+        "p95_ms": 2.6278
+      }
+    },
+    {
+      "attribution_complete": true,
+      "case_id": "swift-option-strategies",
+      "content_type": "code",
+      "language": "swift",
+      "max_trace_bytes": 45069,
+      "repository": "swift-argument-parser",
+      "results_equal": true,
+      "traced": {
+        "mean_ms": 2.856,
+        "p50_ms": 2.7551,
+        "p95_ms": 3.4697
+      },
+      "untraced": {
+        "mean_ms": 2.2356,
+        "p50_ms": 2.2957,
+        "p95_ms": 2.5839
+      }
+    },
+    {
+      "attribution_complete": true,
+      "case_id": "swift-validation-guide",
+      "content_type": "document",
+      "language": "swift",
+      "max_trace_bytes": 40093,
+      "repository": "swift-argument-parser",
+      "results_equal": true,
+      "traced": {
+        "mean_ms": 2.7204,
+        "p50_ms": 2.6986,
+        "p95_ms": 3.033
+      },
+      "untraced": {
+        "mean_ms": 1.7435,
+        "p50_ms": 1.6804,
+        "p95_ms": 1.9054
+      }
+    },
+    {
+      "attribution_complete": true,
+      "case_id": "swift-completion-install",
+      "content_type": "mixed",
+      "language": "swift",
+      "max_trace_bytes": 48898,
+      "repository": "swift-argument-parser",
+      "results_equal": true,
+      "traced": {
+        "mean_ms": 3.2888,
+        "p50_ms": 3.3002,
+        "p95_ms": 3.6359
+      },
+      "untraced": {
+        "mean_ms": 2.4124,
+        "p50_ms": 2.2856,
+        "p95_ms": 2.8838
+      }
+    },
+    {
+      "attribution_complete": true,
+      "case_id": "dry-configurable-compiler",
+      "content_type": "code",
+      "language": "ruby",
+      "max_trace_bytes": 27229,
+      "repository": "dry-configurable",
+      "results_equal": true,
+      "traced": {
+        "mean_ms": 1.2269,
+        "p50_ms": 1.2017,
+        "p95_ms": 1.35
+      },
+      "untraced": {
+        "mean_ms": 0.8161,
+        "p50_ms": 0.7688,
+        "p95_ms": 1.0255
+      }
+    },
+    {
+      "attribution_complete": true,
+      "case_id": "dry-configurable-finalize",
+      "content_type": "code",
+      "language": "ruby",
+      "max_trace_bytes": 27197,
+      "repository": "dry-configurable",
+      "results_equal": true,
+      "traced": {
+        "mean_ms": 1.3115,
+        "p50_ms": 1.2929,
+        "p95_ms": 1.4439
+      },
+      "untraced": {
+        "mean_ms": 0.8612,
+        "p50_ms": 0.8386,
+        "p95_ms": 1.0109
+      }
+    },
+    {
+      "attribution_complete": true,
+      "case_id": "dry-configurable-inheritance",
+      "content_type": "code",
+      "language": "ruby",
+      "max_trace_bytes": 27243,
+      "repository": "dry-configurable",
+      "results_equal": true,
+      "traced": {
+        "mean_ms": 1.2904,
+        "p50_ms": 1.252,
+        "p95_ms": 1.45
+      },
+      "untraced": {
+        "mean_ms": 0.9247,
+        "p50_ms": 0.7677,
+        "p95_ms": 1.556
+      }
+    },
+    {
+      "attribution_complete": true,
+      "case_id": "dry-configurable-nested-settings",
+      "content_type": "document",
+      "language": "ruby",
+      "max_trace_bytes": 21658,
+      "repository": "dry-configurable",
+      "results_equal": true,
+      "traced": {
+        "mean_ms": 0.7746,
+        "p50_ms": 0.7592,
+        "p95_ms": 0.8416
+      },
+      "untraced": {
+        "mean_ms": 0.429,
+        "p50_ms": 0.3788,
+        "p95_ms": 0.6725
+      }
+    },
+    {
+      "attribution_complete": true,
+      "case_id": "dry-configurable-class-and-instance",
+      "content_type": "mixed",
+      "language": "ruby",
+      "max_trace_bytes": 27443,
+      "repository": "dry-configurable",
+      "results_equal": true,
+      "traced": {
+        "mean_ms": 1.1915,
+        "p50_ms": 1.1633,
+        "p95_ms": 1.4411
+      },
+      "untraced": {
+        "mean_ms": 0.6876,
+        "p50_ms": 0.6574,
+        "p95_ms": 0.8786
+      }
+    }
+  ],
+  "summary": {
+    "added_p95_ms": 0.8976,
+    "gates": {
+      "added_p95_within_25ms": true,
+      "all_attribution_complete": true,
+      "all_results_equal": true,
+      "p95_ratio_within_1_5x": true,
+      "trace_size_within_250kib": true
+    },
+    "max_trace_bytes": 48898,
+    "p95_ratio": 1.1806,
+    "paired_delta": {
+      "mean_ms": 0.6608,
+      "p50_ms": 0.7063,
+      "p95_ms": 1.4954
+    },
+    "passed": true,
+    "traced": {
+      "mean_ms": 2.7755,
+      "p50_ms": 2.4497,
+      "p95_ms": 5.867
+    },
+    "untraced": {
+      "mean_ms": 2.1148,
+      "p50_ms": 1.669,
+      "p95_ms": 4.9694
+    }
+  }
+}

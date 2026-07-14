@@ -79,6 +79,7 @@ nav:
       - Search Guide: search-guide.md
       - Advanced Search: search-advanced.md
       - Snippet Rendering: snippets.md
+      - Candidate Tracing: search-candidate-tracing.md
   - Code Intelligence: code-intelligence.md
   - Multi-Project Federation: multi-project.md
   - Indexing & Maintenance: indexing.md

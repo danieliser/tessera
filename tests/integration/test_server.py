@@ -85,6 +85,26 @@ class TestSearchTool:
         result = await server.call_tool("search", {"query": "", "limit": 10})
         assert len(result.content) > 0
 
+    async def test_debug_search_logs_trace_without_changing_result_payload(self, server):
+        """Candidate traces stay on the explicit debug surface."""
+        with (
+            patch("tessera.server.tools._search.logger.isEnabledFor", return_value=True),
+            patch("tessera.server.tools._search.logger.debug") as debug_log,
+        ):
+            result = await server.call_tool("search", {"query": "trace fixture", "limit": 3})
+
+        payload = result.content[0].text
+        assert "candidate_trace" not in payload
+        trace_calls = [
+            call for call in debug_log.call_args_list
+            if call.args and call.args[0] == "Candidate trace: %s"
+        ]
+        assert len(trace_calls) == 1
+        trace = json.loads(trace_calls[0].args[1])
+        assert trace["schema_version"] == "1.0"
+        assert trace["query"] == "trace fixture"
+        assert trace["reranker"]["status"] == "skipped"
+
 
 class TestSymbolsTool:
     """Test the symbols tool handler."""

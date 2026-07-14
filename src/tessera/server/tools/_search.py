@@ -14,6 +14,7 @@ from ...search import (
     format_results,
     hybrid_search,
 )
+from ...search_trace import FederatedSearchTrace, SearchTrace
 from .._state import (
     _check_session,
     _get_project_dbs,
@@ -143,21 +144,46 @@ def register_search_tools(mcp: FastMCP) -> None:
             # Use model profile's keyword weight unless explicit rrf_weights provided
             profile_kw_weight = _model_profile.hybrid_keyword_weight if _model_profile and not rrf_weights else None
 
+            federated_trace = (
+                FederatedSearchTrace(query=query, limit=limit)
+                if logger.isEnabledFor(logging.DEBUG)
+                else None
+            )
+            project_traces = [
+                SearchTrace(project_id=pid, project_name=pname)
+                if federated_trace is not None
+                else None
+                for pid, pname, _db in dbs
+            ]
             tasks = [
                 asyncio.to_thread(
                     hybrid_search, query, query_embedding, db,
                     None, limit, source_type_filter,
                     search_types, advanced_fts, rrf_weights,
                     keyword_weight=profile_kw_weight,
+                    trace=project_trace,
                 )
-                for pid, pname, db in dbs
+                for (_pid, _pname, db), project_trace in zip(
+                    dbs,
+                    project_traces,
+                    strict=False,
+                )
             ]
             results_list = await asyncio.gather(*tasks, return_exceptions=True)
 
             all_results = []
-            for (pid, pname, _db), result in zip(dbs, results_list, strict=False):
-                if isinstance(result, Exception):
+            for (pid, pname, _db), result, project_trace in zip(
+                dbs,
+                results_list,
+                project_traces,
+                strict=False,
+            ):
+                if federated_trace is not None and project_trace is not None:
+                    federated_trace.add_project(project_trace)
+                if isinstance(result, BaseException):
                     logger.warning("Query on project %d failed: %s", pid, result)
+                    if federated_trace is not None:
+                        federated_trace.error(f"project/{pid}", result)
                     continue
                 for r in result:
                     r["project_id"] = pid
@@ -166,6 +192,8 @@ def register_search_tools(mcp: FastMCP) -> None:
 
             # Sort by score descending
             all_results.sort(key=lambda r: r.get("score", 0), reverse=True)
+            if federated_trace is not None:
+                federated_trace.record_project_union(all_results)
 
             # Post-RRF reranking via cross-encoder (if available)
             from .._state import _reranker
@@ -173,14 +201,30 @@ def register_search_tools(mcp: FastMCP) -> None:
                 try:
                     # Rerank top candidates (take more than limit to give reranker room)
                     rerank_pool = all_results[:limit * 3]
+                    if federated_trace is not None:
+                        federated_trace.record_rerank_pool(rerank_pool)
                     docs = [r.get("content", r.get("snippet", "")) for r in rerank_pool]
                     reranked = await asyncio.to_thread(_reranker.rerank, query, docs, limit)
                     all_results = [rerank_pool[idx] for idx, _score in reranked]
+                    if federated_trace is not None:
+                        federated_trace.record_rerank_result(
+                            rerank_pool,
+                            reranked,
+                            all_results,
+                        )
                 except Exception as e:
                     logger.warning("Reranking failed, using RRF order: %s", e)
+                    if federated_trace is not None:
+                        federated_trace.record_reranker_error(e)
                     all_results = all_results[:limit]
             else:
+                if federated_trace is not None:
+                    reason = "disabled" if not _reranker else "no_candidates"
+                    federated_trace.record_reranker_skipped(reason)
                 all_results = all_results[:limit]
+
+            if federated_trace is not None:
+                federated_trace.record_final(all_results)
 
             # Add stable document IDs
             all_results = enrich_with_docid(all_results)
@@ -221,6 +265,8 @@ def register_search_tools(mcp: FastMCP) -> None:
                     r.update(snippet_info)
 
             _log_audit("search", len(all_results), agent_id=agent_id, ppr_used=False)
+            if federated_trace is not None:
+                logger.debug("Candidate trace: %s", federated_trace.to_json())
             warning = _stale_index_warning([pid for pid, _, _ in dbs])
             return warning + format_results(all_results, format=output_format)
         except Exception as e:
