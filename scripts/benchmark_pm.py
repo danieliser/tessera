@@ -17,16 +17,26 @@ from __future__ import annotations
 
 import argparse
 import csv
+import json
 import logging
 import os
 import subprocess
 import sys
 import time
 from datetime import datetime
+from pathlib import Path
 
+sys.path.insert(0, os.path.dirname(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
 import numpy as np
+from benchmark_governance import (
+    DEFAULT_MANIFEST,
+    CorpusValidationError,
+    load_manifest,
+    manifest_digest,
+    verify_external_suite_revisions,
+)
 
 from tessera.db import ProjectDB
 from tessera.embeddings import (
@@ -445,12 +455,25 @@ def main():
 
     print("=" * 100)
     print("Popup Maker Real-World Benchmark (Core + Pro)")
+    print("Evaluation class: legacy_regression (selection prohibited)")
     print("=" * 100)
 
     for path, label in [(PM_CORE, "Core"), (PM_PRO, "Pro")]:
         if not os.path.isdir(path):
             print(f"ERROR: {label} not found at {path}")
             return
+
+    manifest = load_manifest(DEFAULT_MANIFEST)
+    try:
+        source_revisions = verify_external_suite_revisions(
+            manifest,
+            "popup-maker-pm20",
+            {"core": Path(PM_CORE), "pro": Path(PM_PRO)},
+        )
+    except CorpusValidationError as error:
+        print(f"ERROR: {error}")
+        return
+    corpus_manifest_sha = manifest_digest(DEFAULT_MANIFEST)
 
     client, reranker, model_key, model_label = create_client_and_reranker(args)
     if client is None:
@@ -519,6 +542,7 @@ def main():
     profile_override = None
     if args.chunk_budget:
         from dataclasses import replace as dc_replace
+
         from tessera.model_profiles import resolve_profile
         model_name = getattr(client, 'model_name', None) or getattr(client, 'model', None)
         base_profile = resolve_profile(model_id=model_name) if model_name else None
@@ -669,6 +693,7 @@ def main():
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         csv_path = f"benchmarks/{model_key}_{ts}.csv"
         fieldnames = [
+            "evaluation_split", "selection_allowed", "manifest_sha256", "repository_revisions",
             "model", "mode", "query_id", "query_desc", "expected", "top_file",
             "mrr", "top1", "top3", "top5", "top10", "latency_ms",
             "keyword_weight", "semantic_weight", "graph_weight",
@@ -683,6 +708,10 @@ def main():
             for label in labels:
                 for i, r in enumerate(all_results[label]):
                     writer.writerow({
+                        "evaluation_split": "legacy_regression",
+                        "selection_allowed": "false",
+                        "manifest_sha256": corpus_manifest_sha,
+                        "repository_revisions": json.dumps(source_revisions, sort_keys=True),
                         "model": model_key,
                         "mode": label,
                         "query_id": i,

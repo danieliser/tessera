@@ -17,11 +17,9 @@ Example:
 from __future__ import annotations
 
 import argparse
-import importlib
 import json
 import math
 import os
-import platform
 import re
 import shutil
 import statistics
@@ -29,7 +27,6 @@ import subprocess
 import sys
 import time
 from collections import defaultdict
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -40,6 +37,15 @@ VALIDATION_DIR = Path(__file__).resolve().parent / "benchmark_validation"
 sys.path.insert(0, str(REPO_ROOT / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from benchmark_governance import (  # noqa: E402
+    DEFAULT_MANIFEST,
+    build_run_metadata,
+    load_manifest,
+    load_queries,
+    macro_per_repository,
+    paired_bootstrap_interval,
+    protected_segment_metrics,
+)
 from benchmark_validation.run import (  # noqa: E402
     CODEBASES,
     ensure_codebase,
@@ -52,6 +58,7 @@ from tessera.search import hybrid_search  # noqa: E402
 
 TOP_K = 10
 RERANK_POOL = 40
+BOOTSTRAP_SEED = 1729
 DOCUMENT_SOURCE_TYPES = [
     "markdown",
     "pdf",
@@ -154,27 +161,9 @@ def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def _query_module(codebase: str):
-    return importlib.import_module(f"benchmark_validation.{CODEBASES[codebase]['queries']}")
-
-
 def load_cases(codebase: str, tier: str) -> list[dict[str, Any]]:
     """Load the versioned ground-truth cases for one repository."""
-    language = "typescript" if codebase == "nextjs" else "python"
-    cases = []
-    for query, expected, description, category, query_tier in _query_module(codebase).get_queries(tier):
-        cases.append(
-            {
-                "repository": codebase,
-                "language": language,
-                "category": "document" if category == "doc" else category,
-                "tier": query_tier,
-                "query": query,
-                "description": description,
-                "expected_files": expected,
-            }
-        )
-    return cases
+    return load_queries(load_manifest(DEFAULT_MANIFEST), codebase, tier)
 
 
 def _source_filter(category: str) -> list[str] | None:
@@ -336,9 +325,13 @@ def aggregate(rows: list[dict[str, Any]]) -> dict[str, Any]:
         by_engine[row["engine"]].append(row)
         if row["category"] == "code":
             comparable_code[row["engine"]].append(row)
+    code_rows = [row for row in rows if row["category"] == "code"]
     return {
         "overall": {engine: summarize(engine_rows) for engine, engine_rows in by_engine.items()},
         "comparable_code": {engine: summarize(engine_rows) for engine, engine_rows in comparable_code.items()},
+        "macro_per_repository": macro_per_repository(rows),
+        "macro_comparable_code": macro_per_repository(code_rows),
+        "protected_segments": protected_segment_metrics(rows),
         "segments": {
             f"{engine}/{repository}/{category}": summarize(segment_rows)
             for (engine, repository, category), segment_rows in sorted(grouped.items())
@@ -347,7 +340,7 @@ def aggregate(rows: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def ranker_routing_analysis(rows: list[dict[str, Any]]) -> dict[str, Any]:
-    """Score a post-hoc policy that reranks code but preserves base order elsewhere."""
+    """Score a diagnostic post-hoc oracle; never use it to select product routing."""
     routed = [
         {**row, "engine": "tessera_code_only_rerank"}
         for row in rows
@@ -361,9 +354,12 @@ def ranker_routing_analysis(rows: list[dict[str, Any]]) -> dict[str, Any]:
     for row in routed:
         by_category[row["category"]].append(row)
     return {
-        "policy": "Jina-tiny reranking for code; base hybrid order for document and cross queries",
+        "composition": "Jina-tiny rows for code; base hybrid rows for document and cross queries",
         "post_hoc": True,
+        "diagnostic_oracle": True,
+        "selection_allowed": False,
         "overall": summarize(routed),
+        "macro_per_repository": macro_per_repository(routed)["tessera_code_only_rerank"],
         "categories": {category: summarize(category_rows) for category, category_rows in sorted(by_category.items())},
     }
 
@@ -395,30 +391,36 @@ def _format_pct(value: float) -> str:
 def render_report(report: dict[str, Any]) -> str:
     """Render an answer-first Markdown benchmark report."""
     comparable = report["summary"]["comparable_code"]
+    comparable_macro = report["summary"]["macro_comparable_code"]
     segments = report["summary"]["segments"]
     graph = report["graph_resolution"]
-    reranked = comparable["tessera_bge_small_jina_tiny"]
-    codegraph = comparable["codegraph"]
+    reranked_macro = comparable_macro["tessera_bge_small_jina_tiny"]
+    codegraph_macro = comparable_macro["codegraph"]
     overall = report["summary"]["overall"]
+    overall_macro = report["summary"]["macro_per_repository"]
     routed = report["summary"]["ranker_routing"]["overall"]
-    winner = "Tessera" if reranked["mrr_at_10"] >= codegraph["mrr_at_10"] else "CodeGraph"
+    routed_macro = report["summary"]["ranker_routing"]["macro_per_repository"]
+    comparisons = report["summary"]["paired_bootstrap"]
+    winner = "Tessera" if reranked_macro["mrr_at_10"] >= codegraph_macro["mrr_at_10"] else "CodeGraph"
     lines = [
         "# Tessera vs CodeGraph: Python, TypeScript, and Documentation Benchmark",
         "",
-        f"*Generated {report['metadata']['generated_at']} from pinned Flask and Next.js revisions.*",
+        f"*Generated {report['metadata']['generated_at']} from pinned Flask and Next.js revisions. "
+        "Evaluation class: `legacy_regression`; selection from this artifact is prohibited.*",
         "",
         "## Technical Summary",
         "",
-        f"**{winner} leads the normalized source-code comparison on MRR@10.** "
-        f"Tessera with BGE-small + Jina-tiny scored {reranked['mrr_at_10']:.3f}; "
-        f"CodeGraph scored {codegraph['mrr_at_10']:.3f} across the same Python and "
+        f"**{winner} leads the normalized source-code comparison on macro MRR@10.** "
+        f"Tessera with BGE-small + Jina-tiny scored {reranked_macro['mrr_at_10']:.3f}; "
+        f"CodeGraph scored {codegraph_macro['mrr_at_10']:.3f} across the same Python and "
         "TypeScript query set. Tessera also covers document and mixed-source queries, "
         "which CodeGraph does not index and which are therefore reported separately.",
         "",
-        "Across all Tessera-supported content, reranking every query is counterproductive: "
-        f"base hybrid retrieval scored {overall['tessera_bge_small']['mrr_at_10']:.3f}, "
-        f"global Jina-tiny reranking scored {overall['tessera_bge_small_jina_tiny']['mrr_at_10']:.3f}, "
-        f"and the post-hoc code-only reranking policy scored {routed['mrr_at_10']:.3f}.",
+        "Across all Tessera-supported content, the visible rows show different ranker behavior by segment. "
+        f"Base hybrid retrieval scored {overall_macro['tessera_bge_small']['mrr_at_10']:.3f} macro MRR@10, "
+        f"global Jina-tiny reranking scored {overall_macro['tessera_bge_small_jina_tiny']['mrr_at_10']:.3f}, "
+        f"and a post-hoc code-only composition scored {routed_macro['mrr_at_10']:.3f}. "
+        "That composition is a diagnostic oracle, not evidence for a production route.",
         "",
         f"The exact-edge guardrail remains {graph['tessera']['passed']}/{graph['tessera']['total']} "
         f"for Tessera versus {graph['codegraph']['passed']}/{graph['codegraph']['total']} "
@@ -428,13 +430,15 @@ def render_report(report: dict[str, Any]) -> str:
         "",
         "Both engines are reduced to ordered source-file paths and scored against the same expected files.",
         "",
-        "| Engine | Queries | MRR@10 | Top-1 | Top-3 | Top-10 | Mean latency | P95 latency |",
-        "|---|---:|---:|---:|---:|---:|---:|---:|",
+        "| Engine | Queries | Macro MRR@10 | Pooled MRR@10 | Top-1 | Top-3 | Top-10 | Mean latency | P95 latency |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for engine in ("tessera_bge_small", "tessera_bge_small_jina_tiny", "codegraph"):
         metric = comparable[engine]
+        macro = comparable_macro[engine]
         lines.append(
-            f"| {engine} | {metric['queries_supported']} | {metric['mrr_at_10']:.3f} | "
+            f"| {engine} | {metric['queries_supported']} | {macro['mrr_at_10']:.3f} | "
+            f"{metric['mrr_at_10']:.3f} | "
             f"{_format_pct(metric['top_1'])} | {_format_pct(metric['top_3'])} | "
             f"{_format_pct(metric['top_10'])} | {metric['latency_ms_mean']:.0f} ms | "
             f"{metric['latency_ms_p95']:.0f} ms |"
@@ -445,20 +449,41 @@ def render_report(report: dict[str, Any]) -> str:
         "",
         "## Ranker Ablation Across All Content",
         "",
-        "The routed policy is derived from the same measured rows: use Jina-tiny for code queries and preserve base hybrid ordering for document and mixed queries.",
+        "The code-only row is an oracle assembled after seeing the same measurements. It quantifies possible headroom only; "
+        "it must not define a language/content route, a product default, or a regression target.",
         "",
-        "| Tessera policy | Queries | MRR@10 | Top-1 | Top-3 | Top-10 |",
-        "|---|---:|---:|---:|---:|---:|",
+        "| Tessera configuration | Queries | Macro MRR@10 | Pooled MRR@10 | Top-1 | Top-3 | Top-10 |",
+        "|---|---:|---:|---:|---:|---:|---:|",
     ]
-    for label, metric in (
-        ("BGE-small hybrid", overall["tessera_bge_small"]),
-        ("BGE-small + Jina-tiny globally", overall["tessera_bge_small_jina_tiny"]),
-        ("BGE-small + Jina-tiny on code only (post-hoc)", routed),
+    for label, metric, macro in (
+        ("BGE-small hybrid", overall["tessera_bge_small"], overall_macro["tessera_bge_small"]),
+        (
+            "BGE-small + Jina-tiny globally",
+            overall["tessera_bge_small_jina_tiny"],
+            overall_macro["tessera_bge_small_jina_tiny"],
+        ),
+        ("Code-only composition (post-hoc oracle)", routed, routed_macro),
     ):
         lines.append(
-            f"| {label} | {metric['queries_supported']} | {metric['mrr_at_10']:.3f} | "
+            f"| {label} | {metric['queries_supported']} | {macro['mrr_at_10']:.3f} | "
+            f"{metric['mrr_at_10']:.3f} | "
             f"{_format_pct(metric['top_1'])} | {_format_pct(metric['top_3'])} | "
             f"{_format_pct(metric['top_10'])} |"
+        )
+    lines += [
+        "",
+        "## Paired Repository Bootstrap",
+        "",
+        "Intervals resample paired per-repository MRR@10 deltas. They describe this regression corpus only.",
+        "",
+        "| Comparison | Repositories | Delta | 95% interval |",
+        "|---|---:|---:|---:|",
+    ]
+    for comparison in comparisons.values():
+        lines.append(
+            f"| {comparison['treatment_engine']} vs {comparison['baseline_engine']} | "
+            f"{comparison['repositories']} | {comparison['delta']:+.3f} | "
+            f"[{comparison['ci_lower']:+.3f}, {comparison['ci_upper']:+.3f}] |"
         )
     lines += [
         "",
@@ -485,19 +510,21 @@ def render_report(report: dict[str, Any]) -> str:
         f"- **Queries:** {report['metadata']['query_cases']} unique ground-truth questions; each Tessera "
         "configuration runs all questions, while CodeGraph runs the source-code subset.",
         "- **MRR@10:** reciprocal rank of the first expected file, averaged across supported queries; a miss contributes zero.",
+        "- **Primary aggregation:** metrics are calculated per repository and then macro-averaged so repository size cannot dominate.",
         "- **Top-k:** fraction of supported queries with any expected file in the first k unique file results.",
         "- **Documents:** Markdown, MDX, and reStructuredText are grouped as document retrieval. Unsupported CodeGraph rows are excluded rather than scored as failures.",
         "- **Tessera configuration:** BGE-small embeddings, hybrid retrieval, file deduplication; one run without reranking and one with Jina-tiny reranking.",
-        "- **Routing ablation:** post-hoc selection from measured rows, not a third model execution; it should be confirmed on an independent query set before becoming a default.",
+        "- **Routing oracle:** post-hoc selection from measured rows, not a third model execution. It cannot become a default or define a routing rule; any policy requires broad repository-level development evidence and one sealed milestone holdout.",
         "- **CodeGraph adapter:** ordered source-code file blocks emitted by `codegraph explore --max-files 10`.",
         "",
         "## Validation Assessment",
         "",
-        "**Share with caveats.** File-level relevance labels and calculations are deterministic and machine-readable. "
-        "The sample is broad enough to guide engineering priorities, but it is curated rather than independently blinded, "
-        "and latency is not a process-normalized performance comparison.",
+        "**Regression and diagnosis only.** File-level relevance labels and calculations are deterministic and machine-readable, "
+        "but the suite has already influenced hypotheses. It cannot select production constants, rankers, models, or routing. "
+        "Latency is also not a process-normalized performance comparison.",
         "",
-        "Recommended next step: inspect the per-query misses in the JSON artifact, then add the highest-impact failures as permanent regression cases before changing models or ranker weights.",
+        "Recommended next steps: measure candidate recall and provenance, address structural retrieval gaps with general invariant fixtures, "
+        "and evaluate any resulting hypothesis on repository-separated development data before opening a sealed holdout.",
         "",
     ]
     return "\n".join(lines)
@@ -521,6 +548,8 @@ def main() -> int:
     parser.add_argument("--report", type=Path)
     args = parser.parse_args()
 
+    corpus_manifest = load_manifest(DEFAULT_MANIFEST)
+    corpus_repositories = {repository["id"]: repository for repository in corpus_manifest["repositories"]}
     repositories = {}
     cases = []
     paths: dict[str, Path] = {}
@@ -528,10 +557,18 @@ def main() -> int:
         path = Path(ensure_codebase(name))
         paths[name] = path
         revision = _version(["git", "rev-parse", "HEAD"], cwd=path)
+        expected_revision = corpus_repositories[name]["revision"]
+        if revision != expected_revision:
+            raise RuntimeError(
+                f"{name} resolved to {revision}, but corpus manifest requires {expected_revision}"
+            )
         repositories[name] = {
             "revision": revision,
             "configured_ref": CODEBASES[name]["ref"],
             "languages": CODEBASES[name]["languages"],
+            "repository_url": corpus_repositories[name]["repository_url"],
+            "license": corpus_repositories[name]["license"],
+            "evaluation_split": corpus_repositories[name]["split"],
             "codegraph_index": ensure_codegraph_index(path, args.codegraph_cli, args.node_binary),
         }
         cases.extend(load_cases(name, args.tier))
@@ -567,20 +604,46 @@ def main() -> int:
 
     summary = aggregate(rows)
     summary["ranker_routing"] = ranker_routing_analysis(rows)
-    output = {
-        "metadata": {
-            "generated_at": datetime.now(UTC).isoformat(),
+    code_rows = [row for row in rows if row["category"] == "code"]
+    summary["paired_bootstrap"] = {
+        "global_reranker": paired_bootstrap_interval(
+            rows,
+            "tessera_bge_small",
+            "tessera_bge_small_jina_tiny",
+            seed=BOOTSTRAP_SEED,
+        ),
+        "code_reranker": paired_bootstrap_interval(
+            code_rows,
+            "tessera_bge_small",
+            "tessera_bge_small_jina_tiny",
+            seed=BOOTSTRAP_SEED,
+        ),
+        "codegraph_comparison": paired_bootstrap_interval(
+            code_rows,
+            "codegraph",
+            "tessera_bge_small_jina_tiny",
+            seed=BOOTSTRAP_SEED,
+        ),
+    }
+    metadata = build_run_metadata(
+        DEFAULT_MANIFEST,
+        "legacy_regression",
+        {name: details["revision"] for name, details in repositories.items()},
+        command=sys.argv,
+        seed=BOOTSTRAP_SEED,
+        extra={
             "tier": args.tier,
             "query_cases": len(cases),
             "measured_query_runs": total_runs,
             "top_k": TOP_K,
-            "python": platform.python_version(),
-            "platform": platform.platform(),
             "tessera_revision": _version(["git", "rev-parse", "HEAD"], cwd=REPO_ROOT),
             "codegraph_version": _version([args.node_binary, str(args.codegraph_cli), "--version"]),
             "embedding_model": "BAAI/bge-small-en-v1.5",
             "reranking_model": RERANKER_JINA_TINY,
         },
+    )
+    output = {
+        "metadata": metadata,
         "repositories": repositories,
         "summary": summary,
         "graph_resolution": run_cross_file_suite(args.codegraph_cli, args.node_binary),
@@ -590,6 +653,7 @@ def main() -> int:
             "Tessera runs in-process while CodeGraph launches a CLI process per query; latency is directional.",
             "Ground truth is curated and file-level; it does not score answer synthesis or snippet quality.",
             "Cached indexes are used unless --reindex is supplied, so setup_ms is not a cold-index benchmark.",
+            "This legacy_regression corpus has influenced implementation hypotheses and cannot select product behavior.",
         ],
     }
 

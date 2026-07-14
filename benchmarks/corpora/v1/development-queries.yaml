@@ -1,0 +1,200 @@
+schema_version: 1
+label_set_id: tessera-development-queries-v1
+authored_at: 2026-07-14
+repositories:
+  attrs:
+    - id: attrs-converter-pipeline
+      query: normalize optional attribute values through a converter pipeline
+      expected_files: [src/attr/converters.py]
+      description: Find optional and piped value converters
+      category: code
+      tier: quick
+    - id: attrs-deep-validators
+      query: validate every item in a nested iterable and allow optional values
+      expected_files: [src/attr/validators.py]
+      description: Find deep iterable and optional validators
+      category: code
+      tier: quick
+    - id: attrs-generated-init
+      query: generate init methods and attach them to decorated classes
+      expected_files: [src/attr/_make.py]
+      description: Find generated initializer implementation
+      category: code
+      tier: quick
+    - id: attrs-dataclasses-comparison
+      query: why use attrs instead of standard library dataclasses
+      expected_files: [docs/why.md]
+      description: Find the attrs and dataclasses comparison
+      category: document
+      tier: quick
+    - id: attrs-init-lifecycle
+      query: how generated initialization orders converters validators and post init hooks
+      expected_files: [docs/init.md, src/attr/_make.py]
+      description: Find initialization lifecycle documentation or implementation
+      category: cross
+      tier: quick
+
+  hono:
+    - id: hono-compose-middleware
+      query: compose middleware into a request dispatch chain and call next
+      expected_files: [src/compose.ts]
+      description: Find middleware composition
+      category: code
+      tier: quick
+    - id: hono-signed-cookies
+      query: parse verify and serialize HMAC signed cookies
+      expected_files: [src/utils/cookie.ts, src/helper/cookie/index.ts]
+      description: Find signed cookie helpers
+      category: code
+      tier: quick
+    - id: hono-basic-auth
+      query: HTTP basic authentication middleware validates username and password
+      expected_files: [src/middleware/basic-auth/index.ts]
+      description: Find basic authentication middleware
+      category: code
+      tier: quick
+    - id: hono-migration
+      query: migrate an application across breaking Hono releases
+      expected_files: [docs/MIGRATION.md]
+      description: Find the migration guide
+      category: document
+      tier: quick
+    - id: hono-server-sent-events
+      query: stream server sent events with event data ids and retry intervals
+      expected_files: [src/helper/streaming/sse.ts, src/helper/streaming/index.ts]
+      description: Find the server-sent event streaming API
+      category: cross
+      tier: quick
+
+  fastroute:
+    - id: fastroute-route-parser
+      query: parse route placeholders regular expressions and optional trailing segments
+      expected_files: [src/RouteParser/Std.php]
+      description: Find standard route parsing
+      category: code
+      tier: quick
+    - id: fastroute-method-not-allowed
+      query: represent a dispatch result when the path matches but HTTP method does not
+      expected_files: [src/Dispatcher/Result/MethodNotAllowed.php]
+      description: Find method-not-allowed dispatch results
+      category: code
+      tier: quick
+    - id: fastroute-file-cache
+      query: persist generated route collector data in a filesystem cache
+      expected_files: [src/Cache/FileCache.php]
+      description: Find the filesystem route cache
+      category: code
+      tier: quick
+    - id: fastroute-route-groups
+      query: define route groups with a shared path prefix
+      expected_files: [README.md]
+      description: Find route group documentation
+      category: document
+      tier: quick
+    - id: fastroute-uri-generation
+      query: generate a URI from a named route and placeholder values
+      expected_files: [README.md, src/GenerateUri/FromProcessedConfiguration.php]
+      description: Find URI generation usage or implementation
+      category: cross
+      tier: quick
+
+  pflag:
+    - id: pflag-name-normalization
+      query: normalize flag names so underscores and hyphens compare as equivalent
+      expected_files: [flag.go]
+      description: Find custom flag-name normalization
+      category: code
+      tier: quick
+    - id: pflag-shorthand-parser
+      query: parse combined single-letter shorthand boolean flags
+      expected_files: [flag.go]
+      description: Find shorthand flag parsing
+      category: code
+      tier: quick
+    - id: pflag-string-slice
+      query: implement a repeatable string slice command line flag value
+      expected_files: [string_slice.go]
+      description: Find string-slice flags
+      category: code
+      tier: quick
+    - id: pflag-go-flag-compatibility
+      query: use pflag together with the standard library flag package
+      expected_files: [README.md]
+      description: Find standard flag compatibility documentation
+      category: document
+      tier: quick
+    - id: pflag-deprecated-shorthand
+      query: deprecate a flag shorthand hide it from help and print a warning
+      expected_files: [README.md, flag.go]
+      description: Find shorthand deprecation behavior
+      category: cross
+      tier: quick
+
+  swift-argument-parser:
+    - id: swift-command-parser
+      query: parse nested subcommands and select the matching command configuration
+      expected_files: [Sources/ArgumentParser/Parsing/CommandParser.swift]
+      description: Find subcommand parsing
+      category: code
+      tier: quick
+    - id: swift-bash-completions
+      query: generate bash completion functions for options arguments and subcommands
+      expected_files: [Sources/ArgumentParser/Completions/BashCompletionsGenerator.swift]
+      description: Find Bash completion generation
+      category: code
+      tier: quick
+    - id: swift-option-strategies
+      query: configure option parsing strategies for arrays and repeated values
+      expected_files: [Sources/ArgumentParser/Parsable Properties/Option.swift]
+      description: Find option parsing strategies
+      category: code
+      tier: quick
+    - id: swift-validation-guide
+      query: validate parsed command line arguments and report validation errors
+      expected_files: [Sources/ArgumentParser/Documentation.docc/Articles/Validation.md]
+      description: Find argument validation documentation
+      category: document
+      tier: quick
+    - id: swift-completion-install
+      query: generate and install shell completion scripts for a command
+      expected_files:
+        - Sources/ArgumentParser/Documentation.docc/Articles/InstallingCompletionScripts.md
+        - Sources/ArgumentParser/Completions/CompletionsGenerator.swift
+      description: Find completion installation documentation or implementation
+      category: cross
+      tier: quick
+
+  dry-configurable:
+    - id: dry-configurable-compiler
+      query: compile nested setting abstract syntax tree nodes into configuration settings
+      expected_files: [lib/dry/configurable/compiler.rb]
+      description: Find the configuration DSL compiler
+      category: code
+      tier: quick
+    - id: dry-configurable-finalize
+      query: finalize a configuration recursively and prevent later mutation
+      expected_files: [lib/dry/configurable/config.rb]
+      description: Find configuration finalization
+      category: code
+      tier: quick
+    - id: dry-configurable-inheritance
+      query: duplicate settings and configuration values when a configurable class is inherited
+      expected_files: [lib/dry/configurable/class_methods.rb]
+      description: Find configurable class inheritance
+      category: code
+      tier: quick
+    - id: dry-configurable-nested-settings
+      query: define nested settings with defaults and constructors
+      expected_files: [README.md]
+      description: Find nested configuration documentation
+      category: document
+      tier: quick
+    - id: dry-configurable-class-and-instance
+      query: expose the same configurable settings on classes and instances
+      expected_files:
+        - README.md
+        - lib/dry/configurable/extension.rb
+        - lib/dry/configurable/instance_methods.rb
+      description: Find class and instance configuration behavior
+      category: cross
+      tier: quick

@@ -11,3 +11,6 @@ build/
 .pytest_cache/
 .claude/
 site/
+
+# Sealed benchmark manifests and labels must never enter the public worktree.
+benchmarks/corpora/private/
