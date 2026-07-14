@@ -6,7 +6,7 @@
 
 **Tessera leads the normalized source-code comparison on MRR@10.** Tessera with BGE-small + Jina-tiny scored 0.577; CodeGraph scored 0.413 across the same Python and TypeScript query set. Tessera also covers document and mixed-source queries, which CodeGraph does not index and which are therefore reported separately.
 
-Across all Tessera-supported content, reranking every query is counterproductive: base hybrid retrieval scored 0.610, global Jina-tiny reranking scored 0.588, and the post-hoc code-only reranking policy scored 0.638.
+Across all Tessera-supported content, reranking every query is counterproductive: base hybrid retrieval scored 0.610, global Jina-tiny reranking scored 0.588, and a post-hoc code-only oracle scored 0.638. The oracle was selected after inspecting these rows and is not a product policy or evidence for language/content routing.
 
 The exact-edge guardrail remains 4/4 for Tessera versus 3/4 for CodeGraph. These graph cases measure exact target correctness, not retrieval ranking.
 
@@ -24,7 +24,7 @@ Latency is directional: Tessera uses an in-process cached index, while CodeGraph
 
 ## Ranker Ablation Across All Content
 
-The routed policy is derived from the same measured rows: use Jina-tiny for code queries and preserve base hybrid ordering for document and mixed queries.
+The oracle is derived from the same measured rows: it selects Jina-tiny for code queries and preserves base hybrid ordering for document and mixed queries. It estimates possible headroom only; implementing it would overfit this benchmark.
 
 | Tessera policy | Queries | MRR@10 | Top-1 | Top-3 | Top-10 |
 |---|---:|---:|---:|---:|---:|
@@ -66,10 +66,11 @@ The Flask document subset improved from 0/2 to 2/2 Top-10 under both configurati
 
 ## Engineering Priorities
 
-1. **Gate reranking by content and language.** Jina-tiny improves Next.js code MRR from 0.308 to 0.520, but reduces Flask code from 0.764 to 0.650 and combined document retrieval from 0.839 to 0.718. Validate a TypeScript/code-only gate on an independent set before changing defaults.
-2. **Improve TypeScript candidate generation.** Even after reranking, Next.js code Top-10 is 77%; the remaining misses are webpack configuration, HMR, and static generation. These should become regression cases before tuning weights.
-3. **Sweep rankers behind the routed baseline.** Compare Jina tiny, turbo, and v3 (and code-specialized embedders such as CodeRankEmbed) per language/content segment rather than selecting on one aggregate.
-4. **Finish the broader benchmark program.** Expand the exact graph track beyond four collision cases, add independently authored relevance labels, and run process-normalized latency plus repeated agent-task evaluations.
+1. **Establish repository-level development and sealed-holdout sets.** This visible Flask/Next.js suite has already shaped hypotheses and is now regression/diagnostic evidence only. Do not choose routes, weights, constants, models, or query expansions from it.
+2. **Fix structural candidate limitations.** Validate a real two-stage candidate/rerank pool and first-class path and symbol candidate channels on different development repositories. The production code currently cannot rerank candidates it never retrieved, and post-merge metadata boosts cannot create missing candidates.
+3. **Improve representations without query-specific patches.** Test bounded AST splitting, hierarchical file-to-chunk retrieval, and separately searchable metadata views across multiple languages and repositories. Translate failures into general invariants rather than adding visible benchmark queries to product logic.
+4. **Defer model and routing selection.** Sweep rankers and code-specialized embedders only after candidate architecture is fixed. Promote nothing without repository-level development evidence and a single frozen milestone holdout.
+5. **Finish the broader benchmark program.** Expand the exact graph track beyond four collision cases, add independently authored relevance labels, and run process-normalized latency plus repeated agent-task evaluations.
 
 ## Method and Definitions
 
@@ -79,11 +80,11 @@ The Flask document subset improved from 0/2 to 2/2 Top-10 under both configurati
 - **Top-k:** fraction of supported queries with any expected file in the first k unique file results.
 - **Documents:** Markdown, MDX, and reStructuredText are grouped as document retrieval. Unsupported CodeGraph rows are excluded rather than scored as failures.
 - **Tessera configuration:** BGE-small embeddings, hybrid retrieval, file deduplication; one run without reranking and one with Jina-tiny reranking.
-- **Routing ablation:** post-hoc selection from measured rows, not a third model execution; it should be confirmed on an independent query set before becoming a default.
+- **Routing oracle:** post-hoc selection from measured rows, not a third model execution. It must not become a default or define a routing rule; future policies require repository-level development evidence and a sealed milestone holdout.
 - **CodeGraph adapter:** ordered source-code file blocks emitted by `codegraph explore --max-files 10`.
 
 ## Validation Assessment
 
 **Share with caveats.** File-level relevance labels and calculations are deterministic and machine-readable. The sample is broad enough to guide engineering priorities, but it is curated rather than independently blinded, and latency is not a process-normalized performance comparison.
 
-Recommended next step: inspect the per-query misses in the JSON artifact, then add the highest-impact failures as permanent regression cases before changing models or ranker weights.
+Recommended next step: classify misses into general failure modes, build independent synthetic invariants and different-repository development cases, then measure structural candidate improvements before changing models or ranker weights.

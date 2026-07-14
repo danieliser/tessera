@@ -689,7 +689,7 @@ def hybrid_search(
         source_type: Optional list of source types to filter by (e.g., ['code', 'markdown'])
         search_types: Which search lists to run. None = parse from query prefix.
         advanced_fts: If True, allow FTS5 operators (phrases, NOT, *, NEAR).
-        filename_boost: Boost RRF score per query-token/filename overlap (0.003 recommended)
+        filename_boost: Optional post-merge score per query-token/filename overlap
         file_dedup: Keep only the best-scoring chunk per file
     """
     # Parse structured query prefix if search_types not explicitly provided
