@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-14
 
-**Status:** Active; PR-01 complete, PR-02 next
+**Status:** Active; PR-01 and PR-02 complete, PR-03 next
 
 **Integration target:** `develop` at foundation commit `35800ce`
 
@@ -103,7 +103,7 @@ PR-12/13 and PR-14/15 are parallel optional branches after PR-11. Neither model 
 |---|---|---|---|---|---|
 | CP-0 | Establish the integration branch and retarget open work | Owner decision | S | Complete | PR #9 / `35800ce` |
 | PR-01 | Evaluation governance and repository-level corpora | PR #9 | M | Complete | PR #14 |
-| PR-02 | Candidate tracing and benchmark observability | PR-01 | M | Todo | — |
+| PR-02 | Candidate tracing and benchmark observability | PR-01 | M | Complete | PR #15 |
 | PR-03 | Real two-stage retrieval and rerank pool | PR-02 | M | Todo | — |
 | PR-04 | Searchable file/path candidate channel | PR-03 | M | Todo | — |
 | PR-05 | Searchable symbol/signature candidate channel | PR-04 | M | Todo | — |
@@ -155,15 +155,22 @@ No holdout repository identity or label is present in the public tree.
 
 **Goal:** Explain why every result was or was not eligible for ranking.
 
-- [ ] Record candidate provenance, source-channel rank/score, deduplication, shortcut decisions, graph expansion, rerank-pool inclusion, and final rank.
-- [ ] Emit structured traces without changing default result ordering.
-- [ ] Add per-channel and union Recall@K plus duplicate/file-diversity metrics.
-- [ ] Add cross-project source attribution and calibration diagnostics.
-- [ ] Keep normal search output compact; expose traces only through benchmark/debug surfaces.
+- [x] Record candidate provenance, source-channel rank/score, deduplication, shortcut decisions, graph expansion, rerank-pool inclusion, and final rank.
+- [x] Emit structured traces without changing default result ordering.
+- [x] Add per-channel and union Recall@K plus duplicate/file-diversity metrics.
+- [x] Add cross-project source attribution and calibration diagnostics.
+- [x] Keep normal search output compact; expose traces only through benchmark/debug surfaces.
 
 **Excludes:** New candidate channels or score changes.
 
 **Gate:** Bit-for-bit or order-equivalent default results, bounded tracing overhead, and complete attribution for deterministic fixtures.
+
+**Passed on PR #15:** all 300 paired traced/untraced development searches
+were exactly equal; all 30 frozen-baseline ranks and ordered file lists were
+unchanged; attribution was complete; tracing added 0.8976 ms at p95 (1.1806x)
+and produced at most 48,898 bytes per query. Focused validation passed 544
+tests, lint, and strict docs. See
+[the PR-02 report](../../benchmark-candidate-tracing-2026-07-14.md).
 
 ### PR-03 — Real two-stage retrieval and rerank pool
 
