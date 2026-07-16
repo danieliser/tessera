@@ -592,6 +592,94 @@ def paired_bootstrap_interval(
     }
 
 
+def paired_candidate_recall_interval(
+    rows: list[dict[str, Any]],
+    baseline_engine: str,
+    treatment_engine: str,
+    *,
+    cutoff: int,
+    candidate_set: str = "union",
+    iterations: int = 10_000,
+    seed: int = 1729,
+) -> dict[str, Any]:
+    """Return a paired repository-bootstrap interval for candidate Recall@K."""
+    if cutoff < 1:
+        raise CorpusValidationError("Candidate recall cutoff must be positive")
+    if iterations < 1:
+        raise CorpusValidationError("Bootstrap iterations must be positive")
+
+    baseline = {
+        _case_key(row): row
+        for row in rows
+        if row.get("engine") == baseline_engine and row.get("supported", True)
+    }
+    treatment = {
+        _case_key(row): row
+        for row in rows
+        if row.get("engine") == treatment_engine and row.get("supported", True)
+    }
+    if baseline.keys() != treatment.keys():
+        missing_treatment = sorted(baseline.keys() - treatment.keys())
+        missing_baseline = sorted(treatment.keys() - baseline.keys())
+        raise CorpusValidationError(
+            f"Paired engines cover different cases; missing treatment={missing_treatment}, "
+            f"missing baseline={missing_baseline}"
+        )
+    if not baseline:
+        raise CorpusValidationError("Paired comparison has no shared supported cases")
+
+    def recall(row: dict[str, Any]) -> float:
+        diagnostics = row.get("candidate_diagnostics") or {}
+        if candidate_set == "union":
+            candidate = diagnostics.get("union") or {}
+        else:
+            candidate = (diagnostics.get("channels") or {}).get(candidate_set) or {}
+        value = (candidate.get("recall_at_k") or {}).get(str(cutoff))
+        if value is None:
+            raise CorpusValidationError(
+                f"Missing {candidate_set} candidate Recall@{cutoff} for {_case_key(row)}"
+            )
+        return float(value)
+
+    by_repository: dict[str, list[tuple[float, float]]] = defaultdict(list)
+    for key in sorted(baseline):
+        by_repository[key[0]].append((recall(baseline[key]), recall(treatment[key])))
+    baseline_repo = {
+        repository: fmean(pair[0] for pair in pairs)
+        for repository, pairs in by_repository.items()
+    }
+    treatment_repo = {
+        repository: fmean(pair[1] for pair in pairs)
+        for repository, pairs in by_repository.items()
+    }
+    repository_deltas = [
+        treatment_repo[name] - baseline_repo[name]
+        for name in sorted(by_repository)
+    ]
+    rng = random.Random(seed)
+    sample_size = len(repository_deltas)
+    samples = [
+        fmean(repository_deltas[rng.randrange(sample_size)] for _ in range(sample_size))
+        for _ in range(iterations)
+    ]
+    return {
+        "metric": f"macro_{candidate_set}_candidate_recall_at_{cutoff}_delta",
+        "baseline_engine": baseline_engine,
+        "treatment_engine": treatment_engine,
+        "repositories": sample_size,
+        "paired_queries": len(baseline),
+        "baseline": round(fmean(baseline_repo.values()), 6),
+        "treatment": round(fmean(treatment_repo.values()), 6),
+        "delta": round(fmean(repository_deltas), 6),
+        "confidence": 0.95,
+        "ci_lower": round(_percentile(samples, 0.025), 6),
+        "ci_upper": round(_percentile(samples, 0.975), 6),
+        "bootstrap_unit": "repository",
+        "iterations": iterations,
+        "seed": seed,
+    }
+
+
 def build_run_metadata(
     manifest_path: Path,
     split: str,

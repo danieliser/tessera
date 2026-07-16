@@ -1,14 +1,14 @@
-"""Tests for schema migration v1 → v2."""
+"""Tests for ProjectDB schema creation and migrations."""
 import tempfile
 
 from tessera.db import ProjectDB
 
 
 class TestSchemaMigration:
-    def test_fresh_db_has_v2_schema(self):
+    def test_fresh_db_has_current_schema(self):
         db = ProjectDB(tempfile.mkdtemp())
         cur = db.conn.execute("SELECT value FROM _meta WHERE key='schema_version'")
-        assert cur.fetchone()[0] == "3"
+        assert cur.fetchone()[0] == "4"
 
     def test_new_columns_exist(self):
         db = ProjectDB(tempfile.mkdtemp())
@@ -20,7 +20,7 @@ class TestSchemaMigration:
         db = ProjectDB(tempfile.mkdtemp())
         db._run_migrations()  # Should not raise
         cur = db.conn.execute("SELECT value FROM _meta WHERE key='schema_version'")
-        assert cur.fetchone()[0] == "3"
+        assert cur.fetchone()[0] == "4"
 
     def test_source_type_defaults_to_code(self):
         db = ProjectDB(tempfile.mkdtemp())
